@@ -81,7 +81,15 @@ export default function ClassroomApp({ config = {} }) {
     // 5. Data Collections
     const [chatMessages, setChatMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
-    const [notes, setNotes] = useState([]);
+    const [notes, setNotes] = useState(() => {
+        if (config.isDemo) {
+            return [
+                { id: 101, text: '📌 ДЗ к следующему уроку: №14–18 из сборника ЦТ 2026', time: '15:30' },
+                { id: 102, text: '💡 Запомнить: если дискриминант D < 0, действительных корней нет', time: '15:35' },
+            ];
+        }
+        return [];
+    });
     const [noteInput, setNoteInput] = useState('');
     const [notesLoading, setNotesLoading] = useState(false);
     const [files, setFiles] = useState([]);
@@ -89,10 +97,137 @@ export default function ClassroomApp({ config = {} }) {
     const [isUploadingFile, setIsUploadingFile] = useState(false);
     const fileInputRef = useRef(null);
     const [aiMessages, setAiMessages] = useState(config.aiChatHistory || [
-        { role: 'assistant', text: 'Здравствуйте! Я ваш ИИ-помощник Edusfera. Могу составить план урока, разобрать сложную задачу или сгенерировать тест по ЦТ.' }
+        { role: 'assistant', text: 'Здравствуйте! Я ваш ИИ-помощник Edusfera PRO. Могу составить план урока, разобрать сложную задачу или сгенерировать тест по ЦТ.' }
     ]);
     const [aiInput, setAiInput] = useState('');
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const [copiedIdx, setCopiedIdx] = useState(null);
+    const [insertedIdx, setInsertedIdx] = useState(null);
+    const [toastMessage, setToastMessage] = useState(null);
+    const [bannerDismissed, setBannerDismissed] = useState(false);
+    const aiChatContainerRef = useRef(null);
+
+    // Auto-scroll AI chat to bottom on new messages
+    useEffect(() => {
+        if (aiChatContainerRef.current) {
+            aiChatContainerRef.current.scrollTo({
+                top: aiChatContainerRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [aiMessages, isAiLoading]);
+
+    // Insert AI generated task onto Excalidraw Whiteboard
+    const insertOnWhiteboard = (text, idx) => {
+        if (!excalidrawAPI) return;
+        try {
+            const elements = excalidrawAPI.getSceneElements() || [];
+            let maxY = 460;
+            let minX = 50;
+            elements.forEach(el => {
+                if (!el.isDeleted && el.y !== undefined) {
+                    const bottom = el.y + (el.height || 0);
+                    if (bottom > maxY) maxY = bottom;
+                }
+            });
+
+            const cardWidth = isMobile ? 340 : 740;
+            const cardHeight = isMobile ? 220 : 160;
+            const spawnX = minX;
+            const spawnY = maxY + 28;
+
+            const cleanText = text
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/\*(.*?)\*/g, '$1')
+                .replace(/\$(.*?)\$/g, '$1')
+                .replace(/\\Rightarrow/g, '⇒')
+                .replace(/\\in/g, '∈')
+                .replace(/\\sqrt\{(.*?)\}/g, '√($1)')
+                .slice(0, 420);
+
+            const cardId = 'ai_card_' + Date.now();
+            const bgElement = {
+                id: cardId + '_bg',
+                type: 'rectangle',
+                x: spawnX,
+                y: spawnY,
+                width: cardWidth,
+                height: cardHeight,
+                angle: 0,
+                strokeColor: '#7D39EB',
+                backgroundColor: '#FAF5FF',
+                fillStyle: 'solid',
+                strokeWidth: 2,
+                strokeStyle: 'solid',
+                roughness: 0,
+                opacity: 100,
+                groupIds: [],
+                roundness: { type: 3 },
+                seed: Math.floor(Math.random() * 100000),
+                version: 1,
+                versionNonce: 1,
+                isDeleted: false,
+            };
+
+            const textElement = {
+                id: cardId + '_txt',
+                type: 'text',
+                x: spawnX + 18,
+                y: spawnY + 16,
+                width: cardWidth - 36,
+                height: cardHeight - 32,
+                angle: 0,
+                strokeColor: '#1E1B4B',
+                backgroundColor: 'transparent',
+                fillStyle: 'solid',
+                strokeWidth: 1,
+                strokeStyle: 'solid',
+                roughness: 0,
+                opacity: 100,
+                groupIds: [],
+                roundness: null,
+                seed: Math.floor(Math.random() * 100000),
+                version: 1,
+                versionNonce: 1,
+                isDeleted: false,
+                text: '📝 Материал от ИИ:\n' + cleanText,
+                fontSize: 15,
+                fontFamily: 1,
+                textAlign: 'left',
+                verticalAlign: 'top',
+                baseline: 13,
+                containerId: null,
+                originalText: '📝 Материал от ИИ:\n' + cleanText,
+                lineHeight: 1.35,
+            };
+
+            const newElements = [...elements, bgElement, textElement];
+            excalidrawAPI.updateScene({
+                elements: newElements,
+                commitToHistory: true,
+            });
+
+            setTimeout(() => {
+                try {
+                    excalidrawAPI.scrollToContent(newElements, {
+                        fitToViewport: true,
+                        viewportZoomFactor: isMobile ? 0.92 : 0.88,
+                        maxZoom: 1.0,
+                        animate: true,
+                    });
+                } catch (_) {}
+            }, 80);
+
+            setInsertedIdx(idx);
+            setToastMessage('Материал перенесен на доску!');
+            setTimeout(() => {
+                setInsertedIdx(null);
+                setToastMessage(null);
+            }, 2200);
+        } catch (e) {
+            console.warn('[ClassroomApp] insertOnWhiteboard error:', e);
+        }
+    };
 
     // Excalidraw API & Media Refs
     const [excalidrawAPI, setExcalidrawAPI] = useState(null);
@@ -187,7 +322,8 @@ export default function ClassroomApp({ config = {} }) {
                 const toScroll = (current && current.length > 0) ? current : config.initialElements;
                 excalidrawAPI.scrollToContent(toScroll, {
                     fitToViewport: true,
-                    viewportZoomFactor: isMobile ? 0.72 : 0.88,
+                    viewportZoomFactor: isMobile ? 0.92 : 0.88,
+                    maxZoom: 1.0,
                     animate: false,
                 });
                 demoLoadedRef.current = true;
@@ -207,6 +343,24 @@ export default function ClassroomApp({ config = {} }) {
             clearTimeout(t3);
         };
     }, [excalidrawAPI, config.isDemo, config.initialElements, isMobile]);
+
+    // Re-center smoothly when drawer opens/closes or on screen resize
+    useEffect(() => {
+        if (!excalidrawAPI || !config.isDemo || !config.initialElements) return;
+        const timer = setTimeout(() => {
+            try {
+                const elements = excalidrawAPI.getSceneElements();
+                const toScroll = (elements && elements.length > 0) ? elements : config.initialElements;
+                excalidrawAPI.scrollToContent(toScroll, {
+                    fitToViewport: true,
+                    viewportZoomFactor: isMobile ? 0.92 : 0.88,
+                    maxZoom: 1.0,
+                    animate: true,
+                });
+            } catch (_) {}
+        }, 280);
+        return () => clearTimeout(timer);
+    }, [activeTab, isMobile]);
 
     // Demo Mode: Local Camera & Mic Preview
     useEffect(() => {
@@ -691,9 +845,18 @@ export default function ClassroomApp({ config = {} }) {
 
     const addNote = async (e) => {
         e?.preventDefault();
-        if (!noteInput.trim() || !config.lessonId) return;
+        if (!noteInput.trim()) return;
         const text = noteInput.trim();
         setNoteInput('');
+        if (config.isDemo) {
+            setNotes(prev => [{
+                id: Date.now(),
+                text: text,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }, ...prev]);
+            return;
+        }
+        if (!config.lessonId) return;
         try {
             const res = await fetch(`/classroom/${config.lessonId}/notes`, {
                 method: 'POST',
@@ -781,6 +944,28 @@ export default function ClassroomApp({ config = {} }) {
             created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         setChatMessages(prev => [...prev, newMsg]);
+
+        if (config.isDemo) {
+            // Interactive mock student response in demo room
+            setTimeout(() => {
+                const replies = [
+                    'Здравствуйте! Я на связи, всё отлично слышно и видно доску 👍',
+                    'Да, всё понятно! Сейчас запишу эту формулу.',
+                    'У меня получилось x = 3, верно?',
+                    'Спасибо за разбор, теперь этот тип задач ясен!'
+                ];
+                const replyText = replies[Math.floor(Math.random() * replies.length)];
+                setChatMessages(prev => [...prev, {
+                    id: Date.now() + 1,
+                    sender_id: 'guest_student_demo',
+                    sender_name: 'Ученик (Тестовый режим)',
+                    message: replyText,
+                    created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }]);
+            }, 900);
+            return;
+        }
+
         liveKitRef.current?.sendData({
             type: 'chat_message',
             message: newMsg
@@ -856,10 +1041,13 @@ export default function ClassroomApp({ config = {} }) {
             {/* ═══════════════════════════════════════════════════ */}
             <div className="cr-excalidraw-surface" style={{
                 position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: (activeTab && !isMobile) ? '400px' : 0,
+                width: (activeTab && !isMobile) ? 'calc(100% - 400px)' : '100%',
                 zIndex: 1,
+                transition: 'right 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
             }}>
                 <Excalidraw
                     initialData={initialData}
@@ -885,13 +1073,14 @@ export default function ClassroomApp({ config = {} }) {
             {/* ═══════════════════════════════════════════════════ */}
             {/* 1.5. DEMO ROOM PRO TOP BANNER (CTA)                 */}
             {/* ═══════════════════════════════════════════════════ */}
-            {config.isDemo && !isVideoFullscreen && (
+            {config.isDemo && !isVideoFullscreen && !bannerDismissed && (
                 <div style={{
                     position: 'absolute',
-                    top: isMobile ? 'calc(max(8px, env(safe-area-inset-top)) + 104px)' : '72px',
-                    left: isMobile ? '8px' : '16px',
+                    top: isMobile ? 'calc(max(6px, env(safe-area-inset-top)) + 58px)' : 'auto',
+                    bottom: isMobile ? 'auto' : '20px',
+                    left: isMobile ? '8px' : '20px',
                     right: isMobile ? '8px' : 'auto',
-                    padding: isMobile ? '8px 12px' : '8px 16px',
+                    padding: isMobile ? '6px 10px' : '8px 16px',
                     borderRadius: '16px',
                     backgroundColor: isLight ? 'rgba(15, 23, 42, 0.94)' : 'rgba(24, 24, 27, 0.94)',
                     backdropFilter: 'blur(16px)',
@@ -901,54 +1090,97 @@ export default function ClassroomApp({ config = {} }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '12px',
+                    gap: isMobile ? '8px' : '12px',
                     zIndex: 42,
                     maxWidth: isMobile ? 'none' : '460px',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <span style={{ fontSize: '15px', flexShrink: 0 }}>⚡</span>
+                        <span style={{ fontSize: isMobile ? '13px' : '15px', flexShrink: 0 }}>⚡</span>
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                             <span style={{
-                                fontSize: isMobile ? '11px' : '12px',
+                                fontSize: isMobile ? '10.5px' : '12px',
                                 fontWeight: 700,
                                 color: '#FFFFFF',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
                             }}>
-                                Вы находитесь в демо-классе (PRO-режим).
+                                {isMobile ? 'Демо-класс PRO (без ограничений)' : 'Вы находитесь в демо-классе (PRO-режим).'}
                             </span>
-                            <span style={{
-                                fontSize: isMobile ? '10px' : '11px',
-                                color: '#94A3B8',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                            }}>
-                                Чтобы вести уроки с учениками и сохранять доски:
-                            </span>
+                            {!isMobile && (
+                                <span style={{
+                                    fontSize: '11px',
+                                    color: '#94A3B8',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    Чтобы вести уроки с учениками и сохранять доски:
+                                </span>
+                            )}
                         </div>
                     </div>
-                    <a
-                        href="/register?role=tutor"
-                        style={{
-                            padding: '6px 12px',
-                            borderRadius: '10px',
-                            backgroundColor: '#C6FF33',
-                            color: '#000000',
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            textDecoration: 'none',
-                            whiteSpace: 'nowrap',
-                            boxShadow: '0 2px 8px rgba(198, 255, 51, 0.3)',
-                            flexShrink: 0,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                        }}>
-                        <span>Создать постоянный кабинет</span>
-                        <span>→</span>
-                    </a>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        <a
+                            href="/register?role=tutor"
+                            style={{
+                                padding: isMobile ? '5px 10px' : '6px 12px',
+                                borderRadius: '10px',
+                                backgroundColor: '#C6FF33',
+                                color: '#000000',
+                                fontSize: isMobile ? '10.5px' : '11px',
+                                fontWeight: 800,
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 2px 8px rgba(198, 255, 51, 0.3)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}>
+                            <span>{isMobile ? 'Создать кабинет' : 'Создать постоянный кабинет'}</span>
+                            <span>→</span>
+                        </a>
+                        <button
+                            type="button"
+                            onClick={() => setBannerDismissed(true)}
+                            title="Скрыть уведомление"
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'rgba(255, 255, 255, 0.5)',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Quick Toast Notification */}
+            {toastMessage && (
+                <div style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 99,
+                    backgroundColor: '#10B981',
+                    color: '#FFFFFF',
+                    padding: '8px 18px',
+                    borderRadius: '20px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    boxShadow: '0 8px 24px rgba(16, 185, 129, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                }}>
+                    <Check size={16} />
+                    <span>{toastMessage}</span>
                 </div>
             )}
 
@@ -1244,7 +1476,7 @@ export default function ClassroomApp({ config = {} }) {
                             right: '12px',
                         } : {
                             top: '16px',
-                            right: '16px',
+                            right: (activeTab && !isMobile) ? '416px' : '16px',
                         })),
                         width: `${getVideoWidth()}px`,
                         borderRadius: '18px',
@@ -1261,7 +1493,7 @@ export default function ClassroomApp({ config = {} }) {
                         overflow: 'hidden',
                         display: 'flex',
                         flexDirection: 'column',
-                        transition: isDraggingVideo ? 'none' : 'box-shadow 0.2s, border-color 0.2s, width 0.2s ease',
+                        transition: isDraggingVideo ? 'none' : 'right 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, border-color 0.2s, width 0.2s ease',
                     }}>
                     {/* Draggable Header with Move Handle & Scale Presets */}
                     <div 
@@ -1638,16 +1870,28 @@ export default function ClassroomApp({ config = {} }) {
                         </>
                     )}
 
-                    {/* Mobile Only: More Actions Sheet */}
+                    {/* Mobile Only: AI Quick Access in Demo & More Actions */}
                     {isMobile && (
-                        <button
-                            type="button"
-                            onClick={() => setMobileMoreOpen(true)}
-                            title="Все действия и материалы"
-                            style={dockButtonStyle(isLight, mobileMoreOpen ? (isLight ? '#E0E7FF' : 'rgba(125, 57, 235, 0.3)') : 'transparent', isMobile)}>
-                            <MoreHorizontal size={18} color={isLight ? '#334155' : '#E2E8F0'} />
-                            <span style={dockLabelStyle(isLight)}>Ещё</span>
-                        </button>
+                        <>
+                            {config.isDemo && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab(prev => prev === 'ai' ? null : 'ai')}
+                                    title="ИИ-помощник"
+                                    style={dockButtonStyle(isLight, activeTab === 'ai' ? (isLight ? '#E0E7FF' : 'rgba(125, 57, 235, 0.3)') : 'rgba(125, 57, 235, 0.1)', isMobile)}>
+                                    <Sparkles size={18} color="#7D39EB" />
+                                    <span style={{ ...dockLabelStyle(isLight), color: '#7D39EB', fontWeight: 700 }}>ИИ</span>
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setMobileMoreOpen(true)}
+                                title="Все действия и материалы"
+                                style={dockButtonStyle(isLight, mobileMoreOpen ? (isLight ? '#E0E7FF' : 'rgba(125, 57, 235, 0.3)') : 'transparent', isMobile)}>
+                                <MoreHorizontal size={18} color={isLight ? '#334155' : '#E2E8F0'} />
+                                <span style={dockLabelStyle(isLight)}>Ещё</span>
+                            </button>
+                        </>
                     )}
 
                     {/* Exit Button */}
@@ -1843,7 +2087,7 @@ export default function ClassroomApp({ config = {} }) {
 
                             {activeTab === 'ai' && (
                                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div ref={aiChatContainerRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                         {aiMessages.map((m, idx) => (
                                             <div key={idx} style={{
                                                 padding: '10px 14px',
@@ -1865,7 +2109,64 @@ export default function ClassroomApp({ config = {} }) {
                                                 {m.role === 'user' ? (
                                                     <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
                                                 ) : (
-                                                    <AiFormattedContent content={m.text} fontSize="compact" />
+                                                    <>
+                                                        <AiFormattedContent content={m.text} fontSize="compact" />
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            marginTop: '8px',
+                                                            paddingTop: '6px',
+                                                            borderTop: isLight ? '1px solid rgba(0, 0, 0, 0.05)' : '1px solid rgba(255, 255, 255, 0.06)'
+                                                        }}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => insertOnWhiteboard(m.text, idx)}
+                                                                title="Перенести этот материал на интерактивную доску"
+                                                                style={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 600,
+                                                                    border: 'none',
+                                                                    backgroundColor: insertedIdx === idx ? '#10B981' : (isLight ? 'rgba(125, 57, 235, 0.1)' : 'rgba(125, 57, 235, 0.25)'),
+                                                                    color: insertedIdx === idx ? '#FFFFFF' : (isLight ? '#7D39EB' : '#C4B5FD'),
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.15s ease'
+                                                                }}>
+                                                                {insertedIdx === idx ? <Check size={12} /> : <Plus size={12} />}
+                                                                <span>{insertedIdx === idx ? 'На доске!' : 'На доску'}</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    navigator.clipboard?.writeText(m.text);
+                                                                    setCopiedIdx(idx);
+                                                                    setTimeout(() => setCopiedIdx(null), 1800);
+                                                                }}
+                                                                title="Скопировать текст"
+                                                                style={{
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '3px 8px',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: 600,
+                                                                    border: 'none',
+                                                                    backgroundColor: isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.08)',
+                                                                    color: copiedIdx === idx ? '#10B981' : (isLight ? '#64748B' : '#94A3B8'),
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.15s ease'
+                                                                }}>
+                                                                {copiedIdx === idx ? <Check size={12} /> : <Copy size={12} />}
+                                                                <span>{copiedIdx === idx ? 'Скопировано' : 'Копировать'}</span>
+                                                            </button>
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
                                         ))}
