@@ -177,11 +177,33 @@ class UserResource extends Resource
                     }),
 
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalHeading('Удалить пользователя навсегда?')
+                    ->modalDescription('Аккаунт, анкета репетитора, подписки и расписания будут полностью удалены из базы данных.')
+                    ->using(function (User $record): bool {
+                        $record->tutorProfile()?->delete();
+                        $record->subscription()?->delete();
+                        $record->availability()->delete();
+                        $record->tutorBalance()?->delete();
+                        $record->studentBalance()?->delete();
+
+                        return (bool) $record->forceDelete();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->modalHeading('Удалить выбранных пользователей навсегда?')
+                        ->using(function ($records): void {
+                            foreach ($records as $record) {
+                                $record->tutorProfile()?->delete();
+                                $record->subscription()?->delete();
+                                $record->availability()->delete();
+                                $record->tutorBalance()?->delete();
+                                $record->studentBalance()?->delete();
+                                $record->forceDelete();
+                            }
+                        }),
                 ]),
             ]);
     }
@@ -202,7 +224,7 @@ class UserResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Управление пользователями';
+        return 'Пользователи и модерация';
     }
 
     public static function shouldRegisterNavigation(): bool

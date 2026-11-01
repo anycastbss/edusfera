@@ -45,50 +45,61 @@
                     @endphp
 
                     <div class="student-list-item">
-                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                            <div class="student-tutor-avatar-lg" style="width: 42px; height: 42px; font-size: 16px; border-radius: 12px;">
-                                {{ $tutorInitial }}
+                        <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">
+                            <div class="student-tutor-avatar-wrap">
+                                <div class="student-tutor-avatar-lg" style="width: 46px; height: 46px; font-size: 17px;">
+                                    {{ $tutorInitial }}
+                                </div>
+                                @if($isLive)
+                                    <span class="student-tutor-online-badge"></span>
+                                @endif
                             </div>
                             <div style="min-width: 0;">
-                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span style="font-size: 0.95rem; font-weight: 800; color: var(--stu-text-main);">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span style="font-size: 0.98rem; font-weight: 800; color: var(--stu-text-main);">
                                         {{ $tutorName }}
                                     </span>
                                     @if($isLive)
-                                        <span class="student-status-badge student-status-badge--paid" style="background:#10B981; color:#FFFFFF;">
+                                        <span class="student-status-badge student-status-badge--paid" style="background:#10B981; color:#FFFFFF; border:none; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);">
                                             ● В эфире
                                         </span>
                                     @elseif($lesson->status === \App\Models\Lesson::STATUS_CONFIRMED)
                                         <span class="student-status-badge student-status-badge--paid">
-                                            ✓ Подтверждён
+                                            ✓✓ Подтверждён
                                         </span>
                                     @else
                                         <span class="student-status-badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25);">
-                                            Ожидает подтверждения
+                                            ⏳ Ожидает
                                         </span>
                                     @endif
                                 </div>
-                                <div style="font-size: 0.82rem; color: var(--stu-text-muted); margin-top: 2px;">
-                                    <span>{{ $lesson->start_time->translatedFormat('j M (D), H:i') }}</span>
+                                <div style="font-size: 0.84rem; color: var(--stu-text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 600; color: var(--stu-accent);">🕒 {{ $lesson->start_time->translatedFormat('j M (D), H:i') }}</span>
                                     <span>•</span>
-                                    <span>{{ $lesson->subject ?? 'Урок' }}</span>
+                                    <span>{{ $lesson->subject ?? 'Индивидуальный урок' }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            @if($tutor)
+                                <a href="/admin/messages?user={{ $tutor->id }}" class="student-chip-btn" style="padding: 7px 10px; font-size: 13px;" title="Написать репетитору">
+                                    <span>💬</span>
+                                </a>
+                            @endif
+
                             @if($lesson->status === \App\Models\Lesson::STATUS_CONFIRMED)
                                 @if($isLive)
-                                    <a href="{{ $classroomUrl }}" target="_blank" class="student-chip-btn student-chip-btn--primary" style="padding: 8px 14px; font-weight: 800;">
+                                    <a href="{{ $classroomUrl }}" target="_blank" class="student-chip-btn student-chip-btn--primary" style="padding: 8px 16px; font-weight: 800; border-radius: 12px;">
                                         <span>🚀 Войти</span>
                                     </a>
                                 @else
-                                    <a href="{{ $classroomUrl }}" class="student-chip-btn" style="padding: 6px 12px;">
+                                    <a href="{{ $classroomUrl }}" class="student-chip-btn" style="padding: 7px 14px; font-weight: 700; border-radius: 12px;">
                                         <span>Класс</span>
                                     </a>
                                 @endif
                             @else
-                                <span class="student-chip-btn" style="padding: 6px 10px; opacity: 0.75; cursor: default; background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2);">
+                                <span class="student-chip-btn" style="padding: 6px 12px; opacity: 0.8; cursor: default; background: rgba(245, 158, 11, 0.08); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); font-weight: 700;">
                                     <span>⏳ Ожидает</span>
                                 </span>
                             @endif

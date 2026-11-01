@@ -36,6 +36,17 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
                 }
             }
         });
+
+        $cascadeCleanup = function (User $user): void {
+            $user->tutorProfile()?->delete();
+            $user->subscription()?->delete();
+            $user->availability()->delete();
+            $user->tutorBalance()?->delete();
+            $user->studentBalance()?->delete();
+        };
+
+        static::deleting($cascadeCleanup);
+        static::forceDeleting($cascadeCleanup);
     }
 
     public function getAvatarUrlAttribute(): ?string
@@ -168,6 +179,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         }
 
         return $this->role === 'student' || $this->role === UserRole::Student->value;
+    }
+
+    public function isStudentOnboarded(): bool
+    {
+        return $this->studentGoals()->where('status', 'active')->exists();
     }
 
     public function isParent(): bool

@@ -149,7 +149,7 @@ class AiSettingsPage extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Управление ИИ и Моделями';
+        return 'Управление платформой';
     }
 
     public static function canAccess(): bool

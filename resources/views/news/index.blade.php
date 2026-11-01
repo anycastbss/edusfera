@@ -54,7 +54,7 @@
           "description": "Экспертные статьи, инструкции и новости по подготовке к экзаменам в Беларуси",
           "url": "https://edusfera.by/news",
           "publisher": {
-            "@type": "EducationalOrganization",
+            "@type": "Organization",
             "name": "Edusfera",
             "url": "https://edusfera.by/"
           }
@@ -105,6 +105,7 @@
 
         [x-cloak] { display: none !important; }
     </style>
+    @include('partials.analytics')
 </head>
 <body x-data="{ scrolled: false, mobileOpen: false }" @scroll.window="scrolled = (window.pageYOffset > 20)">
 
@@ -136,6 +137,11 @@
                         $user = auth()->user();
                         $unreadMessagesCount = app(\App\Services\ChatUnreadCounter::class)->countForUser($user);
                         $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                        $isAdmin = $user->isAdmin();
+                        $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                        $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+                        $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
                     @endphp
 
                     <div x-data="{ open: false }" class="relative">
@@ -157,11 +163,11 @@
                         </button>
 
                         <div x-show="open" x-transition.opacity.scale.95 style="display: none;" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 z-50">
-                            <a href="/admin" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
-                            <a href="{{ $user->role === 'tutor' ? '/admin/transactions' : '/admin/lessons' }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                                {{ $user->role === 'tutor' ? 'Мои финансы' : 'Мои занятия' }}
+                            <a href="{{ $cabinetUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
+                            <a href="{{ $lessonsUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                                Мои занятия
                             </a>
-                            <a href="/admin/messages" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                            <a href="{{ $messagesUrl }}" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                                 Сообщения
                                 @if($unreadMessagesCount > 0)
                                     <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">{{ $unreadMessagesCount }}</span>
@@ -213,20 +219,58 @@
     <main class="pt-36 pb-24 min-h-[70vh]">
         <div class="max-w-7xl mx-auto px-6">
             <!-- Header Section -->
-            <div class="mb-16 text-center">
+            <div class="mb-12 text-center">
                 <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-50 border border-violet-100 mb-6">
                     <span class="w-2 h-2 rounded-full bg-violet-500"></span>
-                    <span class="text-xs font-bold tracking-widest uppercase text-violet-600">Новости и блог</span>
+                    <span class="text-xs font-bold tracking-widest uppercase text-violet-600">База знаний и новости</span>
                 </div>
-                <h1 class="text-4xl sm:text-5xl md:text-6xl font-rimma font-black uppercase tracking-tight text-gray-900 mb-4">Новости Edusfera</h1>
-                <p class="text-lg text-gray-500 font-medium max-w-2xl mx-auto">Полезные советы по подготовке, лайфхаки для ЦТ/ЦЭ и важные обновления нашей платформы.</p>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-rimma font-black uppercase tracking-tight text-gray-900 mb-4">
+                    {{ $category === 'platform-training' ? 'Обучение работе на платформе' : ($category === 'news' ? 'Новости Edusfera' : 'Новости и шпаргалки') }}
+                </h1>
+                <p class="text-lg text-gray-600 font-medium max-w-2xl mx-auto">
+                    {{ $category === 'platform-training' 
+                        ? 'Простые пошаговые инструкции, памятки и советы экспертов для комфортной работы преподавателей 50+.' 
+                        : 'Полезные материалы по подготовке к ЦТ/ЦЭ, разборы обновлений платформы и наглядные инструкции.' }}
+                </p>
+
+                <!-- Category / Topic Tabs -->
+                <div class="mt-8 flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
+                    <a href="{{ route('news.index') }}" 
+                       class="px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm border {{ empty($category) ? 'bg-violet-600 text-white border-violet-600 shadow-violet-200' : 'bg-white text-gray-700 border-gray-200 hover:border-violet-300 hover:bg-violet-50/50' }}">
+                        🌟 Все материалы
+                        @if(!empty($totalCount))
+                            <span class="ml-1.5 text-xs opacity-80">({{ $totalCount }})</span>
+                        @endif
+                    </a>
+
+                    <a href="{{ route('news.index', ['category' => 'platform-training']) }}" 
+                       class="px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm border {{ $category === 'platform-training' ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-200' : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50' }}">
+                        🎓 Обучение работе на платформе
+                        @if(!empty($trainingCount))
+                            <span class="ml-1.5 text-xs opacity-80">({{ $trainingCount }})</span>
+                        @endif
+                    </a>
+
+                    <a href="{{ route('news.index', ['category' => 'news']) }}" 
+                       class="px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm border {{ $category === 'news' ? 'bg-violet-600 text-white border-violet-600 shadow-violet-200' : 'bg-white text-gray-700 border-gray-200 hover:border-violet-300 hover:bg-violet-50/50' }}">
+                        📢 Новости и обновления
+                        @if(!empty($newsCount))
+                            <span class="ml-1.5 text-xs opacity-80">({{ $newsCount }})</span>
+                        @endif
+                    </a>
+                </div>
             </div>
 
             @if($articles->isEmpty())
-                <div class="text-center py-20 bg-white rounded-3xl border border-gray-100">
-                    <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 4a2 2 0 00-2-2v3m2-3V9a2 2 0 00-2-2v3m2-3V5a2 2 0 00-2-2v3m2-3v12a2 2 0 00-2-2H9"></path></svg>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Здесь пока пусто</h3>
-                    <p class="text-gray-400">Мы работаем над первыми материалами. Загляните позже!</p>
+                <div class="text-center py-20 bg-white rounded-3xl border border-gray-100 max-w-xl mx-auto shadow-sm">
+                    <div class="w-16 h-16 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center mx-auto mb-4 text-2xl">
+                        📖
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Статьи в этой теме готовятся</h3>
+                    <p class="text-gray-500 mb-6">Мы готовим свежие иллюстрированные памятки для преподавателей. Скоро они появятся здесь!</p>
+                    <a href="{{ route('news.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-violet-600 text-white text-sm font-bold shadow-md hover:bg-violet-700 transition-colors">
+                        ← Вернуться ко всем статьям
+                    </a>
                 </div>
             @else
                 <!-- Grid of Articles -->
@@ -237,11 +281,13 @@
                                 <!-- Cover / Video Placeholder -->
                                 <div class="relative w-full h-48 rounded-[1.5rem] bg-gray-100 mb-6 overflow-hidden">
                                     @if($article->featured_image)
-                                        <img src="{{ asset('storage/' . $article->featured_image) }}" class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" alt="{{ $article->title }}">
+                                        <img src="{{ str_starts_with($article->featured_image, 'images/') ? asset($article->featured_image) : asset('storage/' . $article->featured_image) }}" class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500" alt="{{ $article->title }}">
                                     @else
                                         <!-- Geometric Abstract Placeholder -->
-                                        <div class="w-full h-full bg-gradient-to-tr from-violet-100 to-lime-50 flex items-center justify-center">
-                                            <svg class="w-12 h-12 text-violet-300 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <div class="w-full h-full bg-gradient-to-tr from-violet-100 via-indigo-50 to-lime-50 flex items-center justify-center p-6 text-center">
+                                            <div class="w-12 h-12 rounded-2xl bg-white/80 backdrop-blur-md shadow-sm border border-white/60 flex items-center justify-center text-2xl text-violet-600">
+                                                {{ $article->category === 'platform-training' ? '🎓' : '📰' }}
+                                            </div>
                                         </div>
                                     @endif
 
@@ -253,24 +299,29 @@
                                     @endif
                                 </div>
 
-                                <!-- Date -->
-                                <div class="text-[10px] uppercase font-bold tracking-wider text-violet-600 mb-2">
-                                    {{ $article->published_at ? $article->published_at->format('d.m.Y') : $article->created_at->format('d.m.Y') }}
+                                <!-- Metadata: Topic Badge + Date -->
+                                <div class="flex items-center justify-between gap-2 mb-3">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border {{ $article->category_badge_class }}">
+                                        {{ $article->category_label }}
+                                    </span>
+                                    <span class="text-xs font-semibold text-gray-600">
+                                        {{ $article->published_at ? $article->published_at->format('d.m.Y') : $article->created_at->format('d.m.Y') }}
+                                    </span>
                                 </div>
 
                                 <!-- Title -->
-                                <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors line-clamp-2">
+                                <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors line-clamp-2 leading-snug">
                                     {{ $article->title }}
                                 </h3>
 
                                 <!-- Excerpt -->
-                                <p class="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-3">
-                                    {{ Str::limit(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br />', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>'], ' ', $article->content))), 130) }}
+                                <p class="text-gray-700 text-sm leading-relaxed mb-6 line-clamp-3">
+                                    {{ Str::limit(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br />', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>'], ' ', $article->content))), 140) }}
                                 </p>
                             </div>
 
                             <a href="{{ route('news.show', $article->slug) }}" class="w-full text-center py-3 rounded-xl bg-violet-50 text-violet-700 font-bold text-sm group-hover:bg-violet-600 group-hover:text-white transition-all">
-                                Читать статью
+                                Читать памятку →
                             </a>
                         </div>
                     @endforeach

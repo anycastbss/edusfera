@@ -48,6 +48,8 @@ class Lesson extends Model
         'package_lessons',
         'package_lessons_remaining',
         'package_parent_lesson_id',
+        'package_total',
+        'package_discount',
         'payment_lock_expires_at',
         'checkout_started_at',
         'meeting_link',
@@ -89,11 +91,40 @@ class Lesson extends Model
         };
     }
 
+    public function getSubjectAttribute(): string
+    {
+        if (! empty($this->notes) && preg_match('/(?:Предмет|предмет)[:\s]+([^\r\n,.]+)/u', (string) $this->notes, $m)) {
+            return trim($m[1]);
+        }
+
+        $subjects = $this->tutor?->tutorProfile?->subjects;
+        if (is_array($subjects) && ! empty($subjects[0])) {
+            return (string) $subjects[0];
+        }
+
+        return 'Индивидуальное занятие';
+    }
+
     public function hasActivePaymentLock(): bool
     {
-        return $this->payment_status === self::PAYMENT_UNPAID
-            && $this->payment_lock_expires_at !== null
-            && $this->payment_lock_expires_at->isFuture();
+        if ($this->payment_status !== self::PAYMENT_UNPAID) {
+            return false;
+        }
+
+        if ($this->status === self::STATUS_CANCELLED) {
+            return false;
+        }
+
+        if ($this->payment_lock_expires_at !== null) {
+            return $this->payment_lock_expires_at->isFuture();
+        }
+
+        // Если явный таймер блокировки не установлен, урок доступен к оплате до конца занятия
+        if ($this->start_time !== null) {
+            return $this->start_time->isFuture() || ($this->end_time !== null && $this->end_time->isFuture());
+        }
+
+        return true;
     }
 
     public function isSettled(): bool
@@ -175,5 +206,14 @@ class Lesson extends Model
     public function isPaid(): bool
     {
         return $this->payment_status === self::PAYMENT_PAID;
+    }
+
+    /**
+     * Get one-click guest join URL for students without prior registration.
+     */
+    public function getStudentInviteUrlAttribute(): string
+    {
+        $token = substr(hash_hmac('sha256', 'classroom_join_'.$this->id, (string) config('app.key')), 0, 16);
+        return route('classroom.join', ['lesson' => $this->id, 'token' => $token]);
     }
 }

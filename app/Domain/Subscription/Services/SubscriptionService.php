@@ -157,6 +157,12 @@ class SubscriptionService
                 'payment_method' => 'card',
             ]);
 
+            // If tutor downgraded to Basic, they cannot hide profile -> auto-switch is_public to true
+            $gate = app(SubscriptionFeatureGate::class);
+            if (! $gate->canHideProfile($tutor) && $tutor->tutorProfile?->is_public === false) {
+                $tutor->tutorProfile->update(['is_public' => true]);
+            }
+
             return $subscription->fresh();
         });
     }
@@ -197,6 +203,12 @@ class SubscriptionService
             $subscription->update([
                 'status' => SubscriptionStatus::EXPIRED,
             ]);
+
+            // Auto-reset is_public to true when expired
+            $tutor = $subscription->tutor;
+            if ($tutor && $tutor->tutorProfile?->is_public === false) {
+                $tutor->tutorProfile->update(['is_public' => true]);
+            }
         }
 
         return $subscription->fresh();
@@ -305,25 +317,53 @@ class SubscriptionService
                 'is_onboarded' => true,
             ]);
 
+            // Check if profile should be restored to public if downgraded to Basic
+            $gate = app(SubscriptionFeatureGate::class);
+            if (! $gate->canHideProfile($sub->tutor) && $sub->tutor?->tutorProfile?->is_public === false) {
+                $sub->tutor->tutorProfile->update(['is_public' => true]);
+            }
+
             return $inv;
         });
     }
 
     /**
      * Daily billing cycle maintenance:
-     * 1. Auto-charge or move expiring subscriptions to grace period.
-     * 2. Deactivate subscriptions whose grace period has expired.
+     * 1. 2-day advance warning for tutors with hidden profile about upcoming public exposure.
+     * 2. Auto-charge or move expiring subscriptions to grace period.
+     * 3. Deactivate subscriptions whose grace period has expired and auto-switch is_public=true.
      */
     public function processDailyBillingCycle(?AlfaBankPaymentGateway $gateway = null): array
     {
         $gateway = $gateway ?? app(AlfaBankPaymentGateway::class);
         $now = CarbonImmutable::now();
+        $gate = app(SubscriptionFeatureGate::class);
         $results = [
             'charged' => 0,
             'invoices_created' => 0,
             'moved_to_grace' => 0,
             'expired' => 0,
+            'warned_about_public' => 0,
+            'reset_to_public' => 0,
         ];
+
+        // 0. Pre-warning for tutors with hidden profiles expiring in ~2 days (between now and +2 days)
+        $soonExpiringHidden = Subscription::query()
+            ->whereIn('status', [SubscriptionStatus::TRIAL, SubscriptionStatus::ACTIVE])
+            ->where('current_period_ends_at', '>', $now)
+            ->where('current_period_ends_at', '<=', $now->addDays(2))
+            ->whereHas('tutor.tutorProfile', function ($query) {
+                $query->where('is_public', false);
+            })
+            ->with(['tutor', 'tutor.tutorProfile'])
+            ->get();
+
+        foreach ($soonExpiringHidden as $sub) {
+            if ($sub->tutor) {
+                $sub->tutor->notify(new \App\Notifications\SubscriptionProfilePublicWarningNotification($sub));
+                $results['warned_about_public']++;
+            }
+        }
 
         // 1. Expiring / expired subscriptions
         $expiringSubs = Subscription::query()
@@ -334,22 +374,37 @@ class SubscriptionService
         foreach ($expiringSubs as $sub) {
             if ($sub->canceled_at !== null) {
                 $sub->update(['status' => SubscriptionStatus::CANCELED]);
+                if (! $gate->canHideProfile($sub->tutor) && $sub->tutor?->tutorProfile?->is_public === false) {
+                    $sub->tutor->tutorProfile->update(['is_public' => true]);
+                    $results['reset_to_public']++;
+                }
 
                 continue;
             }
 
+            $lastPaidInvoice = SubscriptionInvoice::where('subscription_id', $sub->id)
+                ->where('status', InvoiceStatus::PAID)
+                ->latest('paid_at')
+                ->first();
+
+            $periodMonths = $lastPaidInvoice?->period_months === 12 ? 12 : 1;
+            $amountKopecks = $periodMonths === 12
+                ? $sub->plan->yearlyPriceKopecks()
+                : $sub->plan->monthlyPriceKopecks();
+
             if (! empty($sub->payment_token)) {
                 $chargeResult = $gateway->chargeRecurring(
                     $sub->payment_token,
-                    $sub->plan->monthlyPriceKopecks(),
+                    $amountKopecks,
                     [
                         'subscription_id' => $sub->id,
                         'tutor_id' => $sub->tutor_id,
+                        'period_months' => $periodMonths,
                     ]
                 );
 
                 if (! empty($chargeResult['success'])) {
-                    $this->subscribe($sub->tutor, $sub->plan, 1, $sub->payment_token);
+                    $this->subscribe($sub->tutor, $sub->plan, $periodMonths, $sub->payment_token);
                     $results['charged']++;
                     $results['invoices_created']++;
 
@@ -362,7 +417,7 @@ class SubscriptionService
             $results['moved_to_grace']++;
         }
 
-        // 2. Grace period ended without payment -> EXPIRED
+        // 2. Grace period ended without payment -> EXPIRED + reset is_public
         $expiredSubs = Subscription::query()
             ->where('status', SubscriptionStatus::PAST_DUE)
             ->where('grace_period_ends_at', '<=', $now)
@@ -371,6 +426,19 @@ class SubscriptionService
         foreach ($expiredSubs as $sub) {
             $this->expireGracePeriod($sub);
             $results['expired']++;
+        }
+
+        // 3. Any tutors with hidden profile who are no longer eligible (Basic, expired trial, no subscription) -> auto-reset to public
+        $hiddenProfiles = \App\Models\TutorProfile::query()
+            ->where('is_public', false)
+            ->with(['user', 'user.subscription'])
+            ->get();
+
+        foreach ($hiddenProfiles as $profile) {
+            if (! $profile->user || ! $gate->canHideProfile($profile->user)) {
+                $profile->update(['is_public' => true]);
+                $results['reset_to_public']++;
+            }
         }
 
         return $results;

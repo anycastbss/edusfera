@@ -2,13 +2,17 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @include('partials.pwa-meta')
     @include('partials.analytics')
     <title>{{ $tutor->user->name }} — Репетитор{{ !empty($tutor->subjects) ? ' по ' . implode(', ', $tutor->subjects) : '' }} | Edusfera</title>
     <meta name="description" content="Репетитор {{ $tutor->user->name }}{{ !empty($tutor->subjects) ? ' (' . implode(', ', $tutor->subjects) . ')' : '' }} на Edusfera. {{ (float) $tutor->price_per_hour }} BYN/час. Онлайн-запись на уроки и интерактивный класс.">
-    <meta name="robots" content="index, follow, max-image-preview:large">
+    @if(! $tutor->is_public)
+        <meta name="robots" content="noindex, nofollow">
+    @else
+        <meta name="robots" content="index, follow, max-image-preview:large">
+    @endif
     <link rel="canonical" href="{{ route('tutors.show', $tutor->id) }}">
 
     <!-- Open Graph -->
@@ -62,8 +66,8 @@
           "url": "{{ route('tutors.show', $tutor->id) }}",
           "image": "{{ $tutor->avatar_url ?: asset('og-image.png') }}",
           "description": "{{ addslashes(Str::limit(preg_replace('/\s+/', ' ', strip_tags($tutor->bio ?? 'Репетитор на платформе Edusfera')), 160)) }}",
-          "worksFor": {
-            "@type": "EducationalOrganization",
+          "affiliation": {
+            "@type": "Organization",
             "name": "Edusfera",
             "url": "https://edusfera.by/"
           },
@@ -352,14 +356,16 @@
     <div class="container" style="padding-bottom: 4rem;">
         @include('partials.site-nav')
 
-        <a href="{{ route('tutors.index') }}" class="tp-back">← Назад к каталогу</a>
+        @if(! app(\App\Services\WhiteLabelService::class)->isWhiteLabelActive())
+            <a href="{{ route('tutors.index') }}" class="tp-back">← Назад к каталогу</a>
+        @endif
 
         @if(session('booking_success'))
             <div class="tp-success" style="display:flex;align-items:center;gap:.75rem;background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:1rem 1.25rem;border-radius:1rem;font-size:1rem;margin-bottom:1.5rem;box-shadow:0 4px 12px rgba(34,197,94,.08);">
                 <span style="font-size:1.5rem;">🎉</span>
                 <div>
                     <strong style="display:block;margin-bottom:.2rem;">Занятие успешно забронировано!</strong>
-                    <span>{{ session('booking_success') }} Вы можете отслеживать статус в <a href="/admin/lessons" style="color:#15803d;text-decoration:underline;font-weight:700;">личном кабинете</a>.</span>
+                    <span>{{ session('booking_success') }} Вы можете отслеживать статус в <a href="{{ auth()->user()?->isAdmin() ? '/admin/lessons' : '/cabinet?tab=lessons' }}" style="color:#15803d;text-decoration:underline;font-weight:700;">личном кабинете</a>.</span>
                 </div>
             </div>
         @endif
@@ -378,6 +384,18 @@
                         </div>
                         <div>
                             <div class="tp-badges">
+                                @if(! $tutor->is_public)
+                                    <span class="tp-badge" style="background: rgba(125,57,235,0.12); color: #7D39EB; border: 1.5px solid rgba(125,57,235,0.35); font-weight: 800; display: inline-flex; align-items: center; gap: 5px;">
+                                        <span>🔒</span>
+                                        <span>Закрытый учебный класс преподавателя. Запись только по личному приглашению</span>
+                                    </span>
+                                @endif
+                                @if($tutor->is_council_expert)
+                                    <span class="tp-badge" style="background: linear-gradient(135deg, rgba(217, 119, 6, 0.12) 0%, rgba(245, 158, 11, 0.22) 100%); color: #B45309; border: 1.5px solid #F59E0B; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);" title="Член Общественного методического совета Edusfera. Педагог высшей квалификации со стажем.">
+                                        <span>🎖️</span>
+                                        <span>Эксперт Методического совета Edusfera</span>
+                                    </span>
+                                @endif
                                 <span class="tp-badge verify">✓ Диплом проверен</span>
                                 <span class="tp-badge safe">🛡️ Удобная бронь</span>
                                 <button type="button" class="tp-badge" onclick="shareTutorProfile()" style="cursor: pointer; background: #ede9fe; color: #7c3aed; border: 1px solid rgba(124,58,237,0.2); display: inline-flex; align-items: center; gap: 4px;" title="Поделиться профилем">
@@ -589,9 +607,11 @@
                                 @error('notes')<span class="tp-error">{{ $message }}</span>@enderror
                             </label>
 
-                            <label class="tp-terms">
-                                <input type="checkbox" name="terms" value="1" required @checked(old('terms'))>
-                                <span>Согласен с условиями отмены и переноса занятий. Оплата напрямую преподавателю.</span>
+                            <label class="tp-terms" style="display:flex;align-items:flex-start;gap:0.6rem;font-size:0.8rem;color:var(--text-sec);line-height:1.45;cursor:pointer;">
+                                <input type="checkbox" name="terms" value="1" required @checked(old('terms')) style="margin-top:2px;">
+                                <span>
+                                    Согласен(-на) с <a href="{{ route('legal.offer') }}" target="_blank" style="color:var(--text-main);font-weight:600;text-decoration:underline;">Публичной офертой</a>, правилами переноса занятий и даю согласие на обработку персональных данных в соответствии с <a href="{{ route('legal.privacy') }}" target="_blank" style="color:var(--text-main);font-weight:600;text-decoration:underline;">Законом № 99-З</a>. Оплата напрямую преподавателю.
+                                </span>
                             </label>
                             @error('terms')<span class="tp-error">{{ $message }}</span>@enderror
 
@@ -837,10 +857,24 @@
                 });
             });
 
-            // Track booking submit
+            // Track booking submit and prevent duplicate clicks
             const bookingForms = document.querySelectorAll('.tp-booking-form');
             bookingForms.forEach(form => {
-                form.addEventListener('submit', () => {
+                form.addEventListener('submit', (event) => {
+                    if (form.dataset.submitting === 'true') {
+                        event.preventDefault();
+                        return;
+                    }
+                    form.dataset.submitting = 'true';
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        setTimeout(() => {
+                            submitBtn.disabled = true;
+                            submitBtn.style.opacity = '0.7';
+                            submitBtn.style.pointerEvents = 'none';
+                            submitBtn.innerText = 'Запись...';
+                        }, 0);
+                    }
                     if (typeof window.trackEdusferaEvent === 'function') {
                         window.trackEdusferaEvent('booking_submit', {
                             tutor_id: {{ $tutor->id }},

@@ -6,7 +6,7 @@
     @include('partials.pwa-meta')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Документы') — Edusfera</title>
-    <meta name="description" content="@yield('meta_description', 'Edusfera — образовательная онлайн-платформа для подготовки к ЦТ и ЦЭ с проверенными репетиторами в Беларуси.')">
+    <meta name="description" content="@yield('meta_description', 'Edusfera — цифровая онлайн-платформа для подготовки к ЦТ и ЦЭ с проверенными репетиторами в Беларуси.')">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="{{ request()->url() }}">
 
@@ -15,14 +15,14 @@
     <meta property="og:locale" content="ru_BY">
     <meta property="og:site_name" content="Edusfera">
     <meta property="og:title" content="@yield('title', 'Документы') — Edusfera">
-    <meta property="og:description" content="@yield('meta_description', 'Edusfera — образовательная онлайн-платформа для подготовки к ЦТ и ЦЭ с проверенными репетиторами в Беларуси.')">
+    <meta property="og:description" content="@yield('meta_description', 'Edusfera — цифровая онлайн-платформа для подготовки к ЦТ и ЦЭ с проверенными репетиторами в Беларуси.')">
     <meta property="og:url" content="{{ request()->url() }}">
     <meta property="og:image" content="{{ asset('og-image.png') }}">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="@yield('title', 'Документы') — Edusfera">
-    <meta name="twitter:description" content="@yield('meta_description', 'Edusfera — образовательная онлайн-платформа в Беларуси.')">
+    <meta name="twitter:description" content="@yield('meta_description', 'Edusfera — цифровая онлайн-платформа в Беларуси.')">
     <meta name="twitter:image" content="{{ asset('og-image.png') }}">
 
     <!-- Schema.org JSON-LD -->
@@ -145,6 +145,7 @@
             font-weight: 600;
         }
     </style>
+    @include('partials.analytics')
 </head>
 <body x-data="{ scrolled: false, mobileOpen: false }" @scroll.window="scrolled = (window.pageYOffset > 20)">
 
@@ -177,6 +178,11 @@
                         $user = auth()->user();
                         $unreadMessagesCount = app(\App\Services\ChatUnreadCounter::class)->countForUser($user);
                         $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                        $isAdmin = $user->isAdmin();
+                        $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                        $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+                        $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
                     @endphp
 
                     <div x-data="{ open: false }" class="relative">
@@ -197,11 +203,11 @@
                         </button>
 
                         <div x-show="open" x-transition.opacity.scale.95 style="display: none;" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50">
-                            <a href="/admin" class="block px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">Личный кабинет</a>
-                            <a href="{{ $user->role === 'tutor' ? '/admin/transactions' : '/admin/lessons' }}" class="block px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
-                                {{ $user->role === 'tutor' ? 'Мои финансы' : 'Мои занятия' }}
+                            <a href="{{ $cabinetUrl }}" class="block px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">Личный кабинет</a>
+                            <a href="{{ $lessonsUrl }}" class="block px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                                Мои занятия
                             </a>
-                            <a href="/admin/messages" class="flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
+                            <a href="{{ $messagesUrl }}" class="flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
                                 Сообщения
                                 @if($unreadMessagesCount > 0)
                                     <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">{{ $unreadMessagesCount }}</span>
@@ -244,6 +250,7 @@
                 <a href="{{ route('about') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50/60 hover:bg-violet-100">О компании</a>
                 <a href="{{ route('legal.offer') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Публичная оферта</a>
                 <a href="{{ route('legal.privacy') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Политика конфиденциальности</a>
+                <a href="{{ route('legal.cookie') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Политика cookie</a>
                 <a href="{{ route('legal.payment-security') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Правила оплаты и безопасность</a>
                 <a href="{{ route('legal.refund') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Правила возврата</a>
                 <a href="{{ route('contacts') }}" @click="mobileOpen = false" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100">Контакты</a>
@@ -272,6 +279,9 @@
                     </a>
                     <a href="{{ route('legal.privacy') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('legal.privacy') ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
                         Конфиденциальность
+                    </a>
+                    <a href="{{ route('legal.cookie') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('legal.cookie') ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                        Политика cookie
                     </a>
                     <a href="{{ route('legal.payment-security') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {{ request()->routeIs('legal.payment-security') ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
                         Оплата и безопасность
@@ -331,5 +341,6 @@
 
     @include('partials.site-footer')
     @include('partials.pwa-prompt')
+    @include('partials.cookie-banner')
 </body>
 </html>

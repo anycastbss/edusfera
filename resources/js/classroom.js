@@ -15,7 +15,7 @@ class SignalingClient {
         this.userRole = userRole; // 'tutor' | 'student'
         this.clientId = 'client_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
         this.lastServerTime = 0;
-        this.lastSeq = -1;
+        this.lastReceivedSeq = 0;
         this.seenSignalIds = new Set();
         this.sessionStartTime = Date.now() - 30000; // Accept signals from last 30s only to ignore stale sessions
         this.pollTimer = null;
@@ -23,7 +23,7 @@ class SignalingClient {
         this.handlers = new Map();
         this.pollInterval = 600; // ms (smooth fast start)
         this.fastPollInterval = 600; // ms (during handshake / negotiation / reconnect)
-        this.normalPollInterval = 3000; // ms (stable call)
+        this.normalPollInterval = 2500; // ms (stable call)
         this.isStopped = false;
         this.latencyMs = 0;
         this.signalsSent = 0;
@@ -75,12 +75,13 @@ class SignalingClient {
         if (this.isStopped) return;
         const pollStart = performance.now();
         try {
-            const url = `/classroom/${this.lessonId}/signal?since_seq=${this.lastSeq}&since=${this.lastServerTime}&client_id=${this.clientId}`;
+            const url = `/classroom/${this.lessonId}/signal?since_seq=${this.lastReceivedSeq}&since=${this.lastServerTime}&client_id=${this.clientId}&role=${this.userRole}`;
             const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-Client-ID': this.clientId,
+                    'X-Client-Role': this.userRole,
                 }
             });
 
@@ -94,9 +95,9 @@ class SignalingClient {
                 if (data.server_time) {
                     this.lastServerTime = data.server_time;
                 }
-                if (typeof data.max_seq === 'number' && data.max_seq > this.lastSeq) {
-                    this.lastSeq = data.max_seq;
-                }
+                // NOTE: We strictly DO NOT advance this.lastReceivedSeq to data.max_seq!
+                // data.max_seq includes our own outgoing messages and server globals.
+                // We advance lastReceivedSeq ONLY when receiving actual valid incoming counterpart signals.
                 if (Array.isArray(data.signals) && data.signals.length > 0) {
                     for (const sig of data.signals) {
                         if (sig.client_id && sig.client_id === this.clientId) {
@@ -107,13 +108,13 @@ class SignalingClient {
                         }
                         if (sig.id) {
                             this.seenSignalIds.add(sig.id);
-                            if (this.seenSignalIds.size > 300) {
+                            if (this.seenSignalIds.size > 500) {
                                 const first = this.seenSignalIds.values().next().value;
                                 this.seenSignalIds.delete(first);
                             }
                         }
-                        if (typeof sig.seq === 'number' && sig.seq > this.lastSeq) {
-                            this.lastSeq = sig.seq;
+                        if (typeof sig.seq === 'number' && sig.seq > this.lastReceivedSeq) {
+                            this.lastReceivedSeq = sig.seq;
                         }
                         this.signalsReceived++;
                         this._dispatch(sig.type, sig.payload, sig);
@@ -140,6 +141,7 @@ class SignalingClient {
                     'X-CSRF-TOKEN': this.csrfToken,
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-Client-ID': this.clientId,
+                    'X-Client-Role': this.userRole,
                 },
                 body: JSON.stringify({
                     type,
@@ -160,9 +162,7 @@ class SignalingClient {
             }
 
             const data = await res.json();
-            if (data?.seq && typeof data.seq === 'number' && data.seq > this.lastSeq) {
-                this.lastSeq = data.seq;
-            }
+            // Outgoing signals must never alter lastReceivedSeq!
             return data;
         } catch (err) {
             const isCritical = (type === 'offer' || type === 'answer' || type === 'ping' || type === 'hello');
@@ -193,15 +193,6 @@ class P2PConnectionManager {
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun.cloudflare.com:3478' },
             { urls: 'stun:global.stun.twilio.com:3478' },
-            {
-                urls: [
-                    'turn:openrelay.metered.ca:80',
-                    'turn:openrelay.metered.ca:443',
-                    'turn:openrelay.metered.ca:443?transport=tcp',
-                ],
-                username: 'openrelayproject',
-                credential: 'openrelayproject',
-            },
         ];
         this.iceServers = (iceServers && iceServers.length > 0)
             ? [...iceServers, ...fallbackServers]
@@ -256,6 +247,7 @@ class P2PConnectionManager {
         this.onWhiteboardAction = null;
         this.onChatMessage = null;
         this.onDiagnosticUpdate = null;
+        this.onMediaStateChange = null;
     }
 
     log(message, level = 'info') {
@@ -387,14 +379,22 @@ class P2PConnectionManager {
         this.signaling.startPolling();
         await this._createPeerConnection();
 
+        const hasVid = !!(this.localStream && this.localStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled));
+        const hasAud = !!(this.localStream && this.localStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled));
+
         // Broadcast hello so any peer in the room knows we are active
         await this.signaling.send('hello', {
             role: this.userRole,
             clientId: this.signaling.clientId,
-            hasVideo: !!this.localStream?.getVideoTracks().length,
-            hasAudio: !!this.localStream?.getAudioTracks().length,
+            hasVideo: hasVid,
+            hasAudio: hasAud,
         });
         this.log('Отправлен сигнал hello в комнату', 'info');
+
+        this.sendMediaState({
+            video: hasVid,
+            audio: hasAud,
+        });
 
         // Periodic presence heartbeat (purely presence, never destroys connection)
         if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
@@ -441,10 +441,25 @@ class P2PConnectionManager {
             this.diagnostics.peerSeenAt = Date.now();
             this.log(`Собеседник в сети: ${this.diagnostics.peerRole}`, 'success');
 
-            // Peer session change detection: only restart if ALREADY connected and the new hello is explicitly newer than our connected time
+            if (typeof payload?.hasVideo === 'boolean' && this.onMediaStateChange) {
+                this.onMediaStateChange({ video: payload.hasVideo, audio: payload.hasAudio ?? true });
+            }
+
+            // If connection is ALREADY established and running, NEVER destroy connection on presence heartbeat (W3C Rule 2)
+            const isConnAlive = this.isConnected && this.pc && (
+                this.pc.connectionState === 'connected' ||
+                this.pc.iceConnectionState === 'connected' ||
+                this.pc.iceConnectionState === 'completed'
+            );
+            if (isConnAlive) {
+                if (peerClientId !== 'unknown') this.activePeerClientId = peerClientId;
+                return;
+            }
+
+            // Peer session change detection: only restart if explicitly dead and client id changed
             if (peerClientId !== 'unknown' && this.activePeerClientId && this.activePeerClientId !== peerClientId) {
-                if (this.isConnected && this.connectedAt && meta?.created_at_ms && meta.created_at_ms > this.connectedAt) {
-                    this.log(`Собеседник сменил сессию (${peerClientId}). Пересоздание P2P соединения...`, 'warn');
+                if (meta?.created_at_ms && this.connectedAt && meta.created_at_ms > this.connectedAt) {
+                    this.log(`Собеседник сменил сессию (${peerClientId}). Подключение к новой сессии...`, 'warn');
                     this.activePeerClientId = peerClientId;
                     await this.restartConnection();
                     return;
@@ -464,6 +479,12 @@ class P2PConnectionManager {
                     this._lastPingTime = now;
                     await this.signaling.send('ping', { role: 'student', clientId: this.signaling.clientId });
                 }
+            }
+        });
+
+        this.signaling.on('media-state', (payload) => {
+            if (this.onMediaStateChange) {
+                this.onMediaStateChange(payload);
             }
         });
 
@@ -635,7 +656,8 @@ class P2PConnectionManager {
             }
             if (event.streams && event.streams[0]) {
                 this.remoteStream = event.streams[0];
-            } else if (!this.remoteStream.getTracks().includes(event.track)) {
+            }
+            if (!this.remoteStream.getTracks().includes(event.track)) {
                 this.remoteStream.addTrack(event.track);
             }
 
@@ -647,10 +669,7 @@ class P2PConnectionManager {
                 }
             };
             event.track.onmute = () => {
-                this.log(`Удаленный медиа-трек ${event.track.kind} заглушен (mute)`, 'info');
-                if (this.onRemoteTrack) {
-                    this.onRemoteTrack(this.remoteStream, event.track);
-                }
+                this.log(`Удаленный медиа-трек ${event.track.kind} кратковременно задержан (mute)`, 'debug');
             };
 
             if (this.onRemoteTrack) {
@@ -732,18 +751,17 @@ class P2PConnectionManager {
         if (this._unifiedDisconnectTimer) return;
         this._unifiedDisconnectTimer = setTimeout(async () => {
             this._unifiedDisconnectTimer = null;
+            // Only restart ICE if the connection has truly failed, not transient disconnected
             const isDead = !this.pc ||
-                this.pc.connectionState === 'disconnected' ||
                 this.pc.connectionState === 'failed' ||
-                this.pc.iceConnectionState === 'disconnected' ||
                 this.pc.iceConnectionState === 'failed';
             if (isDead) {
-                this.log('Связь не восстановилась за 5с. Перезапуск ICE...', 'warn');
+                this.log('Связь не восстановилась за 10с. Запуск мягкого перезапуска ICE...', 'warn');
                 this.isConnected = false;
                 this.signaling.setFastPolling(true);
                 await this._attemptIceRestart();
             }
-        }, 5000);
+        }, 10000);
     }
 
     _setupDataChannel(channel) {
@@ -770,6 +788,9 @@ class P2PConnectionManager {
         channel.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+                if (data?.type === 'media-state' && this.onMediaStateChange) {
+                    this.onMediaStateChange(data);
+                }
                 if (this.onData) this.onData(data);
             } catch (err) {
                 console.warn('[WebRTC] DataChannel message parse error:', err);
@@ -1142,12 +1163,20 @@ class P2PConnectionManager {
             if (this.onLocalStream && this.localStream) {
                 this.onLocalStream(this.localStream);
             }
+            this.sendMediaState({
+                video: true,
+                audio: this.localStream?.getAudioTracks().some(t => t.enabled) ?? true,
+            });
             this.log('Камера включена', 'success');
             return true;
         } else {
             if (this.localStream) {
                 this.localStream.getVideoTracks().forEach(t => { t.enabled = false; });
             }
+            this.sendMediaState({
+                video: false,
+                audio: this.localStream?.getAudioTracks().some(t => t.enabled) ?? true,
+            });
             this.log('Камера выключена', 'info');
             return true;
         }
@@ -1205,6 +1234,15 @@ class P2PConnectionManager {
         if (this.localStream) {
             this.localStream.getAudioTracks().forEach(t => { t.enabled = enabled; });
         }
+        this.sendMediaState({
+            video: this.localStream?.getVideoTracks().some(t => t.enabled) ?? true,
+            audio: enabled,
+        });
+    }
+
+    sendMediaState(state) {
+        this.sendData({ type: 'media-state', ...state });
+        this.signaling.send('media-state', state);
     }
 
     async restartConnection() {
@@ -2137,7 +2175,7 @@ class SessionTimer {
             const h = String(Math.floor(this.seconds / 3600)).padStart(2, '0');
             const m = String(Math.floor((this.seconds % 3600) / 60)).padStart(2, '0');
             const s = String(this.seconds % 60).padStart(2, '0');
-            if (this.onTick) this.onTick(`${h}:${m}:${s}`);
+            if (this.onTick) this.onTick(`${h}:${m}:${s}`, this.seconds);
         }, 1000);
     }
 
@@ -2419,7 +2457,8 @@ class LiveKitConnectionManager {
     _initRoom() {
         if (this.room) {
             try { this.room.removeAllListeners(); } catch (_) {}
-            try { this.room.disconnect(); } catch (_) {}
+            try { this.room.disconnect(true); } catch (_) {}
+            this.room = null;
         }
         // adaptiveStream: false prevents video pause deadlocks when video elements are hidden/resized on mobile
         // stopLocalTrackOnUnpublish: false keeps Android camera session alive without re-prompting permissions
@@ -2473,9 +2512,11 @@ class LiveKitConnectionManager {
             this.log('Отключено от LiveKit: ' + reason, 'warn');
             if (this.onConnectionStateChange) this.onConnectionStateChange('disconnected');
 
-            // Do not auto-reconnect if kicked due to duplicate session or manual removal
-            if (reason === 2 || reason === 'DUPLICATE_IDENTITY' || reason === 3 || reason === 'PARTICIPANT_REMOVED') {
-                this.log('Вход с другого устройства/вкладки под тем же аккаунтом', 'warn');
+            // Do not auto-reconnect if kicked due to duplicate session or deliberate client close
+            if (reason === 0 || reason === 'CLIENT_INITIATED' || reason === 2 || reason === 'DUPLICATE_IDENTITY' || reason === 3 || reason === 'PARTICIPANT_REMOVED') {
+                if (reason === 2 || reason === 'DUPLICATE_IDENTITY') {
+                    this.log('Вход с другого устройства/вкладки под тем же аккаунтом', 'warn');
+                }
                 return;
             }
 
@@ -2540,9 +2581,7 @@ class LiveKitConnectionManager {
 
         this.room.on(RoomEvent.TrackMuted, (pub, participant) => {
             if (!participant.isLocal) {
-                // In LiveKit, RemoteTrackPublication has metadataMuted which reflects actual participant mute state.
-                // Do not mute UI on transient WebRTC renegotiation/jitter packet loss if metadata is not muted.
-                const isExplicitlyMuted = pub.metadataMuted === true || (pub.isMuted && !pub.track);
+                const isExplicitlyMuted = pub.isMuted === true || !pub.track;
                 if (pub.kind === 'video' && isExplicitlyMuted && this.onRemoteTrackMuted) {
                     this.onRemoteTrackMuted(true);
                 }
@@ -2599,7 +2638,6 @@ class LiveKitConnectionManager {
     syncRemoteTracks() {
         if (!this.room || !this.room.remoteParticipants) return;
         this.room.remoteParticipants.forEach((participant) => {
-            if (this.onParticipantJoined) this.onParticipantJoined(participant);
             participant.trackPublications.forEach((pub) => {
                 if (pub.isSubscribed && pub.track) {
                     if (typeof pub.track.setPlayoutDelay === 'function') {
@@ -2730,6 +2768,27 @@ class LiveKitConnectionManager {
             } catch (e) {
                 console.warn('[LiveKit] setMicEnabled error:', e);
             }
+        } else if (enabled && this.room?.localParticipant) {
+            try {
+                const track = await createLocalAudioTrack({
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    latency: 0.01,
+                    channelCount: 1,
+                });
+                this.localAudioTrack = track;
+                await this.room.localParticipant.publishTrack(track, {
+                    audioPreset: AudioPresets?.speech,
+                    dtx: true,
+                    red: true,
+                    priority: 'high',
+                });
+                if (this.onLocalTrack) this.onLocalTrack(track);
+                return;
+            } catch (err) {
+                console.warn('[LiveKit] on-demand createLocalAudioTrack error:', err);
+            }
         }
         if (this.room?.localParticipant) {
             try {
@@ -2756,6 +2815,25 @@ class LiveKitConnectionManager {
             } catch (e) {
                 console.warn('[LiveKit] setCameraEnabled error:', e);
             }
+        } else if (enabled && this.room?.localParticipant) {
+            try {
+                const track = await createLocalVideoTrack({
+                    facingMode: this.facingMode,
+                    width: { ideal: 640, max: 800 },
+                    height: { ideal: 480, max: 600 },
+                    frameRate: { ideal: 30, max: 30 },
+                });
+                this.localVideoTrack = track;
+                await this.room.localParticipant.publishTrack(track, {
+                    simulcast: false,
+                    videoCodec: 'vp8',
+                    degradationPreference: 'maintain-framerate',
+                });
+                if (this.onLocalTrack) this.onLocalTrack(track);
+                return;
+            } catch (err) {
+                console.warn('[LiveKit] on-demand createLocalVideoTrack error:', err);
+            }
         }
         if (this.room?.localParticipant) {
             try {
@@ -2766,22 +2844,76 @@ class LiveKitConnectionManager {
 
     async flipCamera() {
         this.facingMode = this.facingMode === 'user' ? 'environment' : 'user';
-        if (this.localVideoTrack && typeof this.localVideoTrack.restartTrack === 'function') {
-            try {
-                await this.localVideoTrack.restartTrack({ facingMode: this.facingMode });
-                if (this.onLocalTrack) this.onLocalTrack(this.localVideoTrack);
-                return this.facingMode;
-            } catch (e) {
-                console.warn('[LiveKit] flipCamera restartTrack error:', e);
+        const targetFacing = this.facingMode;
+        this.log(`Переключение камеры на: ${targetFacing}`, 'info');
+
+        try {
+            // 1. Enumerate available video inputs to resolve exact physical deviceId
+            let targetDeviceId = null;
+            if (navigator?.mediaDevices?.enumerateDevices) {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    if (videoDevices.length > 1) {
+                        const currentId = this.localVideoTrack?.mediaStreamTrack?.getSettings?.()?.deviceId;
+                        if (targetFacing === 'environment') {
+                            const backCam = videoDevices.find(d => /back|rear|environment|задн/i.test(d.label))
+                                         || videoDevices.find(d => d.deviceId !== currentId);
+                            if (backCam) targetDeviceId = backCam.deviceId;
+                        } else {
+                            const frontCam = videoDevices.find(d => /front|user|передн|селфи/i.test(d.label))
+                                          || videoDevices.find(d => d.deviceId !== currentId);
+                            if (frontCam) targetDeviceId = frontCam.deviceId;
+                        }
+                    }
+                } catch (enumErr) {
+                    console.warn('[LiveKit] enumerateDevices warning:', enumErr);
+                }
             }
-        }
-        if (this.room?.localParticipant && typeof this.room.localParticipant.switchCamera === 'function') {
-            try {
-                await this.room.localParticipant.switchCamera();
-                return this.facingMode;
-            } catch (e) {
-                console.warn('[LiveKit] switchCamera error:', e);
+
+            // 2. Clear stale constraints from existing track to prevent OverconstrainedError
+            if (this.localVideoTrack) {
+                if (this.localVideoTrack._constraints) {
+                    delete this.localVideoTrack._constraints.deviceId;
+                    delete this.localVideoTrack._constraints.facingMode;
+                }
+
+                const restartConstraints = targetDeviceId 
+                    ? { deviceId: { exact: targetDeviceId } }
+                    : { facingMode: targetFacing };
+
+                try {
+                    await this.localVideoTrack.restartTrack(restartConstraints);
+                    if (this.onLocalTrack) this.onLocalTrack(this.localVideoTrack);
+                    return this.facingMode;
+                } catch (restartErr) {
+                    console.warn('[LiveKit] restartTrack error, recreating track:', restartErr);
+                }
             }
+
+            // 3. Fallback: recreate track via createLocalVideoTrack and republish
+            if (this.room?.localParticipant) {
+                if (this.localVideoTrack) {
+                    try {
+                        await this.room.localParticipant.unpublishTrack(this.localVideoTrack, true);
+                    } catch (_) {}
+                }
+                const newTrackConstraints = targetDeviceId 
+                    ? { deviceId: { exact: targetDeviceId } }
+                    : { facingMode: targetFacing };
+
+                const newTrack = await createLocalVideoTrack(newTrackConstraints);
+                this.localVideoTrack = newTrack;
+                await this.room.localParticipant.publishTrack(newTrack, {
+                    simulcast: false,
+                    videoCodec: 'vp8',
+                    degradationPreference: 'maintain-framerate'
+                });
+                if (this.onLocalTrack) this.onLocalTrack(newTrack);
+                return this.facingMode;
+            }
+        } catch (e) {
+            console.error('[LiveKit] flipCamera error:', e);
         }
         return this.facingMode;
     }

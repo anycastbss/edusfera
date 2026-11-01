@@ -25,7 +25,10 @@ class PromoCodeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
-    protected static ?string $navigationGroup = 'Маркетинг и скидки';
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Финансы и SaaS';
+    }
 
     protected static ?string $modelLabel = 'Промокод';
 

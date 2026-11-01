@@ -37,6 +37,7 @@ cookies*.txt
 .agents/
 .codegraph/
 .venv/
+.playwright-cli/
 scratch/
 test_script.php
 codegraph.html

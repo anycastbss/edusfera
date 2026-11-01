@@ -8,7 +8,7 @@
 --}}
 
 <style>
-    /* ═══ Базовые переменные и сброс для кабинета ученика ══════════ */
+    /* ═══ Базовые переменные и сброс для кабинета ученика (MAYA + Telegram/Viber UX) ══════════ */
     :root {
         --stu-accent: #7D39EB;
         --stu-accent-hover: #6C2BD9;
@@ -16,22 +16,22 @@
         --stu-accent-glow: rgba(125, 57, 235, 0.22);
         --stu-live-green: #10B981;
         --stu-live-lime: #C6FF33;
-        --stu-card-bg: #FFFFFF;
-        --stu-card-border: #ECEEF1;
-        --stu-card-shadow: 0 4px 20px -2px rgba(16, 10, 31, 0.05), 0 2px 6px -1px rgba(16, 10, 31, 0.02);
+        --stu-card-bg: rgba(255, 255, 255, 0.90);
+        --stu-card-border: rgba(226, 232, 240, 0.85);
+        --stu-card-shadow: 0 8px 28px -4px rgba(16, 10, 31, 0.05), 0 2px 8px -2px rgba(16, 10, 31, 0.02), inset 0 1px 1px rgba(255, 255, 255, 0.8);
         --stu-text-main: #0F172A;
         --stu-text-muted: #64748B;
         --stu-surface-subtle: #F8FAFC;
     }
 
     .dark {
-        --stu-card-bg: #111827;
-        --stu-card-border: #1F2937;
-        --stu-card-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.35);
+        --stu-card-bg: rgba(17, 24, 39, 0.88);
+        --stu-card-border: rgba(31, 41, 55, 0.85);
+        --stu-card-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.08);
         --stu-text-main: #F8FAFC;
         --stu-text-muted: #94A3B8;
-        --stu-surface-subtle: rgba(30, 41, 59, 0.45);
-        --stu-accent-light: rgba(125, 57, 235, 0.16);
+        --stu-surface-subtle: rgba(30, 41, 59, 0.5);
+        --stu-accent-light: rgba(125, 57, 235, 0.18);
     }
 
     .student-dashboard-root [x-cloak] { display: none !important; }
@@ -40,16 +40,18 @@
     .student-card {
         background: var(--stu-card-bg);
         border: 1px solid var(--stu-card-border);
-        border-radius: 20px;
+        border-radius: 22px;
         padding: 24px;
         box-shadow: var(--stu-card-shadow);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
         position: relative;
         overflow: hidden;
     }
 
     @media (max-width: 640px) {
-        .student-card { padding: 18px; border-radius: 16px; }
+        .student-card { padding: 18px; border-radius: 18px; }
     }
 
     /* ═══ 1. Hero-шапка ученика ════════════════════════════════════ */
@@ -158,40 +160,50 @@
         line-height: 1;
     }
 
-    /* ═══ 2. Spotlight-карточка урока (Живой урок / Ближайший) ═══ */
+    /* ═══ 2. Spotlight-карточка урока (Живой урок / Ближайший в стиле звонка Telegram) ═══ */
     .student-spotlight-card {
-        border-radius: 20px;
+        border-radius: 22px;
         padding: 24px;
         position: relative;
         overflow: hidden;
         margin-bottom: 24px;
-        transition: all 0.25s ease;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
     }
 
-    /* Состояние: Урок прямо сейчас (LIVE) */
+    /* Состояние: Урок прямо сейчас (LIVE / Telegram Video Call banner) */
     .student-spotlight-card--live {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(125, 57, 235, 0.07) 100%), var(--stu-card-bg);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(125, 57, 235, 0.08) 100%), var(--stu-card-bg);
         border: 2px solid #10B981;
-        box-shadow: 0 8px 30px rgba(16, 185, 129, 0.18);
+        box-shadow: 0 10px 32px rgba(16, 185, 129, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.6);
     }
 
     .dark .student-spotlight-card--live {
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(125, 57, 235, 0.12) 100%), var(--stu-card-bg);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(125, 57, 235, 0.14) 100%), var(--stu-card-bg);
         border-color: rgba(16, 185, 129, 0.85);
+        box-shadow: 0 12px 36px rgba(16, 185, 129, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.1);
     }
 
-    /* Состояние: Урок скоро (запланирован) */
+    /* Состояние: Урок скоро (запланирован / Pinned Telegram chat) */
     .student-spotlight-card--upcoming {
-        background: linear-gradient(135deg, rgba(125, 57, 235, 0.04) 0%, var(--stu-surface-subtle) 100%), var(--stu-card-bg);
-        border: 1px solid rgba(125, 57, 235, 0.2);
+        background: linear-gradient(135deg, rgba(125, 57, 235, 0.05) 0%, rgba(248, 250, 252, 0.8) 100%), var(--stu-card-bg);
+        border: 1px solid rgba(125, 57, 235, 0.24);
+        box-shadow: 0 8px 24px -4px rgba(125, 57, 235, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.7);
+    }
+    .dark .student-spotlight-card--upcoming {
+        background: linear-gradient(135deg, rgba(125, 57, 235, 0.12) 0%, rgba(30, 41, 59, 0.6) 100%), var(--stu-card-bg);
+        border-color: rgba(125, 57, 235, 0.35);
+        box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.06);
     }
 
     /* Состояние: Спокойно / Нет уроков */
     .student-spotlight-card--empty {
         background: var(--stu-surface-subtle);
-        border: 1px dashed var(--stu-card-border);
+        border: 1.5px dashed var(--stu-card-border);
         text-align: center;
         padding: 32px 24px;
+        border-radius: 22px;
     }
 
     .student-spotlight-inner {
@@ -206,11 +218,15 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        font-size: 12px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        background: rgba(125, 57, 235, 0.08);
+        font-size: 11px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
     }
+    .dark .student-spotlight-status { background: rgba(125, 57, 235, 0.18); }
 
     .student-pulse-dot {
         width: 10px;
@@ -231,22 +247,43 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        margin-top: 10px;
+        margin-top: 12px;
+    }
+
+    /* Telegram-style Circular Avatar with active online dot */
+    .student-tutor-avatar-wrap {
+        position: relative;
+        flex-shrink: 0;
     }
 
     .student-tutor-avatar-lg {
-        width: 52px;
-        height: 52px;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #7D39EB, #A855F7);
+        width: 58px;
+        height: 58px;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #7D39EB, #9047FF);
         color: #FFFFFF;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 800;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        box-shadow: 0 4px 12px var(--stu-accent-glow);
+        box-shadow: 0 4px 14px var(--stu-accent-glow);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+    .dark .student-tutor-avatar-lg {
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .student-tutor-online-badge {
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 14px;
+        height: 14px;
+        border-radius: 9999px;
+        background: #10B981;
+        border: 2.5px solid var(--stu-card-bg);
     }
 
     .student-spotlight-info h3 {
@@ -280,6 +317,15 @@
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         white-space: nowrap;
     }
+    @media (max-width: 640px) {
+        .student-spotlight-cta {
+            width: 100%;
+            min-height: 52px;
+            font-size: 1rem;
+            justify-content: center;
+            border-radius: 16px;
+        }
+    }
 
     .student-spotlight-cta--live {
         background: linear-gradient(135deg, #10B981, #059669);
@@ -310,7 +356,7 @@
         transform: translateY(-2px);
     }
 
-    /* ═══ 3. Сетка интерактивных смарт-метрик ══════════════════════ */
+    /* ═══ 3. Сетка интерактивных смарт-метрик (Telegram / Viber Mini App cards) ═══ */
     .student-metrics-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -328,20 +374,30 @@
     .student-metric-card {
         background: var(--stu-card-bg);
         border: 1px solid var(--stu-card-border);
-        border-radius: 18px;
+        border-radius: 20px;
         padding: 20px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        gap: 12px;
-        transition: all 0.2s ease;
+        gap: 14px;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
+        overflow: hidden;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 4px 18px -2px rgba(16, 10, 31, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    }
+    .dark .student-metric-card {
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.06);
     }
 
     .student-metric-card:hover {
-        border-color: rgba(125, 57, 235, 0.4);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px -4px rgba(125, 57, 235, 0.12);
+        border-color: rgba(125, 57, 235, 0.45);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px -4px rgba(125, 57, 235, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    }
+    .dark .student-metric-card:hover {
+        box-shadow: 0 12px 30px -4px rgba(125, 57, 235, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
     }
 
     .student-metric-header {
@@ -358,45 +414,62 @@
         color: var(--stu-text-muted);
     }
 
+    /* Telegram squircle icon container */
     .student-metric-icon-wrap {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 17px;
+        font-size: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        flex-shrink: 0;
+    }
+    .dark .student-metric-icon-wrap {
+        border-color: rgba(255, 255, 255, 0.08);
     }
 
     .student-metric-value {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 900;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         line-height: 1.1;
+        font-variant-numeric: tabular-nums;
         color: var(--stu-text-main);
+        margin-top: 4px;
     }
 
     .student-metric-subtext {
-        font-size: 12px;
+        font-size: 13px;
+        font-weight: 500;
         color: var(--stu-text-muted);
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
+        line-height: 1.4;
     }
 
     .student-metric-action {
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         color: var(--stu-accent);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        margin-top: 4px;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 10px;
+        background: var(--stu-accent-light);
+        transition: all 0.15s ease;
+        margin-top: 6px;
     }
 
     .student-metric-action:hover {
-        text-decoration: underline;
+        background: var(--stu-accent);
+        color: #FFFFFF !important;
+        transform: translateX(2px);
     }
 
     /* ═══ 4. Траектория подготовки и слабые темы ═══════════════════ */
@@ -468,7 +541,7 @@
         color: #FBBF24;
     }
 
-    /* ═══ 5. Карточки уроков и репетиторов (Сетка 2 колонки) ══════ */
+    /* ═══ 5. Карточки уроков и репетиторов в стиле диалогов Telegram/Viber ══════ */
     .student-two-col-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -484,46 +557,59 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        padding: 14px 16px;
-        border-radius: 14px;
+        gap: 14px;
+        padding: 14px 18px;
+        border-radius: 18px;
         border: 1px solid var(--stu-card-border);
         background: var(--stu-card-bg);
-        transition: all 0.15s ease;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        position: relative;
     }
 
     .student-list-item:hover {
-        border-color: rgba(125, 57, 235, 0.35);
-        background: var(--stu-surface-subtle);
-        transform: translateY(-1px);
+        border-color: rgba(125, 57, 235, 0.4);
+        background: rgba(125, 57, 235, 0.03);
+        transform: translateX(3px);
+        box-shadow: 0 4px 16px -2px rgba(125, 57, 235, 0.1);
+    }
+    .dark .student-list-item:hover {
+        background: rgba(125, 57, 235, 0.1);
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
     }
 
     .student-status-badge {
         font-size: 11px;
-        font-weight: 700;
-        padding: 3px 8px;
-        border-radius: 6px;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 9999px;
         display: inline-flex;
         align-items: center;
         gap: 4px;
+        letter-spacing: 0.02em;
     }
 
     .student-status-badge--paid {
         background: rgba(16, 185, 129, 0.12);
         color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.25);
     }
     .dark .student-status-badge--paid {
         background: rgba(16, 185, 129, 0.2);
         color: #34D399;
+        border-color: rgba(16, 185, 129, 0.35);
     }
 
     .student-status-badge--unpaid {
         background: rgba(245, 158, 11, 0.12);
         color: #D97706;
+        border: 1px solid rgba(245, 158, 11, 0.25);
     }
     .dark .student-status-badge--unpaid {
         background: rgba(245, 158, 11, 0.2);
         color: #FBBF24;
+        border-color: rgba(245, 158, 11, 0.35);
     }
 
     /* ═══ Адаптивность и мобильный тюнинг ═════════════════════════ */

@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/app.jsx',
                 'resources/css/classroom.css',
                 'resources/js/classroom.js',
+                'resources/js/classroom-app.jsx',
                 'resources/js/excalidraw-wrapper.jsx',
                 'resources/css/filament/admin/theme.css',
             ],

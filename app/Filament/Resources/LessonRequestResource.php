@@ -104,12 +104,30 @@ class LessonRequestResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('confirm')
                     ->label('Подтвердить')
-                    ->color('success')
-                    ->icon('heroicon-o-check-circle')
+                    ->color(fn (Lesson $record): string => (! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canAddStudent($record->tutor ?? auth()->user(), $record->student_id)) ? 'warning' : 'success')
+                    ->icon(fn (Lesson $record): string => (! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canAddStudent($record->tutor ?? auth()->user(), $record->student_id)) ? 'heroicon-o-lock-closed' : 'heroicon-o-check-circle')
                     ->button()
                     ->visible(fn (Lesson $record): bool => $record->status === Lesson::STATUS_PENDING)
                     ->requiresConfirmation()
-                    ->action(function (Lesson $record): void {
+                    ->modalHeading(fn (Lesson $record): string => (! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canAddStudent($record->tutor ?? auth()->user(), $record->student_id))
+                        ? '🔒 Лимит учеников: требуется тариф «Частная практика» (40 BYN)'
+                        : 'Подтвердить заявку на занятие')
+                    ->modalDescription(fn (Lesson $record): string => (! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canAddStudent($record->tutor ?? auth()->user(), $record->student_id))
+                        ? 'На тарифе «Стандарт» (20 BYN) действует лимит до 5 активных учеников. Для работы с 6 и более учениками перейдите на тариф «Частная практика» (40 BYN) с безлимитным доступом.'
+                        : 'Подтвердить занятие с учеником и открыть доступ к уроку?')
+                    ->modalSubmitActionLabel(fn (Lesson $record): string => (! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canAddStudent($record->tutor ?? auth()->user(), $record->student_id))
+                        ? 'Перейти на тариф (40 BYN)'
+                        : 'Подтвердить')
+                    ->action(function (Lesson $record, Tables\Actions\Action $action): void {
+                        $tutor = $record->tutor ?? auth()->user();
+                        $gate = app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class);
+
+                        if ($tutor && ! $gate->canAddStudent($tutor, $record->student_id)) {
+                            $action->redirect(route('filament.admin.pages.tutor-subscription-page'));
+
+                            return;
+                        }
+
                         $record->update(['status' => Lesson::STATUS_CONFIRMED]);
                         $record->student?->notify(new LessonConfirmedNotification($record->fresh()));
                     }),
@@ -202,8 +220,12 @@ class LessonRequestResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return (Filament::getCurrentPanel()?->getId() === 'site-admin' || auth()->user()?->isAdmin())
-            ? 'Операции'
+        if (Filament::getCurrentPanel()?->getId() === 'site-admin' || auth()->user()?->isAdmin()) {
+            return 'Пользователи и модерация';
+        }
+
+        return auth()->user()?->isTutor()
+            ? 'Уроки и ученики'
             : 'Занятия';
     }
 

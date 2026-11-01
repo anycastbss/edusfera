@@ -142,7 +142,7 @@ class AuroraAuthBackendTest extends TestCase
                 'success' => true,
                 'role' => 'student',
                 'isTutor' => false,
-                'redirect' => '/admin',
+                'redirect' => '/onboarding',
             ]);
 
         $user = User::where('email', 'maria.student@edusfera.by')->firstOrFail();
@@ -172,7 +172,7 @@ class AuroraAuthBackendTest extends TestCase
                 'success' => true,
                 'role' => 'tutor',
                 'isTutor' => true,
-                'redirect' => '/admin/tutor-subscription-page?onboarding=1',
+                'redirect' => '/onboarding',
             ]);
 
         $user = User::where('email', 'sergey.tutor@edusfera.by')->firstOrFail();
@@ -221,5 +221,63 @@ class AuroraAuthBackendTest extends TestCase
 
         $response->assertStatus(422);
         $this->assertStringContainsString('Пользователь с таким e-mail уже зарегистрирован', json_encode($response->json(), JSON_UNESCAPED_UNICODE));
+    }
+
+    public function test_register_allows_re_registration_if_previous_user_was_soft_deleted(): void
+    {
+        $oldUser = User::factory()->create([
+            'email' => 'tutor.reenter@edusfera.by',
+            'phone' => '+375299998877',
+            'role' => UserRole::Tutor,
+        ]);
+        \App\Models\TutorProfile::create(['user_id' => $oldUser->id]);
+        $oldUser->delete();
+
+        $this->assertTrue($oldUser->trashed());
+
+        // Re-registration with same email and phone must succeed
+        $response = $this->postJson('/api/auth/register', [
+            'firstName' => 'Петр',
+            'lastName' => 'Новиков',
+            'email' => 'tutor.reenter@edusfera.by',
+            'phone' => '+375 (29) 999-88-77',
+            'password' => 'Password123!',
+            'role' => 'tutor',
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'success' => true,
+                'role' => 'tutor',
+            ]);
+
+        $newUser = User::where('email', 'tutor.reenter@edusfera.by')->first();
+        $this->assertNotNull($newUser);
+        $this->assertNull($newUser->deleted_at);
+        $this->assertNotEquals($oldUser->id, $newUser->id);
+    }
+
+    public function test_user_deletion_cascades_and_removes_tutor_profile_and_availability(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'cascade.test@edusfera.by',
+            'role' => UserRole::Tutor,
+        ]);
+        $profile = \App\Models\TutorProfile::create(['user_id' => $user->id]);
+        \App\Models\TutorAvailability::create([
+            'user_id' => $user->id,
+            'day_of_week' => 1,
+            'start_time' => '10:00:00',
+            'end_time' => '11:00:00',
+            'is_active' => true,
+        ]);
+
+        $this->assertDatabaseHas('tutor_profiles', ['id' => $profile->id]);
+        $this->assertDatabaseHas('tutor_availability', ['user_id' => $user->id]);
+
+        $user->delete();
+
+        $this->assertDatabaseMissing('tutor_profiles', ['id' => $profile->id]);
+        $this->assertDatabaseMissing('tutor_availability', ['user_id' => $user->id]);
     }
 }

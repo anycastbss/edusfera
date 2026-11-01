@@ -26,7 +26,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Публичный роут для приема заявок с промо-лендинга
-Route::post('/promo/leads', [PromoLeadController::class, 'store'])->name('promo.leads.store');
+Route::post('/promo/leads', [PromoLeadController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('promo.leads.store');
+
+// Эндпоинт приема клиентской телеметрии (Web Vitals, JS errors, interactions)
+Route::post('/telemetry/event', [\App\Http\Controllers\Api\TelemetryEventController::class, 'record'])
+    ->name('telemetry.event');
 
 Route::prefix('v1')
     ->name('api.v1.')

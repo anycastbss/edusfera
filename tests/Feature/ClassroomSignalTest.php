@@ -125,4 +125,33 @@ class ClassroomSignalTest extends TestCase
         $this->assertTrue(collect($urls)->contains('turn:turn.edusfera.by:3478'));
         $this->assertTrue(collect($urls)->contains('turn:turn.edusfera.by:3478?transport=tcp'));
     }
+
+    public function test_parent_can_access_classroom_when_parent_id_is_set(): void
+    {
+        $tutor = User::factory()->create(['role' => 'tutor']);
+        $student = User::factory()->create(['role' => 'student']);
+        $parent = User::factory()->create(['role' => 'parent']);
+
+        $lesson = Lesson::forceCreate([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'parent_id' => $parent->id,
+            'status' => Lesson::STATUS_CONFIRMED,
+            'payment_status' => Lesson::PAYMENT_UNPAID,
+            'start_time' => now()->subMinutes(10),
+            'end_time' => now()->addMinutes(50),
+            'duration_minutes' => 60,
+            'price' => 1000,
+            'platform_commission' => 0,
+            'net_amount' => 1000,
+        ]);
+
+        $service = app(ClassroomService::class);
+        $this->assertTrue($service->canAccess($lesson, $parent));
+        $this->assertTrue($service->canAccess($lesson, $student));
+        $this->assertTrue($service->canAccess($lesson, $tutor));
+
+        $stranger = User::factory()->create(['role' => 'student']);
+        $this->assertFalse($service->canAccess($lesson, $stranger));
+    }
 }

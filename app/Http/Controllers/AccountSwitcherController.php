@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Services\MultiAccountService;
+use App\Traits\DetectsMobileDevice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AccountSwitcherController extends Controller
 {
+    use DetectsMobileDevice;
+
     public function __construct(private readonly MultiAccountService $multiAccount) {}
 
     /**
@@ -26,7 +29,7 @@ class AccountSwitcherController extends Controller
         }
 
         if ($this->multiAccount->switchTo($userId)) {
-            return redirect('/admin');
+            return redirect($this->isMobileDevice($request) ? route('mobile.cabinet') : '/admin');
         }
 
         // switchTo failed (userId not in cookie, user not found, etc.)

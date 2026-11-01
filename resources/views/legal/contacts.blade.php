@@ -40,7 +40,7 @@
         <li><strong>Государственная регистрация:</strong> Зарегистрировано Минским горисполкомом 04.05.2026 г.</li>
         <li><strong>УНП:</strong> 192854899</li>
         <li><strong>Юридический адрес и страна нахождения:</strong> Республика Беларусь, 220100, г. Минск, ул. Веры Хоружей, д. 6А, пом. 29</li>
-        <li><strong>Лицензирование:</strong> Деятельность по предоставлению доступа к цифровой платформе и образовательным услугам не подлежит лицензированию в соответствии с законодательством Республики Беларусь.</li>
+        <li><strong>Правовой статус и лицензирование:</strong> ООО «Эдусфера» предоставляет цифровую программную платформу (SaaS) для взаимодействия репетиторов и учеников и не является учреждением образования в понимании Кодекса Республики Беларусь об образовании. Предоставление доступа к программному обеспечению не подлежит лицензированию в соответствии с законодательством Республики Беларусь. Образовательные и консультационные услуги оказываются непосредственно преподавателями.</li>
     </ul>
 
     <h2>🏦 Банковские реквизиты и эквайринг</h2>
@@ -66,6 +66,10 @@
         </a>
         <a href="{{ route('legal.privacy') }}" class="p-3 bg-gray-50 hover:bg-violet-50 border border-gray-200 hover:border-violet-200 rounded-xl text-violet-700 transition-colors flex items-center justify-between">
             <span>Политика конфиденциальности (99-З)</span>
+            <span>→</span>
+        </a>
+        <a href="{{ route('legal.cookie') }}" class="p-3 bg-gray-50 hover:bg-violet-50 border border-gray-200 hover:border-violet-200 rounded-xl text-violet-700 transition-colors flex items-center justify-between">
+            <span>Политика файлов cookie</span>
             <span>→</span>
         </a>
         <a href="{{ route('legal.payment-security') }}" class="p-3 bg-gray-50 hover:bg-violet-50 border border-gray-200 hover:border-violet-200 rounded-xl text-violet-700 transition-colors flex items-center justify-between">

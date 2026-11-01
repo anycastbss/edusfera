@@ -330,7 +330,7 @@ class MicroservicesDashboard extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Микросервисы и Шлюз (Gateway)';
+        return 'Мониторинг и карта системы';
     }
 
     public static function canAccess(): bool

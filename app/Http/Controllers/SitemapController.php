@@ -32,6 +32,7 @@ class SitemapController extends Controller
         // Tutors dynamic URLs
         $tutors = TutorProfile::query()
             ->where('verification_status', 'approved')
+            ->where('is_public', true)
             ->with('user')
             ->get();
 

@@ -41,8 +41,167 @@ class SubscriptionFeatureGate
     }
 
     /**
+     * Check if tutor can hide their profile from the catalog (is_public = false).
+     * Allowed only on Pro (40 BYN), Premium (60 BYN), and during 14-day trial.
+     */
+    public function canHideProfile(User $tutor): bool
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        return $sub->isInTrial() || $sub->isPro();
+    }
+
+    /**
+     * Maximum allowed active students.
+     * BASIC (20 BYN): 5 students.
+     * PRO / PREMIUM / TRIAL: unlimited (null).
+     */
+    public function maxActiveStudents(User $tutor): ?int
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return 5;
+        }
+
+        if ($sub->isInTrial() || $sub->isPro()) {
+            return null;
+        }
+
+        return 5;
+    }
+
+    /**
+     * Get IDs of current distinct students of a tutor.
+     *
+     * @return list<int>
+     */
+    public function getActiveStudentIds(User $tutor): array
+    {
+        return \App\Models\Lesson::query()
+            ->where('tutor_id', $tutor->id)
+            ->whereNotNull('student_id')
+            ->whereIn('status', [
+                \App\Models\Lesson::STATUS_CONFIRMED,
+                \App\Models\Lesson::STATUS_PENDING,
+                \App\Models\Lesson::STATUS_COMPLETED,
+            ])
+            ->distinct()
+            ->pluck('student_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Check if tutor can add a student (or accept student lesson booking).
+     */
+    public function canAddStudent(User $tutor, ?int $studentId = null): bool
+    {
+        $limit = $this->maxActiveStudents($tutor);
+        if ($limit === null) {
+            return true;
+        }
+
+        $studentIds = $this->getActiveStudentIds($tutor);
+        if ($studentId !== null && in_array((int) $studentId, $studentIds, true)) {
+            return true;
+        }
+
+        return count($studentIds) < $limit;
+    }
+
+    /**
+     * Check if tutor can use One-Click NPD receipts generation.
+     * Pro (40 BYN), Premium (60 BYN), and trial: allowed.
+     * Basic (20 BYN): locked.
+     */
+    public function canUseOneClickNpd(User $tutor): bool
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        return $sub->isInTrial() || $sub->isPro();
+    }
+
+    /**
+     * Check if tutor can use White-Label mode (60 BYN / Premium).
+     */
+    public function canUseWhiteLabel(User $tutor): bool
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        return $sub->isInTrial() || $sub->isPremium();
+    }
+
+    /**
+     * Monthly AI generations limit.
+     * Basic (20 BYN): 10 requests per month.
+     * Pro / Premium / Trial: unlimited (null).
+     */
+    public function maxAiGenerationsPerMonth(User $tutor): ?int
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return 0;
+        }
+
+        if ($sub->isInTrial() || $sub->isPro()) {
+            return null;
+        }
+
+        return 10;
+    }
+
+    public function getAiGenerationsUsedThisMonth(User $tutor): int
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub) {
+            return 0;
+        }
+
+        $this->ensureMonthlyAiGenerationsReset($sub);
+
+        return (int) $sub->ai_generations_used_this_month;
+    }
+
+    public function incrementAiGenerationUsage(User $tutor): bool
+    {
+        $sub = $this->getSubscription($tutor);
+        if (! $sub || ! $sub->isActive()) {
+            return false;
+        }
+
+        $this->ensureMonthlyAiGenerationsReset($sub);
+        $sub->increment('ai_generations_used_this_month');
+
+        return true;
+    }
+
+    public function ensureMonthlyAiGenerationsReset(Subscription $sub): void
+    {
+        $currentPeriod = now()->format('Y-m');
+        if ($sub->ai_generations_period !== $currentPeriod) {
+            $sub->update([
+                'ai_generations_used_this_month' => 0,
+                'ai_generations_period' => $currentPeriod,
+            ]);
+            $sub->ai_generations_used_this_month = 0;
+            $sub->ai_generations_period = $currentPeriod;
+        }
+    }
+
+    /**
      * Check if tutor can use AI tools (diagnostics, lesson plans, tests).
-     * Available for PRO plan or during free trial (full PRO access).
+     * Available for PRO/PREMIUM plan or during free trial (unlimited),
+     * and on BASIC plan up to 10 requests per month.
      */
     public function canUseAiTools(User $tutor): bool
     {
@@ -51,7 +210,16 @@ class SubscriptionFeatureGate
             return false;
         }
 
-        return $sub->isInTrial() || $sub->isPro();
+        if ($sub->isInTrial() || $sub->isPro()) {
+            return true;
+        }
+
+        $limit = $this->maxAiGenerationsPerMonth($tutor);
+        if ($limit === null) {
+            return true;
+        }
+
+        return $this->getAiGenerationsUsedThisMonth($tutor) < $limit;
     }
 
     /**
@@ -97,6 +265,8 @@ class SubscriptionFeatureGate
             return false;
         }
 
+        $this->ensureMonthlyResponsesReset($sub);
+
         if ($sub->isInTrial()) {
             return true;
         }
@@ -123,9 +293,27 @@ class SubscriptionFeatureGate
             return false;
         }
 
+        $this->ensureMonthlyResponsesReset($sub);
+
         $sub->increment('responses_used_this_month');
 
         return true;
+    }
+
+    /**
+     * Ensure responses count is reset when a new calendar month begins.
+     */
+    public function ensureMonthlyResponsesReset(Subscription $sub): void
+    {
+        $currentPeriod = now()->format('Y-m');
+        if ($sub->responses_period !== $currentPeriod) {
+            $sub->update([
+                'responses_used_this_month' => 0,
+                'responses_period' => $currentPeriod,
+            ]);
+            $sub->responses_used_this_month = 0;
+            $sub->responses_period = $currentPeriod;
+        }
     }
 
     /**
@@ -181,15 +369,26 @@ class SubscriptionFeatureGate
 
     /**
      * Check maximum allowed duration per video lesson in minutes.
+     * Basic (20 BYN): 60 minutes.
+     * Pro / Premium / Trial: null (unlimited).
      */
-    public function getMaxLessonDurationMinutes(User $tutor): int
+    public function maxLessonDurationMinutes(User $tutor): ?int
     {
         $sub = $this->getSubscription($tutor);
         if (! $sub || ! $sub->isActive()) {
-            return 45;
+            return 60;
         }
 
-        return $sub->plan->maxLessonDurationMinutes();
+        if ($sub->isInTrial() || $sub->isPro()) {
+            return null; // Unlimited
+        }
+
+        return 60;
+    }
+
+    public function getMaxLessonDurationMinutes(User $tutor): ?int
+    {
+        return $this->maxLessonDurationMinutes($tutor);
     }
 
     /**

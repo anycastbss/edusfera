@@ -61,14 +61,30 @@ class TutorFinanceOverview extends Widget
         $subscription = $user->subscription;
         $planTitle = $subscription ? ($subscription->plan?->title() ?? 'Тариф Pro') : 'Пробный доступ';
         if ($subscription && $subscription->is_founder) {
-            $planTitle = 'Основатель (Founder)';
+            $planTitle = 'Тариф: Персональный';
         }
 
+        $gate = app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class);
+        $activeStudentsCount = count($gate->getActiveStudentIds($user));
+        $maxStudents = $gate->maxActiveStudents($user);
+        $studentQuotaLabel = $maxStudents !== null ? "{$activeStudentsCount} / {$maxStudents}" : "{$activeStudentsCount} (Безлимит)";
+        $studentQuotaHint = $maxStudents !== null ? 'Лимит тарифа' : 'Безлимит учеников';
+
+        $earnedFormatted = $this->shortMoney((string) $earnedThisMonth);
+        $forecastFormatted = $this->shortMoney((string) $monthlyForecast);
+        $monthName = now()->translatedFormat('F');
+
         return [
+            'earnedThisMonth' => (float) $earnedThisMonth,
+            'earnedThisMonthFormatted' => $earnedFormatted,
+            'monthlyForecastFormatted' => $forecastFormatted,
+            'completedLessonsCount' => $completedLessonsCount,
+            'planTitle' => $planTitle,
+            'currentMonthName' => $monthName,
             'stats' => [
                 [
-                    'label' => 'Прямой доход · '.now()->translatedFormat('F'),
-                    'value' => $this->shortMoney((string) $earnedThisMonth).' BYN',
+                    'label' => 'Прямой доход · '.$monthName,
+                    'value' => $earnedFormatted.' BYN',
                     'hint' => 'Оплаты от учеников (для НПД)',
                     'href' => '/admin/tutor-npd',
                     'accent' => true,
@@ -88,10 +104,10 @@ class TutorFinanceOverview extends Widget
                     'accent' => false,
                 ],
                 [
-                    'label' => 'Чеки НПД (МНС РБ)',
-                    'value' => '10%',
-                    'hint' => 'Формирование и учёт чеков',
-                    'href' => '/admin/tutor-npd',
+                    'label' => 'Активные ученики',
+                    'value' => $studentQuotaLabel,
+                    'hint' => $studentQuotaHint,
+                    'href' => '/admin/lessons',
                     'accent' => false,
                 ],
             ],

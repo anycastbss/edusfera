@@ -30,6 +30,12 @@ class ListLessons extends ListRecords
 
     public ?int $selectedCalendarLessonId = null;
 
+    public ?string $quickPrepPlan = null;
+
+    public bool $isGeneratingPrep = false;
+
+    public ?int $prepLessonId = null;
+
     public function mount(): void
     {
         parent::mount();
@@ -48,7 +54,7 @@ class ListLessons extends ListRecords
 
     public function setViewMode(string $mode): void
     {
-        if (in_array($mode, ['calendar', 'table'], true)) {
+        if (in_array($mode, ['calendar', 'table', 'agenda'], true)) {
             $this->viewMode = $mode;
         }
     }
@@ -77,14 +83,234 @@ class ListLessons extends ListRecords
         $this->currentWeekStart = Carbon::now($displayTz)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
     }
 
+    public ?string $prepTopic = null;
+
     public function openCalendarLesson(int $lessonId): void
     {
         $this->selectedCalendarLessonId = $lessonId;
+        $this->quickPrepPlan = null;
+        $this->prepLessonId = null;
+        $lesson = Lesson::with(['student', 'tutor.tutorProfile'])->find($lessonId);
+        if ($lesson) {
+            $context = $this->detectLessonPrepContext($lesson);
+            $this->prepTopic = $context['detected_topic'];
+        }
+    }
+
+    public function resetPrepTopic(int $lessonId): void
+    {
+        $lesson = Lesson::with(['student', 'tutor.tutorProfile'])->find($lessonId);
+        if ($lesson) {
+            $context = $this->detectLessonPrepContext($lesson);
+            $this->prepTopic = $context['detected_topic'];
+        }
+    }
+
+    public function detectLessonPrepContext(Lesson $lesson): array
+    {
+        $subject = trim((string) ($lesson->subject ?: ''));
+        if (empty($subject)) {
+            $tutorProfile = $lesson->tutor?->tutorProfile;
+            if ($tutorProfile && ! empty($tutorProfile->subjects)) {
+                $subjects = is_array($tutorProfile->subjects) ? $tutorProfile->subjects : json_decode((string) $tutorProfile->subjects, true);
+                if (is_array($subjects) && count($subjects) > 0) {
+                    $subject = (string) $subjects[0];
+                }
+            }
+        }
+        if (empty($subject)) {
+            $subject = 'Математика';
+        }
+
+        // Previous completed lesson with this student
+        $previousLesson = Lesson::query()
+            ->where('student_id', $lesson->student_id)
+            ->where('tutor_id', $lesson->tutor_id)
+            ->where('status', Lesson::STATUS_COMPLETED)
+            ->where('id', '!=', $lesson->id)
+            ->latest('end_time')
+            ->first();
+
+        // Calculate lesson sequence number with this student
+        $lessonNumber = Lesson::query()
+            ->where('student_id', $lesson->student_id)
+            ->where('tutor_id', $lesson->tutor_id)
+            ->where('status', '!=', Lesson::STATUS_CANCELLED)
+            ->where('start_time', '<=', $lesson->start_time)
+            ->count();
+        if ($lessonNumber === 0) {
+            $lessonNumber = 1;
+        }
+
+        // Check if notes contain specific topic
+        $notesTopic = null;
+        if (! empty($lesson->notes)) {
+            if (preg_match('/(?:Тема|тема|Раздел|раздел|План|план)[:\s]+([^\r\n,.]+)/u', $lesson->notes, $m)) {
+                $notesTopic = trim($m[1]);
+            }
+        }
+
+        // Active goal & skill gaps for this student
+        $activeGoal = \App\Models\StudentGoal::query()
+            ->with(['skillGaps' => fn ($q) => $q->where('status', 'open')->latest('id')])
+            ->where('student_id', $lesson->student_id)
+            ->where('tutor_id', $lesson->tutor_id)
+            ->where('status', 'active')
+            ->latest('id')
+            ->first();
+
+        $topSkillGap = $activeGoal?->skillGaps->first();
+
+        $isFirstLesson = ($lessonNumber === 1 && ! $previousLesson);
+
+        // Determine detected topic and source
+        $detectedTopic = '';
+        $topicSource = '';
+
+        if (! empty($notesTopic)) {
+            $detectedTopic = $notesTopic;
+            $topicSource = 'Заметки к занятию';
+        } elseif ($previousLesson && ! empty($previousLesson->tutor_next_step)) {
+            $detectedTopic = $previousLesson->tutor_next_step;
+            $topicSource = 'Намечено на уроке #' . $previousLesson->id;
+        } elseif ($isFirstLesson) {
+            $detectedTopic = 'Входная диагностика и аудит знаний';
+            $topicSource = 'Вводный урок (Урок №1)';
+        } elseif ($previousLesson && ! empty($previousLesson->tutor_report_summary)) {
+            $detectedTopic = 'Закрепление: ' . $previousLesson->tutor_report_summary;
+            $topicSource = 'Итоги урока #' . $previousLesson->id;
+        } elseif ($topSkillGap) {
+            $detectedTopic = 'Ликвидация пробела: ' . $topSkillGap->topic;
+            $topicSource = 'Пробел из диагностики';
+        } else {
+            $detectedTopic = 'Подготовка к ЦТ/ЦЭ 2026: базовый модуль';
+            $topicSource = 'Программа подготовки';
+        }
+
+        return [
+            'subject' => $subject,
+            'lesson_number' => $lessonNumber,
+            'is_first_lesson' => $isFirstLesson,
+            'previous_lesson' => $previousLesson,
+            'detected_topic' => $detectedTopic,
+            'topic_source' => $topicSource,
+            'previous_summary' => $previousLesson?->tutor_report_summary,
+            'previous_next_step' => $previousLesson?->tutor_next_step,
+            'previous_focus' => $previousLesson?->tutor_report_focus,
+            'previous_homework' => $previousLesson?->tutor_homework_summary,
+            'target_score' => $activeGoal?->target_score,
+            'current_score' => $activeGoal?->current_score,
+            'skill_gap' => $topSkillGap?->topic,
+        ];
+    }
+
+    public function generateQuickPrep(int $lessonId, ?string $customTopic = null): void
+    {
+        $this->isGeneratingPrep = true;
+        $this->prepLessonId = $lessonId;
+        $lesson = Lesson::with(['student', 'tutor.tutorProfile'])->find($lessonId);
+
+        if (! $lesson) {
+            Notification::make()->title('Урок не найден')->danger()->send();
+            $this->isGeneratingPrep = false;
+
+            return;
+        }
+
+        $user = auth()->user();
+        if ($user && $user->isTutor()) {
+            app(\App\Domain\Subscription\Services\SubscriptionService::class)->ensureTrialStarted($user);
+            $gate = app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class);
+            if (! $gate->canUseAiTools($user)) {
+                $this->isGeneratingPrep = false;
+                Notification::make()
+                    ->title('Лимит ИИ-запросов исчерпан')
+                    ->body('На тарифе «Стандарт» доступно 10 ИИ-генераций в месяц. Перейдите на тариф «Частная практика» (40 BYN) для безлимитного доступа.')
+                    ->warning()
+                    ->persistent()
+                    ->actions([
+                        \Filament\Notifications\Actions\Action::make('upgrade')
+                            ->button()
+                            ->label('Перейти на 40 BYN')
+                            ->url(route('filament.admin.pages.tutor-subscription-page')),
+                    ])
+                    ->send();
+
+                return;
+            }
+            $gate->incrementAiGenerationUsage($user);
+        }
+
+        $context = $this->detectLessonPrepContext($lesson);
+        $topic = trim((string) ($customTopic ?: ($this->prepTopic ?: $context['detected_topic'])));
+        $this->prepTopic = $topic;
+        $subject = $context['subject'];
+        $studentName = $lesson->student?->name ?? 'Ученик';
+        $tutorName = $lesson->tutor?->name ?? 'Преподаватель';
+
+        $historyContext = '';
+        if ($context['is_first_lesson']) {
+            $historyContext = "Это ПЕРВЫЙ вводный урок (Стартовое занятие) с этим учеником.\n".
+                "Главная цель: входная диагностика, определение базового уровня, психологический контакт и выявление пробелов по предмету {$subject}.\n";
+        } elseif ($context['previous_lesson']) {
+            $historyContext = "Это занятие №{$context['lesson_number']} в курсе с этим учеником.\n".
+                ($context['previous_summary'] ? "- На прошлом уроке прошли: «{$context['previous_summary']}».\n" : '').
+                ($context['previous_focus'] ? "- Трудности/фокус ученика: «{$context['previous_focus']}».\n" : '').
+                ($context['previous_next_step'] ? "- План репетитора на текущий шаг: «{$context['previous_next_step']}».\n" : '').
+                ($context['previous_homework'] ? "- Было задано ДЗ: «{$context['previous_homework']}».\n" : '');
+        }
+
+        if (! empty($context['target_score'])) {
+            $historyContext .= "- Целевой балл ученика: {$context['target_score']} (текущий: ".($context['current_score'] ?? 'в процессе').").\n";
+        }
+        if (! empty($context['skill_gap'])) {
+            $historyContext .= "- Выявленный пробел в знаниях: «{$context['skill_gap']}».\n";
+        }
+
+        $prompt = "Ты ведущий эксперт-методист образовательной платформы Edusfera.by.\n".
+            "Преподаватель {$tutorName} через 10 минут начинает урок с учеником {$studentName}.\n".
+            "Предмет: {$subject}. Тема текущего занятия: «{$topic}».\n\n".
+            $historyContext.
+            "\nСоставь конспект-шпаргалку к уроку на 1 экран (шпаргалка для преподавателя перед занятием):\n".
+            "1. **⚡ Разминка (3 мин):** 3 быстрых устных вопроса на проверку понятий/формул (свяжи с темой и проверкой ДЗ).\n".
+            "2. **⚠️ Ловушки РИКЗ (ЦТ/ЦЭ 2026):** 2 типичные ошибки абитуриентов в этой теме.\n".
+            "3. **📝 Практический блок (3 задачи):** краткие условия 3 ключевых задач для совместного решения на интерактивной доске.\n".
+            "4. **🎯 Контрольный вопрос в финале (1 мин)** для быстрой фиксации усвоения темы.\n\n".
+            "Пиши емко, структурировано, формулы оформляй понятно.";
+
+        $system = 'Ты опытный методист-наставник Edusfera.by. Твой конспект должен читаться за 30 секунд.';
+
+        try {
+            $plan = app(\App\Services\Ai\GeminiService::class)->generateText($prompt, $system);
+        } catch (\Throwable $e) {
+            $plan = null;
+        }
+
+        if (empty(trim((string) $plan))) {
+            $plan = "### ⚡ 1. Разминка (3 мин)\n1. Базовые определения и формулы темы «{$topic}» ({$subject}).\n2. Проверка понимания ключевых условий и ограничений.\n3. Вопрос на взаимосвязь с пройденным ранее материалом.\n\n### ⚠️ 2. Ловушки РИКЗ (ЦТ/ЦЭ 2026)\n- Типовые вычислительные неточности и невнимательность в знаках.\n- Подводные камни формулировок в тестах спецификации РИКЗ.\n\n### 📝 3. Практика (3 задачи)\n1. Задача базового уровня на первичное закрепление темы.\n2. Комбинированная задача уровня части А ЦТ.\n3. Задача с логическим усложнением уровня части Б.\n\n### 🎯 4. Контрольный вопрос в финале\n- Сформулировать вывод и контрольное правило самопроверки.";
+        }
+
+        $this->quickPrepPlan = $plan;
+        $this->isGeneratingPrep = false;
+
+        Notification::make()
+            ->title('Экспресс-план готов!')
+            ->body("Шпаргалка по теме «{$topic}» сформирована.")
+            ->success()
+            ->send();
+    }
+
+    public function closeQuickPrep(): void
+    {
+        $this->quickPrepPlan = null;
+        $this->prepLessonId = null;
     }
 
     public function closeCalendarLesson(): void
     {
         $this->selectedCalendarLessonId = null;
+        $this->quickPrepPlan = null;
+        $this->prepLessonId = null;
     }
 
     public function markLessonPaidDirectly(int $lessonId): void
@@ -406,9 +632,32 @@ class ListLessons extends ListRecords
                         ->label('Заметки к уроку (тема, ссылка, ДЗ)')
                         ->rows(2),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data, Actions\Action $action) {
                     $user = auth()->user();
                     $studentId = null;
+
+                    if ($user?->isTutor()) {
+                        $gate = app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class);
+                        $checkStudentId = (($data['student_mode'] ?? 'existing') === 'existing') ? (int) ($data['student_id'] ?? 0) : null;
+                        if (! $gate->canAddStudent($user, $checkStudentId)) {
+                            Notification::make()
+                                ->title('Лимит учеников: требуется тариф «Частная практика» (40 BYN)')
+                                ->body('На тарифе «Стандарт» (20 BYN) действует лимит до 5 активных учеников. Чтобы добавить нового ученика, перейдите на тариф «Частная практика» (40 BYN) с безлимитным доступом.')
+                                ->warning()
+                                ->persistent()
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('upgrade')
+                                        ->button()
+                                        ->label('Перейти на 40 BYN')
+                                        ->url(route('filament.admin.pages.tutor-subscription-page')),
+                                ])
+                                ->send();
+
+                            $action->redirect(route('filament.admin.pages.tutor-subscription-page'));
+
+                            return;
+                        }
+                    }
 
                     if (($data['student_mode'] ?? 'existing') === 'new') {
                         $phone = trim($data['new_student_phone'] ?? '');
@@ -464,7 +713,7 @@ class ListLessons extends ListRecords
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('primary')
                 ->url('/tutors')
-                ->visible(fn (): bool => $user !== null && ($user->isStudent() || $user->isParent())),
+                ->visible(fn (): bool => $user !== null && ($user->isStudent() || $user->isParent()) && ! app(\App\Services\WhiteLabelService::class)->isWhiteLabelActive()),
             Actions\Action::make('availability')
                 ->label('Рабочие часы')
                 ->icon('heroicon-o-clock')
@@ -474,6 +723,13 @@ class ListLessons extends ListRecords
                 ->label('Налог НПД (МНС)')
                 ->icon('heroicon-o-document-currency-dollar')
                 ->url('/admin/tutor-npd')
+                ->visible(fn (): bool => $user?->isTutor() ?? false),
+            Actions\Action::make('print_weekly')
+                ->label('Распечатать на неделю (А4)')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => route('admin.lessons.print-weekly', ['week' => $this->currentWeekStart]))
+                ->openUrlInNewTab()
                 ->visible(fn (): bool => $user?->isTutor() ?? false),
             Actions\Action::make('diagnostic')
                 ->label('Диагностика')

@@ -45,6 +45,10 @@ class WalletPage extends Page
 
     public static function canAccess(): bool
     {
+        if (\Filament\Facades\Filament::getCurrentPanel()?->getId() === 'site-admin') {
+            return false;
+        }
+
         $user = auth()->user();
 
         return $user !== null && ($user->isAdmin() || $user->isStudent() || $user->isParent());

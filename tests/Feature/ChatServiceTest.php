@@ -148,7 +148,7 @@ class ChatServiceTest extends TestCase
         ]);
     }
 
-    public function test_it_still_masks_payment_details_after_contacts_are_unlocked(): void
+    public function test_it_allows_sharing_payment_details_and_bank_cards(): void
     {
         Notification::fake();
 
@@ -168,7 +168,26 @@ class ChatServiceTest extends TestCase
             'last_message_at' => now(),
         ]);
 
-        Lesson::query()->forceCreate([
+        $result = app(ChatService::class)->sendMessage($conversation->id, $student->id, 'Номер карты: 9112 3800 2624 3678, счет BY20ALFA1234567890');
+
+        $this->assertNull($result['warning']);
+        $this->assertDatabaseHas('messages', [
+            'conversation_id' => $conversation->id,
+            'sender_id' => $student->id,
+            'message' => 'Номер карты: 9112 3800 2624 3678, счет BY20ALFA1234567890',
+        ]);
+        $this->assertDatabaseMissing('messages', [
+            'conversation_id' => $conversation->id,
+            'is_system' => true,
+        ]);
+    }
+
+    public function test_it_reuses_existing_conversation_for_new_lessons_with_same_student(): void
+    {
+        $tutor = User::factory()->create(['role' => 'tutor']);
+        $student = User::factory()->create(['role' => 'student']);
+
+        $lesson1 = Lesson::query()->forceCreate([
             'tutor_id' => $tutor->id,
             'student_id' => $student->id,
             'start_time' => now()->addDay(),
@@ -177,25 +196,38 @@ class ChatServiceTest extends TestCase
             'price' => '40.00',
             'platform_commission' => '6.00',
             'net_amount' => '34.00',
-            'status' => Lesson::STATUS_PENDING,
+            'status' => Lesson::STATUS_CONFIRMED,
             'payment_status' => Lesson::PAYMENT_PAID,
         ]);
 
-        $result = app(ChatService::class)->sendMessage($conversation->id, $student->id, 'Номер карты: 9112 3800 2624 3678');
+        $lesson2 = Lesson::query()->forceCreate([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'start_time' => now()->addDays(2),
+            'end_time' => now()->addDays(2)->addHour(),
+            'duration_minutes' => 60,
+            'price' => '40.00',
+            'platform_commission' => '6.00',
+            'net_amount' => '34.00',
+            'status' => Lesson::STATUS_CONFIRMED,
+            'payment_status' => Lesson::PAYMENT_PAID,
+        ]);
 
-        $this->assertNotNull($result['warning']);
-        $this->assertStringContainsString('Реквизиты для прямых переводов скрыты', $result['warning']);
-        $this->assertDatabaseHas('messages', [
-            'conversation_id' => $conversation->id,
-            'sender_id' => $student->id,
-            'message' => '[платежные данные скрыты]: [платежные данные скрыты]',
-        ]);
-        $this->assertDatabaseHas('messages', [
-            'conversation_id' => $conversation->id,
-            'sender_id' => null,
-            'is_system' => true,
-            'message' => $result['warning'],
-        ]);
+        $service = app(ChatService::class);
+
+        // Lesson 1
+        $conv1 = $service->getOrCreateConversation($tutor->id, $student->id, $lesson1->id);
+        $this->assertSame($lesson1->id, $conv1->lesson_id);
+
+        // Lesson 2 with same student
+        $conv2 = $service->getOrCreateConversation($tutor->id, $student->id, $lesson2->id);
+
+        // Must be the EXACT same conversation ID, not a duplicate!
+        $this->assertSame($conv1->id, $conv2->id);
+        $this->assertSame($lesson2->id, $conv2->fresh()->lesson_id);
+
+        // Count of conversations in DB must still be 1
+        $this->assertSame(1, Conversation::query()->where('tutor_id', $tutor->id)->where('student_id', $student->id)->count());
     }
 
     public function test_it_does_not_penalize_tutor_for_sharing_contacts_in_saas_model(): void
@@ -317,5 +349,46 @@ class ChatServiceTest extends TestCase
             ->assertSet('conversationId', $conversation->id)
             ->call('closeConversation')
             ->assertSet('conversationId', null);
+    }
+
+    public function test_messages_page_optimistic_sending_and_delta_sync(): void
+    {
+        $tutor = User::factory()->create(['role' => 'tutor']);
+        $student = User::factory()->create(['role' => 'student']);
+
+        $service = app(ChatService::class);
+        $conversation = $service->getOrCreateConversation($tutor->id, $student->id);
+
+        $component = Livewire::actingAs($student)
+            ->test(MessagesPage::class, ['conversation' => $conversation->id]);
+
+        // 1. Send optimistic message
+        $clientId = 'c_test_123';
+        $result = $component->instance()->sendOptimisticMessage('Привет! Это оптимистичное сообщение.', $clientId);
+
+        $this->assertNotNull($result);
+        $this->assertSame($clientId, $result['client_id']);
+        $this->assertNotNull($result['id']);
+        $this->assertSame('Привет! Это оптимистичное сообщение.', $result['message']);
+
+        // Check DB
+        $this->assertDatabaseHas('messages', [
+            'id' => $result['id'],
+            'conversation_id' => $conversation->id,
+            'message' => 'Привет! Это оптимистичное сообщение.',
+        ]);
+
+        // 2. Ping typing
+        $component->instance()->pingTyping();
+        $this->assertTrue(cache()->has("chat_typing_{$conversation->id}_{$student->id}"));
+
+        // 3. Tutor checks delta messages
+        $tutorComponent = Livewire::actingAs($tutor)
+            ->test(MessagesPage::class, ['conversation' => $conversation->id]);
+
+        $delta = $tutorComponent->instance()->checkNewMessages(0);
+        $this->assertCount(1, $delta['messages']);
+        $this->assertSame('Привет! Это оптимистичное сообщение.', $delta['messages'][0]['message']);
+        $this->assertTrue($delta['is_typing']);
     }
 }

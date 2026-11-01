@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @include('partials.pwa-meta')
     @include('partials.analytics')
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Каталог репетиторов — Edusfera | Подготовка к ЦТ и ЦЭ в Беларуси</title>
     <meta name="description" content="Подберите проверенного репетитора в Беларуси для подготовки к ЦТ и ЦЭ. Фильтр по предмету, цене и отзывам. Безопасная оплата занятий и онлайн-класс.">
     <meta name="keywords" content="каталог репетиторов беларусь, репетиторы минск цт, найти репетитора цэ, репетитор математика цт, репетитор русский цт, безопасная оплата уроков">
@@ -24,7 +24,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Каталог репетиторов Беларуси — Edusfera">
-    <meta name="twitter:description" content="Проверенные репетиторы по всем предметам ЦТ и ЦЭ. Безопасная сделка.">
+    <meta name="twitter:description" content="Проверенные репетиторы по всем предметам ЦТ и ЦЭ. Прямая оплата без комиссии платформы.">
     <meta name="twitter:image" content="https://edusfera.by/og-image.png">
 
     <!-- Schema.org JSON-LD -->
@@ -158,6 +158,11 @@
                         $unreadMessagesCount = app(\App\Services\ChatUnreadCounter::class)->countForUser($user);
                         $linked = app(\App\Services\MultiAccountService::class)->getLinkedAccounts();
                         $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                        $isAdmin = $user->isAdmin();
+                        $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                        $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+                        $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
                     @endphp
 
                     <div x-data="{ open: false }" class="relative">
@@ -179,11 +184,11 @@
                         </button>
 
                         <div x-show="open" x-transition.opacity.scale.95 style="display: none;" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 z-50">
-                            <a href="/admin" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
-                            <a href="{{ $user->role === 'tutor' ? '/admin/transactions' : '/admin/lessons' }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                                {{ $user->role === 'tutor' ? 'Мои финансы' : 'Мои занятия' }}
+                            <a href="{{ $cabinetUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
+                            <a href="{{ $lessonsUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                                Мои занятия
                             </a>
-                            <a href="/admin/messages" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                            <a href="{{ $messagesUrl }}" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                                 Сообщения
                                 @if($unreadMessagesCount > 0)
                                     <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">{{ $unreadMessagesCount }}</span>
@@ -413,7 +418,7 @@
                 </p>
                 <div class="flex gap-2">
                     @auth
-                        <a class="h-9 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-bold text-gray-600 flex items-center transition-colors" href="/admin">Кабинет</a>
+                        <a class="h-9 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-bold text-gray-600 flex items-center transition-colors" href="{{ $cabinetUrl ?? (auth()->user()?->isAdmin() ? '/admin' : '/cabinet') }}">Кабинет</a>
                     @else
                         <a class="h-9 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold flex items-center transition-colors shadow-sm" href="/admin/register?redirect_to={{ urlencode(url()->full()) }}">Стать репетитором</a>
                     @endauth
@@ -458,6 +463,9 @@
                                     <div class="flex gap-1.5 flex-wrap mb-2">
                                         @if($isPremium)
                                             <span class="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-black bg-amber-400/20 text-amber-900 border border-amber-400/50 shadow-sm">👑 Топ-эксперт</span>
+                                        @endif
+                                        @if($tutor->is_council_expert)
+                                            <span class="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs" title="Член Общественного методического совета Edusfera">🎖️ Эксперт совета</span>
                                         @endif
                                         @if($isOfficial)<span class="inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-bold bg-lime-50 text-lime-700 border border-lime-200">Официальный</span>@endif
                                         @if($tutor->diagnostic_supported)<span class="inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-bold bg-violet-50 text-violet-600 border border-violet-200">Диагностика</span>@endif

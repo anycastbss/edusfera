@@ -2,7 +2,7 @@
 <html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Edusfera — Умная подготовка к ЦТ и ЦЭ с ИИ | Платформа нового поколения</title>
     <meta name="description" content="Готовься к ЦТ и ЦЭ с персональными ИИ-агентами, интерактивной диагностикой знаний и проверенными репетиторами Беларуси. 100 баллов без зубрежки на платформе Edusfera.">
     <meta name="keywords" content="подготовка к ЦТ, подготовка к ЦЭ, репетиторы Беларусь, ИИ репетитор, диагностика знаний ЦТ, тесты РИКЗ, онлайн подготовка к экзаменам">
@@ -51,14 +51,14 @@
           }
         },
         {
-          "@type": "EducationalOrganization",
+          "@type": "Organization",
           "@id": "https://edusfera.by/#org",
           "name": "Edusfera",
-          "alternateName": "ООО Эдусфера",
+          "alternateName": "ООО «Эдусфера»",
           "url": "https://edusfera.by/",
           "logo": "https://edusfera.by/favicon.svg",
           "image": "https://edusfera.by/og-image.png",
-          "description": "Образовательная онлайн-платформа для подготовки к ЦТ и ЦЭ в Беларуси с проверенными репетиторами, ИИ-диагностикой и гарантией качества.",
+          "description": "Онлайн-платформа (SaaS) для организации взаимодействия преподавателей и учеников, подготовки к ЦТ и ЦЭ в Беларуси с ИИ-диагностикой и интерактивным классом.",
           "address": {
             "@type": "PostalAddress",
             "addressCountry": "BY",
@@ -99,6 +99,7 @@
     </noscript>
 
     @php
+        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
         $authUser = auth()->user() ? [
             'id' => auth()->user()->id,
             'name' => auth()->user()->name,
@@ -112,6 +113,7 @@
         window.EDUSFERA_USER = @js($authUser);
         window.EDUSFERA_LINKED_ACCOUNTS = @js($linkedAccounts);
         window.EDUSFERA_CSRF_TOKEN = "{{ csrf_token() }}";
+        window.EDUSFERA_IS_MOBILE = @js($isMobileDevice);
     </script>
 
     @viteReactRefresh
@@ -127,12 +129,16 @@
                 </a>
             </nav>
             <main class="max-w-xl my-auto">
+                <div class="inline-block text-xs font-bold text-[#C6FF33] uppercase tracking-wider mb-3">
+                    Закрытый бета-тест первой белорусской рабочей среды для репетиторов
+                </div>
                 <h1 class="text-4xl font-semibold tracking-tight text-white">
-                    Готовься к ЦТ и ЦЭ с ИИ-агентами, пока другие зубрят
+                    Готовься к ЦТ и ЦЭ с ИИ-агентами и лучшими преподавателями
                 </h1>
             </main>
         </div>
     </div>
     @include('partials.pwa-prompt')
+    @include('partials.cookie-banner')
 </body>
 </html>

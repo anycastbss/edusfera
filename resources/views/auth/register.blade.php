@@ -10,7 +10,24 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" href="/fonts/Rimma_sans-Bold.ttf" as="font" type="font/ttf" crossorigin>
+
+    <style>
+        @font-face {
+            font-family: 'Rimma Sans';
+            src: url('/fonts/Rimma_sans-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        .font-rimma {
+            font-family: 'Rimma Sans', sans-serif !important;
+        }
+        body, input, textarea, select, button, .font-geist, .font-sans {
+            font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+    </style>
 
     <script>
         window.EDUSFERA_CSRF_TOKEN = "{{ csrf_token() }}";

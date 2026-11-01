@@ -7,6 +7,7 @@ use App\Http\Middleware\ApplyRoleSessionLifetime;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\EnforceServiceScope;
+use App\Http\Middleware\HandleWhiteLabelContext;
 use App\Http\Middleware\MetricsAuth;
 use App\Http\Middleware\RecordHttpMetrics;
 use App\Http\Middleware\SecurityHeaders;
@@ -63,11 +64,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ApplyRoleSessionLifetime::class,
             TrackUtmParameters::class,
             SecurityHeaders::class,
-            'throttle:120,1',
+            HandleWhiteLabelContext::class,
+            \App\Http\Middleware\TrackActiveSession::class,
+            \App\Http\Middleware\CapturePlatformTelemetry::class,
+            \App\Http\Middleware\RedirectMobileToCabinetMiddleware::class,
         ]);
 
         $middleware->appendToGroup('api', [
             SecurityHeaders::class,
+            \App\Http\Middleware\CapturePlatformTelemetry::class,
         ]);
 
         // Группа `api` используется маршрутами `routes/api.php`,
@@ -112,6 +117,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'payments/alfabank/webhook',
             'webhooks/alfabank',
             'api/v1/payments/alfabank/webhook',
+            'api/tutor/onboarding/*',
+            'api/student/onboarding/*',
+            'api/telemetry/*',
         ]);
     })
     ->withCommands([
@@ -128,6 +136,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('health:check')->daily()->at('06:00');
         $schedule->command('queue:prune-batches --hours=48')->daily();
         $schedule->command('queue:prune-failed --hours=168')->daily();
+        $schedule->command('telemetry:prune --days=14')->dailyAt('04:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (ThrottleRequestsException $e, $request) {
@@ -136,6 +145,12 @@ return Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => 'Слишком много попыток. Пожалуйста, подождите одну минуту и попробуйте снова.',
                 ], 429);
+            }
+
+            if ($request->isMethod('post') || $request->isMethod('put') || $request->isMethod('delete')) {
+                return back()->withInput()->withErrors([
+                    'slot' => 'Слишком много попыток. Пожалуйста, подождите одну минуту перед повторной попыткой.',
+                ]);
             }
         });
     })->create();

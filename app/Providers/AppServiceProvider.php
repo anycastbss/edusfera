@@ -99,6 +99,95 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ClassroomNote::class, ClassroomNotePolicy::class);
         Gate::policy(TutorProfile::class, TutorProfilePolicy::class);
 
+        // Автоматический аудит входа и выхода пользователей
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($event): void {
+            try {
+                \App\Models\UserAuditLog::log(
+                    action: 'login_success',
+                    category: 'auth',
+                    user: $event->user,
+                    status: 'success',
+                    details: ['guard' => $event->guard]
+                );
+            } catch (\Throwable $e) {}
+        });
+
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Failed::class, function ($event): void {
+            try {
+                \App\Models\UserAuditLog::log(
+                    action: 'login_failed',
+                    category: 'auth',
+                    user: $event->user,
+                    status: 'failed',
+                    details: ['credentials' => ['email' => $event->credentials['email'] ?? null], 'guard' => $event->guard]
+                );
+            } catch (\Throwable $e) {}
+        });
+
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event): void {
+            try {
+                if ($event->user) {
+                    \App\Models\UserAuditLog::log(
+                        action: 'logout',
+                        category: 'auth',
+                        user: $event->user,
+                        status: 'success'
+                    );
+                }
+            } catch (\Throwable $e) {}
+        });
+
+        // Сквозной бизнес-аудит ключевых действий
+        \App\Models\Lesson::created(function ($lesson): void {
+            try {
+                \App\Models\UserAuditLog::log(
+                    action: 'lesson_created',
+                    category: 'lesson',
+                    user: $lesson->student ?? $lesson->tutor,
+                    status: 'success',
+                    details: ['lesson_id' => $lesson->id, 'subject' => $lesson->subject, 'price' => $lesson->price]
+                );
+            } catch (\Throwable $e) {}
+        });
+
+        \App\Models\Lesson::updated(function ($lesson): void {
+            try {
+                if ($lesson->isDirty('status')) {
+                    \App\Models\UserAuditLog::log(
+                        action: 'lesson_' . $lesson->status,
+                        category: 'lesson',
+                        user: $lesson->tutor ?? $lesson->student,
+                        status: 'success',
+                        details: ['lesson_id' => $lesson->id, 'new_status' => $lesson->status]
+                    );
+                }
+            } catch (\Throwable $e) {}
+        });
+
+        \App\Models\Transaction::created(function ($transaction): void {
+            try {
+                \App\Models\UserAuditLog::log(
+                    action: 'payment_success',
+                    category: 'payment',
+                    user: $transaction->user,
+                    status: 'success',
+                    details: ['amount' => $transaction->amount, 'currency' => 'BYN']
+                );
+            } catch (\Throwable $e) {}
+        });
+
+        \App\Models\ClassroomSession::created(function ($session): void {
+            try {
+                \App\Models\UserAuditLog::log(
+                    action: 'classroom_opened',
+                    category: 'lesson',
+                    user: $session->lesson?->tutor,
+                    status: 'success',
+                    details: ['lesson_id' => $session->lesson_id, 'room_id' => $session->room_id]
+                );
+            } catch (\Throwable $e) {}
+        });
+
         // Требование 3.1, 3.3: включить grant client_credentials и ограничить TTL токенов 30 мин.
         // В Passport v13 client_credentials grant включён по умолчанию.
         // Устанавливаем TTL для всех токенов и отдельно для client_credentials.

@@ -50,19 +50,19 @@ class ChatService
     public function getOrCreateConversation(int $tutorId, int $studentId, ?int $lessonId = null): Conversation
     {
         return DB::transaction(function () use ($lessonId, $studentId, $tutorId): Conversation {
-            $query = Conversation::query()
+            $conversation = Conversation::query()
                 ->where('tutor_id', $tutorId)
-                ->where('student_id', $studentId);
-
-            if ($lessonId !== null) {
-                $query->where('lesson_id', $lessonId);
-            } else {
-                $query->whereNull('lesson_id');
-            }
-
-            $conversation = $query->lockForUpdate()->first();
+                ->where('student_id', $studentId)
+                ->orderByDesc('last_message_at')
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
 
             if ($conversation) {
+                if ($lessonId !== null && $conversation->lesson_id !== $lessonId) {
+                    $conversation->update(['lesson_id' => $lessonId]);
+                }
+
                 return $conversation;
             }
 
@@ -75,24 +75,19 @@ class ChatService
         });
     }
 
-    public function sendMessage(int $conversationId, int $senderId, string $message): array
+    public function sendMessage(int $conversationId, int $senderId, string $message, ?array $meta = null): array
     {
-        $warning = null;
         $message = trim($message);
-        $originalMessage = $message;
-        $hasUnlockableContactAttempt = $this->containsByPatterns($message, $this->unlockableContactPatterns);
-        $hasPaymentAttempt = $this->containsByPatterns($message, $this->paymentPatterns);
-        $contactsUnlocked = false;
 
-        if ($message === '') {
+        if ($message === '' && empty($meta)) {
             throw ValidationException::withMessages([
                 'message' => 'Сообщение не может быть пустым.',
             ]);
         }
 
-        if (mb_strlen($message) > 500) {
+        if (mb_strlen($message) > 1000) {
             throw ValidationException::withMessages([
-                'message' => 'Сообщение не должно превышать 500 символов.',
+                'message' => 'Сообщение не должно превышать 1000 символов.',
             ]);
         }
 
@@ -102,7 +97,7 @@ class ChatService
             ]);
         }
 
-        $createdMessage = DB::transaction(function () use ($conversationId, &$contactsUnlocked, $hasUnlockableContactAttempt, $hasPaymentAttempt, $message, $originalMessage, $senderId, &$warning): Message {
+        $createdMessage = DB::transaction(function () use ($conversationId, $message, $meta, $senderId): Message {
             $conversation = Conversation::query()
                 ->with(['tutor', 'student'])
                 ->lockForUpdate()
@@ -114,67 +109,14 @@ class ChatService
                 ]);
             }
 
-            $contactsUnlocked = true;
-
-            if ($hasUnlockableContactAttempt && ! $contactsUnlocked) {
-                $message = $this->maskUnlockableContacts($message);
-            }
-
-            if ($hasPaymentAttempt) {
-                $message = $this->maskPaymentData($message);
-            }
-
             $createdMessage = Message::query()->create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $senderId,
-                'message' => $message,
+                'message' => $message !== '' ? $message : ($meta['file_name'] ?? 'Вложение'),
                 'is_system' => false,
-                'meta' => ($hasUnlockableContactAttempt && ! $contactsUnlocked) || $hasPaymentAttempt
-                    ? [
-                        'masked' => true,
-                        'original_excerpt' => mb_strimwidth($originalMessage, 0, 120, '...'),
-                    ]
-                    : null,
+                'meta' => $meta,
                 'is_read' => false,
             ]);
-
-            if ($hasUnlockableContactAttempt && ! $contactsUnlocked) {
-                $warning = '🛡️ В целях вашей безопасности обмен личными контактами и ссылками откроется автоматически сразу после бронирования первого занятия. Оплата через Edusfera гарантирует вам возврат средств, если урок не состоится.';
-
-                Message::query()->create([
-                    'conversation_id' => $conversation->id,
-                    'sender_id' => null,
-                    'message' => $warning,
-                    'is_system' => true,
-                    'meta' => [
-                        'variant' => 'contacts_locked',
-                    ],
-                    'is_read' => false,
-                ]);
-
-                if ($conversation->tutor_id === $senderId) {
-                    $this->handleTutorBypassAttempt($conversation, $createdMessage);
-                }
-            }
-
-            if ($hasPaymentAttempt) {
-                $warning = '🛡️ Реквизиты для прямых переводов скрыты. Для вашей безопасности и действия гарантии возврата все оплаты проходят только через Edusfera.';
-
-                Message::query()->create([
-                    'conversation_id' => $conversation->id,
-                    'sender_id' => null,
-                    'message' => $warning,
-                    'is_system' => true,
-                    'meta' => [
-                        'variant' => 'payment_locked',
-                    ],
-                    'is_read' => false,
-                ]);
-
-                if ($conversation->tutor_id === $senderId) {
-                    $this->handleTutorBypassAttempt($conversation, $createdMessage);
-                }
-            }
 
             $conversation->update([
                 'last_message_at' => now('UTC'),
@@ -198,20 +140,13 @@ class ChatService
                 }
             }
 
-            Log::info('chat_message_sent', [
-                'conversation_id' => $conversation->id,
-                'sender_id' => $senderId,
-                'recipient_id' => $recipient?->id,
-                'message_id' => $createdMessage->id,
-                'contacts_locked' => ! $contactsUnlocked,
-            ]);
-
             return $createdMessage;
         });
 
         return [
             'message' => $createdMessage->load('sender'),
-            'warning' => $warning,
+            'warning' => null,
+            'contacts_unlocked' => true,
         ];
     }
 
@@ -255,7 +190,7 @@ class ChatService
 
     public function sanitizeMessageForDisplay(string $message): string
     {
-        return $this->maskPaymentData($message);
+        return $message;
     }
 
     private function hasUnlockedContacts(Conversation $conversation): bool
@@ -286,10 +221,6 @@ class ChatService
 
     private function maskPaymentData(string $message): string
     {
-        $message = preg_replace('/(?<!\+)\b(?:\d[ -]?){13,19}\b/u', '[платежные данные скрыты]', $message) ?? $message;
-        $message = preg_replace('/\bBY\d{2}[A-Z0-9]{6,}\b/iu', '[платежные данные скрыты]', $message) ?? $message;
-        $message = preg_replace('/(?:номер\s+карты|карта|карточка|реквизиты|iban|сч[её]т|ерип|переведи|переведите|оплати\s+на|скинь\s+на\s+карту|скиньте\s+на\s+карту|беларусбанк|приорбанк|альфа[ -]?банк|бнб[ -]?банк)/iu', '[платежные данные скрыты]', $message) ?? $message;
-
         return $message;
     }
 

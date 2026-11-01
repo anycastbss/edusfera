@@ -154,4 +154,46 @@ class TutorGoogleCalendarScheduleTest extends TestCase
 
         $this->assertEquals(Lesson::PAYMENT_PAID, $lesson->fresh()->payment_status);
     }
+
+    public function test_tutor_can_switch_to_agenda_mode_and_see_accessible_lesson_cards(): void
+    {
+        $tutor = User::factory()->create([
+            'role' => 'tutor',
+            'phone' => '+375298400018',
+        ]);
+
+        $student = User::factory()->create([
+            'role' => 'student',
+            'name' => 'Александр Иванов',
+            'phone' => '+375298400019',
+        ]);
+
+        $displayTz = config('booking.display_timezone', 'Europe/Minsk');
+        $nowLocal = Carbon::now($displayTz)->startOfWeek()->addHours(15);
+
+        Lesson::query()->forceCreate([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'start_time' => $nowLocal->copy()->utc(),
+            'end_time' => $nowLocal->copy()->addHour()->utc(),
+            'duration_minutes' => 60,
+            'price' => '80.00',
+            'platform_commission' => '0.00',
+            'net_amount' => '80.00',
+            'status' => Lesson::STATUS_CONFIRMED,
+            'payment_status' => Lesson::PAYMENT_PAID,
+            'package_code' => 'single',
+            'package_lessons' => 1,
+            'notes' => 'Предмет: Математика ЦТ',
+        ]);
+
+        Livewire::actingAs($tutor)
+            ->test(ListLessons::class)
+            ->call('setViewMode', 'agenda')
+            ->assertSet('viewMode', 'agenda')
+            ->assertSee('Карточки')
+            ->assertSee('Александр Иванов')
+            ->assertSee('Математика ЦТ')
+            ->assertSee('Войти в виртуальный класс');
+    }
 }

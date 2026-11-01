@@ -1807,36 +1807,22 @@
             </div>
         @endif
 
-        {{-- Onboarding Welcome Banner --}}
-        @if($isOnboarding || (isset($subscription) && ! $subscription->is_onboarded))
-            <div class="tutor-sub-onboarding-banner">
-                <div class="tutor-sub-onboarding-content">
-                    <div class="tutor-sub-onboarding-badge">
-                        <span>Шаг 1 из 1</span> • <span>Активация тарифа</span>
+        {{-- Onboarding Prompt Banner if not onboarded --}}
+        @if(isset($subscription) && ! $subscription->is_onboarded)
+            <div class="rounded-2xl p-5 mb-8 border border-amber-500/30 bg-amber-500/10 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">📋</span>
+                    <div>
+                        <div class="font-bold text-base text-amber-300">Анкета репетитора не завершена</div>
+                        <div class="text-xs text-white/70">Заполните предметы, ставку и график в мастере онбординга для активации профиля в каталоге.</div>
                     </div>
-                    <h2 class="tutor-sub-onboarding-title">
-                        Добро пожаловать в команду Edusfera! 🚀
-                    </h2>
-                    <p class="tutor-sub-onboarding-desc">
-                        Выберите подходящий тариф для начала работы. Вы можете сразу приступить к работе с <strong>бесплатным пробным периодом</strong> (без списания) или оплатить подписку картой онлайн.
-                    </p>
                 </div>
-                <div class="tutor-sub-onboarding-cta">
-                    <button 
-                        wire:click="activateTrialAndStart('pro')" 
-                        wire:loading.attr="disabled"
-                        type="button" 
-                        class="tutor-sub-onboarding-btn"
-                    >
-                        <span wire:loading.remove wire:target="activateTrialAndStart">
-                            Начать 14 дней бесплатно (Тариф «Про») →
-                        </span>
-                        <span wire:loading wire:target="activateTrialAndStart">Активация...</span>
-                    </button>
-                    <span class="tutor-sub-onboarding-note">
-                        Банковская карта не требуется • Доступ сразу
-                    </span>
-                </div>
+                <a href="{{ route('tutor.onboarding') }}" class="px-4 py-2.5 rounded-xl bg-[#C6FF33] hover:bg-[#d5ff5e] text-black font-black text-xs uppercase tracking-wider transition-all shrink-0 flex items-center gap-2">
+                    <span>Заполнить анкету</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                </a>
             </div>
         @endif
 
@@ -1876,7 +1862,7 @@
                             @if($subscription->current_period_ends_at && $subscription->current_period_ends_at->year >= 2035)
                                 ✓ Бессрочный доступ к тарифу «{{ $subscription->plan->title() }}»
                             @else
-                                ✓ Активная подписка: «{{ $subscription->plan->title() }}», действует до {{ $subscription->current_period_ends_at?->format('d.m.Y') }}
+                                ✓ Активная подписка: «{{ $subscription->plan->title() }}» (до {{ $subscription->current_period_ends_at?->format('d.m.Y') }} · осталось {{ $subscription->daysRemaining() }} {{ trans_choice('день|дня|дней', $subscription->daysRemaining()) }})
                             @endif
                         </span>
                     @elseif($subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::CANCELED)
@@ -1886,6 +1872,12 @@
                     @else
                         <span class="tutor-sub-badge tutor-sub-badge--outline">
                             {{ $subscription->status->title() }}
+                        </span>
+                    @endif
+
+                    @if($this->activePromoInfo)
+                        <span class="tutor-sub-badge tutor-sub-badge--purple" style="background: rgba(125, 57, 235, 0.2); border: 1px solid rgba(125, 57, 235, 0.4); color: #C084FC;">
+                            🎁 Промокод: {{ $this->activePromoInfo['code'] }}
                         </span>
                     @endif
 
@@ -1911,6 +1903,9 @@
                 </p>
 
                 <div style="margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+                    <button wire:click="openPaymentModal('{{ $subscription->plan->value }}')" type="button" style="background: rgba(198, 255, 51, 0.15); border: 1px solid rgba(198, 255, 51, 0.35); color: #C6FF33; border-radius: 12px; font-size: 0.8125rem; font-weight: 700; cursor: pointer; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                        <span>🎁 Ввести промокод / Продлить</span>
+                    </button>
 
                     @if($subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::ACTIVE)
                         <button wire:click="openCancelModal" type="button" style="background: transparent; border: none; color: #9CA3AF; font-size: 0.8125rem; cursor: pointer; text-decoration: underline; padding: 6px 12px;">
@@ -1968,7 +1963,7 @@
                                 @endif
                             </div>
                             <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">
-                                Для независимых преподавателей и комфортного ведения регулярных уроков.
+                                Базовый тариф для работы со своими постоянными учениками в приватном кабинете.
                             </p>
 
                             <div class="tutor-plan-price-row">
@@ -1986,36 +1981,46 @@
                         <ul class="tutor-features-list">
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Неограниченно учеников</strong> и карточек контактов</span>
+                                <span><strong>До 5 активных учеников</strong></span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Виртуальный класс (SFU)</strong> с видеосвязью и демонстрацией экрана</span>
+                                <span><strong>Приватный кабинет</strong> (скрыт из каталога, доступ только по ссылке)</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Интерактивная доска</strong> для формул и заметок</span>
+                                <span><strong>Виртуальный класс (SFU)</strong> до 60 мин с видеосвязью и доской</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Расписание и CRM</strong>: бронирование и контроль посещаемости</span>
+                                <span><strong>Расписание и CRM</strong>: бронирование и ссылка для записи</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Персональная ссылка для записи</strong> учеников</span>
+                                <span><strong>1 ГБ хранилища</strong> учебных материалов</span>
                             </li>
                             <li class="tutor-feature-item">
-                                <span class="tutor-feature-check">✓</span>
-                                <span><strong>Базовый чат</strong> и уведомления</span>
+                                <span class="tutor-feature-check" style="background: rgba(107, 114, 128, 0.12); color: #6B7280;">•</span>
+                                <span style="color: #6B7280;">0 генераций ИИ · Ручной учет налогов</span>
                             </li>
                         </ul>
                     </div>
 
                     <div>
                         @if($isCurrentStart && $subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::ACTIVE)
-                            <button type="button" disabled class="tutor-plan-btn tutor-plan-btn--disabled">
-                                Тариф подключён
-                            </button>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; border-radius: 12px; background: rgba(5, 150, 105, 0.15); color: #059669; font-weight: 700; font-size: 0.8125rem;">
+                                    ✓ Текущий активный тариф
+                                </span>
+                                <button 
+                                    wire:click="openPaymentModal('basic')" 
+                                    type="button" 
+                                    class="tutor-plan-btn tutor-plan-btn--outline"
+                                    style="padding: 9px 12px; font-size: 0.8125rem;"
+                                >
+                                    <span>Продлить / Ввести промокод</span>
+                                </button>
+                            </div>
                         @else
                             <button 
                                 wire:click="openPaymentModal('basic')" 
@@ -2026,16 +2031,6 @@
                                     {{ $isCurrentStart ? 'Оплатить картой и продлить' : 'Подключить «Стандарт»' }}
                                 </span>
                             </button>
-                            @if($isOnboarding || (isset($subscription) && ! $subscription->is_onboarded))
-                                <button 
-                                    wire:click="activateTrialAndStart('basic')"
-                                    wire:loading.attr="disabled"
-                                    type="button" 
-                                    class="tutor-plan-btn--trial"
-                                >
-                                    Начать 5 дней бесплатно
-                                </button>
-                            @endif
                         @endif
                     </div>
                 </div>
@@ -2056,7 +2051,7 @@
                                 @endif
                             </div>
                             <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">
-                                Автоматизация рутины: ИИ-помощник, диагностика и авто-чеки НПД.
+                                Оптимальный выбор: до 15 учеников, 50 генераций ИИ и авто-чеки НПД для МНС РБ.
                             </p>
 
                             <div class="tutor-plan-price-row">
@@ -2074,40 +2069,50 @@
                         <ul class="tutor-features-list">
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Все функции тарифа «Стандарт»</strong></span>
+                                <span><strong>До 15 активных учеников</strong></span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>ИИ-диагностика знаний (РИКЗ)</strong> для оценки пробелов ученика</span>
+                                <span><strong>50 генераций ИИ в месяц</strong> (Сборник ЦТ/ЦЭ, планы, тесты и ДЗ)</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>ИИ-ассистент</strong>: генерация планов уроков, ДЗ и тестов</span>
+                                <span><strong>Авто-генерация чеков НПД</strong> в 1 клик для МНС РБ</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Авто-генерация чеков НПД</strong> для МНС РБ</span>
+                                <span><strong>Виртуальный класс (SFU) без ограничений</strong> по времени</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Расширенный профиль</strong> (+ дипломы и отзывы)</span>
+                                <span>🔒 <strong>Приватный кабинет без публикации в каталоге</strong> (или открытая витрина на выбор)</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Календарь + автонапоминания</strong> ученикам</span>
+                                <span><strong>15 ГБ хранилища</strong> + автонапоминания ученикам</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check">✓</span>
-                                <span><strong>Отклики на входящие заявки</strong> (до 10 в месяц)</span>
+                                <span><strong>До 10 откликов в месяц</strong> на входящие заявки родителей</span>
                             </li>
                         </ul>
                     </div>
 
                     <div>
                         @if($isCurrentPro && $subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::ACTIVE)
-                            <button type="button" disabled class="tutor-plan-btn tutor-plan-btn--disabled">
-                                Тариф подключён
-                            </button>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; border-radius: 12px; background: rgba(5, 150, 105, 0.15); color: #059669; font-weight: 700; font-size: 0.8125rem;">
+                                    ✓ Текущий активный тариф
+                                </span>
+                                <button 
+                                    wire:click="openPaymentModal('pro')" 
+                                    type="button" 
+                                    class="tutor-plan-btn tutor-plan-btn--primary"
+                                    style="padding: 9px 12px; font-size: 0.8125rem;"
+                                >
+                                    <span>Продлить / Ввести промокод</span>
+                                </button>
+                            </div>
                         @else
                             <button 
                                 wire:click="openPaymentModal('pro')" 
@@ -2118,16 +2123,6 @@
                                     {{ $isCurrentPro ? 'Оплатить картой и продлить' : 'Подключить «Про»' }}
                                 </span>
                             </button>
-                            @if($isOnboarding || (isset($subscription) && ! $subscription->is_onboarded))
-                                <button 
-                                    wire:click="activateTrialAndStart('pro')"
-                                    wire:loading.attr="disabled"
-                                    type="button" 
-                                    class="tutor-plan-btn--trial"
-                                >
-                                    Начать 14 дней бесплатно
-                                </button>
-                            @endif
                         @endif
                     </div>
                 </div>
@@ -2148,7 +2143,7 @@
                                 @endif
                             </div>
                             <p style="margin: 0; font-size: 0.875rem; color: #6B7280;">
-                                Максимум учеников, топ-позиции в поиске и персональный бренд.
+                                Для преподавателей с большой нагрузкой: безлимит учеников и режим персональной школы.
                             </p>
 
                             <div class="tutor-plan-price-row">
@@ -2166,7 +2161,19 @@
                         <ul class="tutor-features-list">
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
-                                <span><strong>Все возможности тарифов «Стандарт» и «Про»</strong></span>
+                                <span><strong>Неограниченно учеников</strong> (БЕЗЛИМИТ)</span>
+                            </li>
+                            <li class="tutor-feature-item">
+                                <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
+                                <span>🏛️ <strong>Личная онлайн-школа + Настройка по звонку</strong> (White-Label: персональный бренд)</span>
+                            </li>
+                            <li class="tutor-feature-item">
+                                <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
+                                <span><strong>БЕЗЛИМИТНЫЙ ИИ-помощник</strong> (Edusfera AI Pro без лимита)</span>
+                            </li>
+                            <li class="tutor-feature-item">
+                                <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
+                                <span><strong>Авто-генерация чеков НПД</strong> на полном автопилоте</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
@@ -2174,15 +2181,11 @@
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
-                                <span><strong>🔥 БЕЗЛИМИТНЫЕ отклики на заявки</strong> + автоподбор</span>
+                                <span><strong>🔥 БЕЗЛИМИТНЫЕ отклики на заявки</strong> с биржи</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
                                 <span><strong>Синхронизация с Google Calendar</strong></span>
-                            </li>
-                            <li class="tutor-feature-item">
-                                <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
-                                <span><strong>Собственный брендинг (White-label)</strong>: ваш логотип</span>
                             </li>
                             <li class="tutor-feature-item">
                                 <span class="tutor-feature-check" style="background: rgba(124, 58, 237, 0.12); color: #7C3AED;">✓</span>
@@ -2201,9 +2204,19 @@
 
                     <div>
                         @if($isCurrentPremium && $subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::ACTIVE)
-                            <button type="button" disabled class="tutor-plan-btn tutor-plan-btn--disabled">
-                                Тариф подключён
-                            </button>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; border-radius: 12px; background: rgba(124, 58, 237, 0.15); color: #7C3AED; font-weight: 700; font-size: 0.8125rem;">
+                                    ✓ Текущий активный тариф
+                                </span>
+                                <button 
+                                    wire:click="openPaymentModal('premium')" 
+                                    type="button" 
+                                    class="tutor-plan-btn tutor-plan-btn--premium"
+                                    style="padding: 9px 12px; font-size: 0.8125rem;"
+                                >
+                                    <span>Продлить / Ввести промокод</span>
+                                </button>
+                            </div>
                         @else
                             <button 
                                 wire:click="openPaymentModal('premium')" 
@@ -2214,17 +2227,6 @@
                                     {{ $isCurrentPremium ? 'Оплатить картой и продлить' : 'Подключить «Премиум»' }}
                                 </span>
                             </button>
-                            @if($isOnboarding || (isset($subscription) && ! $subscription->is_onboarded))
-                                <button 
-                                    wire:click="activateTrialAndStart('premium')"
-                                    wire:loading.attr="disabled"
-                                    type="button" 
-                                    class="tutor-plan-btn--trial"
-                                    style="border-color: #7C3AED; color: #7C3AED;"
-                                >
-                                    Начать 28 дней бесплатно
-                                </button>
-                            @endif
                         @endif
                     </div>
                 </div>
@@ -2256,8 +2258,26 @@
                                 <td colspan="4">1. Привлечение новых учеников и каталог</td>
                             </tr>
                             <tr>
+                                <td>Количество активных учеников</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 600;">До 5 учеников</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 700; color: #059669;">До 15 учеников</td>
+                                <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">🔥 Неограниченно учеников</td>
+                            </tr>
+                            <tr>
+                                <td>Режим приватности и каталог</td>
+                                <td class="tutor-matrix-col-plan" style="color: #6B7280;">Только приватный (скрыт из каталога)</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 600;">На выбор: Приватный или Каталог</td>
+                                <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">На выбор + ТОП-1 каталога</td>
+                            </tr>
+                            <tr>
+                                <td>Режим «Личная школа» (скрывает шапку, каталог и чужих репетиторов)</td>
+                                <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
+                                <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
+                                <td class="tutor-matrix-col-plan tutor-matrix-highlight"><span class="tutor-matrix-check-prem">✓ (Ученики видят только вас)</span></td>
+                            </tr>
+                            <tr>
                                 <td>Позиция и ранжирование в каталоге репетиторов</td>
-                                <td class="tutor-matrix-col-plan" style="color: #6B7280;">Базовая</td>
+                                <td class="tutor-matrix-col-plan" style="color: #6B7280;">Скрыт из каталога</td>
                                 <td class="tutor-matrix-col-plan" style="font-weight: 700; color: #059669;">Приоритет x2</td>
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">👑 ТОП-1 каталога</td>
                             </tr>
@@ -2294,12 +2314,12 @@
 
                             {{-- Category 2: Виртуальный класс --}}
                             <tr class="tutor-matrix-category">
-                                <td colspan="4">2. Виртуальный класс и процесс обучения</td>
+                                <td colspan="4">2. Онлайн-класс и процесс обучения</td>
                             </tr>
                             <tr>
-                                <td>Длительность 1 занятия в виртуальном классе SFU</td>
-                                <td class="tutor-matrix-col-plan">До 45 минут</td>
-                                <td class="tutor-matrix-col-plan" style="font-weight: 600;">До 120 минут</td>
+                                <td>Длительность 1 занятия в защищенном онлайн-классе</td>
+                                <td class="tutor-matrix-col-plan">До 60 минут</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 600;">Без ограничений</td>
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">Без ограничений</td>
                             </tr>
                             <tr>
@@ -2309,7 +2329,7 @@
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight"><span class="tutor-matrix-check-prem">✓</span></td>
                             </tr>
                             <tr>
-                                <td>Собственный брендинг класса (логотип, цвета, White-label)</td>
+                                <td>Собственный логотип и оформление класса (Личная школа)</td>
                                 <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
                                 <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight"><span class="tutor-matrix-check-prem">✓</span></td>
@@ -2332,9 +2352,15 @@
                                 <td colspan="4">3. ИИ-ассистент и налоговая автоматизация</td>
                             </tr>
                             <tr>
+                                <td>Генерации ИИ (Сборник ЦТ/ЦЭ, планы, тесты и ДЗ)</td>
+                                <td class="tutor-matrix-col-plan" style="color: #9CA3AF;">0 (недоступно)</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 700; color: #059669;">50 генераций / мес</td>
+                                <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">БЕЗЛИМИТНО</td>
+                            </tr>
+                            <tr>
                                 <td>ИИ-диагностика знаний и пробелов ученика (тесты РИКЗ)</td>
                                 <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
-                                <td class="tutor-matrix-col-plan" style="font-weight: 600; color: #059669;">До 30 / мес</td>
+                                <td class="tutor-matrix-col-plan" style="font-weight: 600; color: #059669;">До 50 / мес</td>
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">БЕЗЛИМИТНО</td>
                             </tr>
                             <tr>

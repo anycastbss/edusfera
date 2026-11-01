@@ -403,14 +403,17 @@ class BookingService
         $slots = [];
 
         foreach ($availability as $window) {
+            $startTime = TutorAvailability::normalizeTimeString((string) $window->start_time);
+            $endTime = TutorAvailability::normalizeTimeString((string) $window->end_time);
+
             $cursor = CarbonImmutable::createFromFormat(
                 'Y-m-d H:i:s',
-                $dayStartLocal->format('Y-m-d').' '.$window->start_time,
+                $dayStartLocal->format('Y-m-d').' '.$startTime,
                 $timezone,
             );
             $windowEnd = CarbonImmutable::createFromFormat(
                 'Y-m-d H:i:s',
-                $dayStartLocal->format('Y-m-d').' '.$window->end_time,
+                $dayStartLocal->format('Y-m-d').' '.$endTime,
                 $timezone,
             );
 
@@ -522,8 +525,11 @@ class BookingService
             ->get();
 
         $isWithinAvailability = $availability->contains(function (TutorAvailability $window) use ($endLocal, $startLocal): bool {
-            return $window->start_time <= $startLocal->format('H:i:s')
-                && $window->end_time >= $endLocal->format('H:i:s');
+            $windowStart = TutorAvailability::normalizeTimeString((string) $window->start_time);
+            $windowEnd = TutorAvailability::normalizeTimeString((string) $window->end_time);
+
+            return $windowStart <= $startLocal->format('H:i:s')
+                && $windowEnd >= $endLocal->format('H:i:s');
         });
 
         if (! $isWithinAvailability) {

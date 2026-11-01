@@ -34,11 +34,17 @@ final class RouteServiceProvider extends ServiceProvider
 
     public const CHECKOUT_PAY_LIMITER = 'checkout.pay';
 
+    public const BOOKING_LIMITER = 'booking';
+
+    public const AI_COPILOT_LIMITER = 'ai_copilot';
+
     public function boot(): void
     {
         $this->configureApiV1RateLimiter();
         $this->configureWebAuthRateLimiter();
         $this->configureCheckoutPayRateLimiter();
+        $this->configureBookingRateLimiter();
+        $this->configureAiCopilotRateLimiter();
     }
 
     /**
@@ -158,6 +164,15 @@ final class RouteServiceProvider extends ServiceProvider
         });
     }
 
+    private function configureBookingRateLimiter(): void
+    {
+        RateLimiter::for(self::BOOKING_LIMITER, function (Request $request): Limit {
+            $limit = $this->app->environment('local', 'testing') ? 100 : 15;
+
+            return Limit::perMinute($limit)->by($request->user()?->id ?: $request->ip());
+        });
+    }
+
     private function configureWebAuthRateLimiter(): void
     {
         RateLimiter::for(self::WEB_AUTH_LIMITER, function (Request $request): Limit {
@@ -166,6 +181,13 @@ final class RouteServiceProvider extends ServiceProvider
                 ->response(function (Request $request, array $headers): JsonResponse {
                     return $this->tooManyRequestsResponse($headers);
                 });
+        });
+    }
+
+    private function configureAiCopilotRateLimiter(): void
+    {
+        RateLimiter::for(self::AI_COPILOT_LIMITER, function (Request $request): Limit {
+            return Limit::perMinute(120)->by('ai_copilot_'.($request->user()?->id ?: $request->ip()));
         });
     }
 

@@ -111,4 +111,50 @@ class PostLessonReportServiceTest extends TestCase
         $this->assertSame(1, HomeworkAssignment::query()->count());
         $this->assertSame(1, ProgressSnapshot::query()->count());
     }
+
+    public function test_tutor_can_save_homework_without_preexisting_student_goal(): void
+    {
+        $tutor = User::factory()->create([
+            'role' => 'tutor',
+            'phone' => '+375298200003',
+        ]);
+
+        $student = User::factory()->create([
+            'role' => 'student',
+            'phone' => '+375298200004',
+        ]);
+
+        $lesson = Lesson::query()->forceCreate([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'start_time' => CarbonImmutable::now('UTC')->subHours(2),
+            'end_time' => CarbonImmutable::now('UTC')->subHour(),
+            'duration_minutes' => 60,
+            'price' => '40.00',
+            'platform_commission' => '0.00',
+            'net_amount' => '40.00',
+            'status' => Lesson::STATUS_COMPLETED,
+            'payment_status' => Lesson::PAYMENT_UNPAID,
+        ]);
+
+        app(PostLessonReportService::class)->saveReport(
+            lesson: $lesson,
+            actorId: $tutor->id,
+            summary: 'Первое вводное занятие.',
+            focus: 'Ознакомились со структурой экзамена.',
+            nextStep: 'Пройти тест из 10 вопросов к следующему уроку.',
+            homework: 'Решить первые 5 задач из демоверсии.',
+            scoreEstimate: null,
+        );
+
+        $this->assertDatabaseHas('homework_assignments', [
+            'lesson_id' => $lesson->id,
+            'student_goal_id' => null,
+            'student_id' => $student->id,
+            'tutor_id' => $tutor->id,
+            'instructions' => 'Решить первые 5 задач из демоверсии.',
+            'status' => 'assigned',
+        ]);
+        $this->assertSame(1, HomeworkAssignment::query()->count());
+    }
 }

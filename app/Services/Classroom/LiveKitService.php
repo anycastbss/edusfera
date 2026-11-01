@@ -22,13 +22,15 @@ class LiveKitService
         return true;
     }
 
-    public function generateToken(Lesson $lesson, User $user, int $ttlSeconds = 7200): string
+    public function generateToken(Lesson $lesson, User $user, int $ttlSeconds = 7200, ?string $userRole = null): string
     {
         $apiKey = (string) config('classroom.livekit_api_key');
         $apiSecret = (string) config('classroom.livekit_api_secret');
 
         $now = time();
-        $isTutor = ($user->id === $lesson->tutor_id) || $user->isAdmin();
+        $isTutor = $userRole !== null
+            ? ($userRole === 'tutor')
+            : (($user->id === $lesson->tutor_id) || $user->isAdmin());
         $identity = $isTutor ? 'tutor_'.$user->id : 'student_'.$user->id;
         $roomName = 'edusfera_lesson_'.$lesson->id;
 

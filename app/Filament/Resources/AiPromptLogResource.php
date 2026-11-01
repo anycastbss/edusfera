@@ -147,7 +147,7 @@ class AiPromptLogResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Управление ИИ и Моделями';
+        return 'Логи и безопасность';
     }
 
     public static function shouldRegisterNavigation(): bool

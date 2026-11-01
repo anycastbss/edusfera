@@ -87,6 +87,11 @@ class EditTutorProfile extends EditRecord
 
     protected function getRedirectUrl(): string
     {
+        $user = auth()->user();
+        if ($user?->isTutor()) {
+            return static::getResource()::getUrl('edit', ['record' => $this->record->id]);
+        }
+
         $panelId = Filament::getCurrentPanel()?->getId();
 
         return static::getResource()::getUrl('index', panel: $panelId);
@@ -160,6 +165,17 @@ class EditTutorProfile extends EditRecord
                         ->send();
 
                     $this->redirect($this->getRedirectUrl());
+                }),
+            Actions\DeleteAction::make()
+                ->modalHeading('Удалить анкету репетитора?')
+                ->modalDescription('Анкета и расписание репетитора будут безвозвратно удалены.')
+                ->using(function (TutorProfile $record): bool {
+                    $user = $record->user;
+                    if ($user) {
+                        $user->availability()->delete();
+                    }
+
+                    return (bool) $record->delete();
                 }),
         ];
     }

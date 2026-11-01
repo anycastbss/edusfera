@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @include('partials.pwa-meta')
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>О компании ООО «Эдусфера» — Разработчик профессионального образовательного ПО</title>
     <meta name="description" content="ООО «Эдусфера» — белорусская IT-компания, разработчик профессионального программного обеспечения для образования: ИИ-диагностика знаний, интерактивные виртуальные классы, биллинг для репетиторов и образовательных центров.">
     <meta name="keywords" content="о компании эдусфера, разработка образовательного по беларусь, edtech беларусь, ит компания минск, платформа для репетиторов, ооо эдусфера">
@@ -136,6 +136,7 @@
         .code-syntax-number { color: #fbbf24; }
         .code-syntax-comment { color: #64748b; font-style: italic; }
     </style>
+    @include('partials.analytics')
 </head>
 <body class="nexum-body min-h-screen bg-[#050508] text-white selection:bg-[#C6FF33] selection:text-black antialiased flex flex-col justify-between" x-data="{ mobileMenu: false, activeTab: 'ai' }">
 
@@ -173,7 +174,7 @@
             <!-- Desktop Actions -->
             <div class="hidden md:flex items-center gap-4">
                 @auth
-                    <a href="/admin" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/15 transition-all">
+                    <a href="{{ auth()->user()?->isAdmin() ? '/admin' : '/cabinet' }}" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-sm border border-white/15 transition-all">
                         🚀 Кабинет
                     </a>
                 @else
@@ -252,8 +253,8 @@
                 <!-- Metric Badges Row -->
                 <div class="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-left border-t border-white/[0.08]">
                     <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                        <div class="text-3xl font-black text-[#C6FF33] font-mono">15,400+</div>
-                        <div class="text-xs text-neutral-400 mt-1.5 leading-snug">Проведённых онлайн-уроков на платформе</div>
+                        <div class="text-3xl font-black text-[#C6FF33] font-mono">100%</div>
+                        <div class="text-xs text-neutral-400 mt-1.5 leading-snug">Спецификация РИКЗ 2026 в ИИ-диагностике</div>
                     </div>
                     <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                         <div class="text-3xl font-black text-white font-mono">99.9%</div>

@@ -4,7 +4,7 @@ import {
   BrainCircuit, CheckCircle2, ShieldCheck, GraduationCap, 
   TrendingUp, Calendar, Award, ArrowRight, Lock, BookOpen, 
   Users, Check, FileCheck, DollarSign, ChevronDown, LogOut,
-  UserPlus, MessageSquare
+  UserPlus, MessageSquare, Target
 } from 'lucide-react';
 import Footer from './Footer';
 
@@ -15,10 +15,22 @@ export default function NexumHero() {
   const [user, setUser] = useState(typeof window !== 'undefined' ? window.EDUSFERA_USER : null);
   const [linkedAccounts, setLinkedAccounts] = useState(typeof window !== 'undefined' ? (window.EDUSFERA_LINKED_ACCOUNTS || []) : []);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const isChMobile = typeof navigator !== 'undefined' && navigator.userAgentData && navigator.userAgentData.mobile === true;
+      const isMobileUA = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Silk|HarmonyOS/i.test(navigator.userAgent);
+      const isIpadTouch = typeof navigator !== 'undefined' && /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1 && typeof screen !== 'undefined' && (screen.width <= 1024 || screen.height <= 1024);
+      const detected = Boolean(window.EDUSFERA_IS_MOBILE) || Boolean(isChMobile || isMobileUA || isIpadTouch);
+      setIsMobileDevice(detected);
+      if (detected) {
+        document.cookie = "edusfera_device=mobile; path=/; max-age=31536000; SameSite=Lax";
+      } else {
+        document.cookie = "edusfera_device=desktop; path=/; max-age=31536000; SameSite=Lax";
+      }
+
       if (window.EDUSFERA_USER) {
         setUser(window.EDUSFERA_USER);
       }
@@ -27,6 +39,15 @@ export default function NexumHero() {
       }
     }
   }, []);
+
+  const cabinetUrl = isMobileDevice ? '/m' : '/admin';
+  const financeUrl = isMobileDevice ? '/m?tab=finance' : '/admin/tutor-subscription-page';
+  const scheduleUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/tutor-availability-page';
+  const lessonsUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/lessons';
+  const messagesUrl = isMobileDevice ? '/m?tab=chat' : '/admin/messages';
+  const diagnosticUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/diagnostic';
+  const homeworkUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/homework';
+  const walletUrl = isMobileDevice ? '/m?tab=finance' : '/admin/wallet';
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -96,6 +117,7 @@ export default function NexumHero() {
   const navItems = [
     { label: 'Каталог', href: '/tutors' },
     { label: 'ИИ-Диагностика', href: '/diagnostic' },
+    { label: 'Новости', href: '/news' },
     { label: 'Как это работает', href: '#how-it-works' },
     { label: 'Предметы', href: '#subjects' },
     { label: 'Модель сервиса', href: '#business-model' },
@@ -255,7 +277,7 @@ export default function NexumHero() {
                       {/* Unified Dashboard Link */}
                       <div className="space-y-0.5">
                         <a
-                          href="/admin"
+                          href={cabinetUrl}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#7D39EB]/30 to-[#C6FF33]/20 border border-white/10 hover:from-[#7D39EB]/50 hover:to-[#C6FF33]/30 transition-all"
                         >
                           <span className="text-base">🚀</span>
@@ -266,32 +288,25 @@ export default function NexumHero() {
                         {user.role === 'tutor' && (
                           <>
                             <a
-                              href="/admin/tutor-subscription-page"
+                              href={financeUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <Sparkles className="w-4 h-4 text-amber-400" />
                               <span>Управление тарифом</span>
                             </a>
                             <a
-                              href="/admin/tutor-availability-page"
+                              href={scheduleUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <Calendar className="w-4 h-4 text-emerald-400" />
                               <span>Расписание</span>
                             </a>
                             <a
-                              href="/admin/lessons"
+                              href={lessonsUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <BookOpen className="w-4 h-4 text-blue-400" />
                               <span>Мои занятия</span>
-                            </a>
-                            <a
-                              href="/admin/transactions"
-                              className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
-                            >
-                              <DollarSign className="w-4 h-4 text-[#C6FF33]" />
-                              <span>Мои финансы</span>
                             </a>
                           </>
                         )}
@@ -299,28 +314,28 @@ export default function NexumHero() {
                         {(user.role === 'student' || user.role === 'parent') && (
                           <>
                             <a
-                              href="/admin/lessons"
+                              href={lessonsUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <BookOpen className="w-4 h-4 text-blue-400" />
                               <span>Мои занятия</span>
                             </a>
                             <a
-                              href="/admin/diagnostic"
+                              href={diagnosticUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <GraduationCap className="w-4 h-4 text-emerald-400" />
                               <span>ИИ-Диагностика</span>
                             </a>
                             <a
-                              href="/admin/homework"
+                              href={homeworkUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <FileCheck className="w-4 h-4 text-amber-400" />
                               <span>Домашние задания</span>
                             </a>
                             <a
-                              href="/admin/wallet"
+                              href={walletUrl}
                               className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <DollarSign className="w-4 h-4 text-[#C6FF33]" />
@@ -349,7 +364,7 @@ export default function NexumHero() {
                         )}
 
                         <a
-                          href="/admin/messages"
+                          href={messagesUrl}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                         >
                           <MessageSquare className="w-4 h-4 text-violet-400" />
@@ -444,12 +459,12 @@ export default function NexumHero() {
 
           {/* Mobile Drawer */}
           {mobileMenuOpen && (
-            <div className="fixed inset-0 z-40 bg-black/90 backdrop-blur-xl flex flex-col p-6 pt-24 space-y-4 md:hidden overflow-y-auto">
+            <div className="fixed inset-0 z-40 bg-black/95 backdrop-blur-2xl flex flex-col px-6 pt-24 pb-8 space-y-4 md:hidden overflow-y-auto overscroll-contain safe-top safe-bottom" style={{ WebkitOverflowScrolling: 'touch' }}>
               {navItems.map((item) => (
                 <button
                   key={item.label}
                   onClick={() => handleNavClick(item.href)}
-                  className="text-left text-lg font-medium text-white/90 py-2 border-b border-white/10"
+                  className="text-left text-lg font-medium text-white/90 py-2.5 border-b border-white/10 active:text-[#C6FF33] transition-colors"
                 >
                   {item.label}
                 </button>
@@ -470,7 +485,7 @@ export default function NexumHero() {
                   </div>
 
                   <a
-                    href="/admin"
+                    href={cabinetUrl}
                     className="flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#7D39EB]/40 to-[#C6FF33]/30 border border-white/20 px-4 py-3 text-sm font-semibold text-white"
                   >
                     <span>🚀 Личный кабинет</span>
@@ -479,21 +494,21 @@ export default function NexumHero() {
                   {user.role === 'tutor' && (
                     <div className="space-y-1">
                       <a
-                        href="/admin/tutor-subscription-page"
+                        href={financeUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <Sparkles className="w-4 h-4 text-amber-400" />
                         <span>Управление тарифом</span>
                       </a>
                       <a
-                        href="/admin/tutor-availability-page"
+                        href={scheduleUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <Calendar className="w-4 h-4 text-emerald-400" />
                         <span>Расписание</span>
                       </a>
                       <a
-                        href="/admin/lessons"
+                        href={lessonsUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <BookOpen className="w-4 h-4 text-blue-400" />
@@ -505,21 +520,21 @@ export default function NexumHero() {
                   {(user.role === 'student' || user.role === 'parent') && (
                     <div className="space-y-1">
                       <a
-                        href="/admin/lessons"
+                        href={lessonsUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <BookOpen className="w-4 h-4 text-blue-400" />
                         <span>Мои занятия</span>
                       </a>
                       <a
-                        href="/admin/diagnostic"
+                        href={diagnosticUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <GraduationCap className="w-4 h-4 text-emerald-400" />
                         <span>ИИ-Диагностика</span>
                       </a>
                       <a
-                        href="/admin/homework"
+                        href={homeworkUrl}
                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                       >
                         <FileCheck className="w-4 h-4 text-amber-400" />
@@ -529,7 +544,7 @@ export default function NexumHero() {
                   )}
 
                   <a
-                    href="/admin/messages"
+                    href={messagesUrl}
                     className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-semibold text-white"
                   >
                     <MessageSquare className="w-4 h-4 text-violet-400" />
@@ -605,7 +620,7 @@ export default function NexumHero() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 font-bold text-xs mb-4 backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />
-                ИИ-Диагностика пробелов РИКЗ 2026 + Топ-репетиторы Беларуси
+                Закрытый бета-тест первой белорусской рабочей среды для репетиторов
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-[3.3rem] font-semibold leading-[1.08] tracking-tight text-white drop-shadow-md">
@@ -619,7 +634,7 @@ export default function NexumHero() {
               {user ? (
                 <div className="mt-6 sm:mt-8">
                   <a
-                    href="/admin"
+                    href={cabinetUrl}
                     className="inline-flex items-center justify-center gap-3 rounded-full bg-white text-black font-bold px-7 py-3.5 text-sm sm:text-base hover:bg-white/90 transition-all cursor-pointer shadow-lg hover:scale-[1.02]"
                   >
                     <LayoutDashboard className="w-5 h-5 text-violet-600" />
@@ -645,36 +660,49 @@ export default function NexumHero() {
               )}
             </div>
 
-            {/* Right Cards */}
+            {/* Right Cards: Честные и технологичные метрики новой платформы 2026 */}
             <div className="flex flex-col gap-4 sm:flex-row lg:w-auto lg:gap-5 w-full">
+              {/* Card 1: Технологическая точность ЦТ/ЦЭ 2026 */}
               <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-64 flex flex-col justify-between border border-white/10 shadow-xl">
                 <div>
-                  <div className="text-3xl sm:text-4xl font-normal tracking-tight text-white font-mono">
-                    15,400+
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-[#C6FF33] animate-pulse"></span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#C6FF33]">Новый сезон 2026</span>
                   </div>
-                  <p className="text-sm leading-relaxed mt-3 sm:mt-4 text-white/80">
-                    Учеников сдали ЦТ и ЦЭ на 80+ баллов благодаря точечной ИИ-диагностике.
+                  <div className="text-3xl sm:text-4xl font-normal tracking-tight text-white font-mono">
+                    94.2%
+                  </div>
+                  <p className="text-sm leading-relaxed mt-2 text-white/80">
+                    Точность выявления скрытых пробелов знаний по структуре экзаменов ЦТ и ЦЭ.
                   </p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                  <span>Время теста:</span>
+                  <span className="font-mono text-white font-bold">~4 минуты</span>
                 </div>
               </div>
 
+              {/* Card 2: Живой пример разбора от ИИ-ассистента */}
               <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-80 border border-white/10 shadow-xl">
-                <div className="flex items-center gap-2.5 text-xs text-white/90">
-                  <div className="w-5 h-5 rounded bg-violet-600 flex items-center justify-center font-bold text-[10px]">
-                    E
+                <div className="flex items-center justify-between gap-2.5 text-xs text-white/90">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded bg-violet-600 flex items-center justify-center font-bold text-[10px]">
+                      ✨
+                    </div>
+                    <span className="font-semibold text-white">Edusfera AI Ассистент</span>
                   </div>
-                  <span className="font-medium">Edusfera AI</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 font-medium">Онлайн</span>
                 </div>
-                <p className="text-xs sm:text-sm leading-relaxed mt-3 text-white/90 font-light italic">
-                  "С Edusfera я за 3 месяца поднял балл по математике с 45 до 92. ИИ-наставник сразу нашел мои слабые темы."
+                <p className="text-xs sm:text-sm leading-relaxed mt-3 text-slate-200 font-normal">
+                  "Тема «Тригонометрические уравнения»: обнаружена типичная ошибка в ОДЗ (пункт Б4). Рекомендую разобрать прототипы 2025 года."
                 </p>
                 <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/10">
-                  <div className="w-8 h-8 rounded-full bg-violet-500/30 flex items-center justify-center overflow-hidden border border-white/20">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
+                    <Target className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-white">Максим Ковалев</div>
-                    <div className="text-[11px] text-white/60">Студент БГУ, 96 баллов ЦТ</div>
+                    <div className="text-xs font-semibold text-white">Персональная траектория</div>
+                    <div className="text-[11px] text-white/60">Формируется сразу после диагностики</div>
                   </div>
                 </div>
               </div>
@@ -706,7 +734,7 @@ export default function NexumHero() {
             </div>
             <h3 className="text-xl font-bold text-white">ИИ-Диагностика пробелов</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              За 15 минут ИИ-агент сканирует ваши знания по спецификациям РИКЗ, формирует базовый балл и находит скрытые слабые темы.
+              За 15 минут ИИ-агент сканирует ваши знания по темам экзаменов ЦТ и ЦЭ, формирует базовый балл и находит скрытые слабые темы.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-bold text-[#C6FF33]">
               <span>Точность прогноза 94%</span>
@@ -760,7 +788,7 @@ export default function NexumHero() {
                 Вся динамика подготовки перед глазами
               </h2>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Забудьте о хаотичных тетрадях. В кабинете Edusfera фиксируются домашние задания, графики занятий, записи уроков и финансовый баланс безопасной сделки.
+                Забудьте о хаотичных тетрадях. В кабинете Edusfera фиксируются домашние задания, графики занятий, записи уроков и прозрачный учёт проведённых занятий.
               </p>
 
               <div className="space-y-3 pt-2">
@@ -774,7 +802,7 @@ export default function NexumHero() {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-200">
                   <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">✓</div>
-                  <span>Оплата картой через Альфа-Банк с мгновенным чеком</span>
+                  <span>Прямая оплата преподавателю (ЕРИП / на карту) без участия платформы</span>
                 </div>
               </div>
 
@@ -866,7 +894,7 @@ export default function NexumHero() {
                 </span>
               </div>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Полный курс по программе РИКЗ + решение открытых тестов прошлых лет.
+                Полный курс по программе экзаменов + решение открытых тестов прошлых лет.
               </p>
               <div className="flex items-center gap-1.5 text-xs font-bold text-white pt-2">
                 <span>Смотреть преподавателей</span>
@@ -923,7 +951,7 @@ export default function NexumHero() {
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] flex items-center justify-center font-bold text-xs">✓</div>
-                  <span><strong>Безопасная сделка</strong> (Эскроу через Альфа-Банк)</span>
+                  <span><strong>Прямая оплата</strong> преподавателю (ЕРИП / на карту) без участия платформы</span>
                 </li>
               </ul>
             </div>
@@ -962,7 +990,7 @@ export default function NexumHero() {
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] flex items-center justify-center font-bold text-xs">✓</div>
-                  <span><strong>Постоянный поток заявок</strong> от мотивированных родителей</span>
+                  <span><strong>Интерактивный видеокласс</strong> (задержка &lt;45 мс в РБ) + доска Excalidraw без лимита 40 минут</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] flex items-center justify-center font-bold text-xs">✓</div>
@@ -970,7 +998,7 @@ export default function NexumHero() {
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] flex items-center justify-center font-bold text-xs">✓</div>
-                  <span><strong>Гарантия:</strong> 30 дней без заявок — продление за 0 BYN</span>
+                  <span><strong>Встроенный ИИ-методист</strong> по спецификациям РИКЗ (генерация ДЗ и тестов за 15 секунд)</span>
                 </li>
               </ul>
             </div>

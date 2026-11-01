@@ -367,4 +367,143 @@ class AiCopilotControllerTest extends TestCase
         $this->assertStringContainsString('Пошаговое решение', (string) $response->json('result'));
         $this->assertStringContainsString('Ответ: 4', (string) $response->json('result'));
     }
+
+    public function test_tutor_can_execute_homework_create_action(): void
+    {
+        $tutor = User::factory()->create(['role' => UserRole::Tutor]);
+        $student = User::factory()->create(['role' => UserRole::Student]);
+
+        $this->actingAs($tutor);
+
+        $response = $this->postJson('/admin/ai-copilot/action', [
+            'action' => 'homework.create',
+            'payload' => [
+                'student_id' => $student->id,
+                'title' => 'Тест по тригонометрии',
+                'instructions' => 'Решить задания 1-5',
+                'due_days' => 2,
+            ],
+        ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $this->assertDatabaseHas('homework_assignments', [
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'title' => 'Тест по тригонометрии',
+            'source' => 'ai_agent',
+        ]);
+    }
+
+    public function test_tutor_can_get_students_list(): void
+    {
+        $tutor = User::factory()->create(['role' => UserRole::Tutor]);
+        $student = User::factory()->create(['role' => UserRole::Student, 'name' => 'Александр Тест']);
+
+        Lesson::create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'start_time' => now()->addDay(),
+            'end_time' => now()->addDay()->addHour(),
+            'duration_minutes' => 60,
+            'price' => 35.00,
+            'platform_commission' => 4.20,
+            'net_amount' => 30.80,
+            'status' => Lesson::STATUS_CONFIRMED,
+        ]);
+
+        $this->actingAs($tutor);
+
+        $response = $this->getJson('/admin/ai-copilot/students');
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'id' => $student->id,
+            'name' => 'Александр Тест',
+        ]);
+    }
+
+    public function test_tutor_can_generate_quick_homework_and_send_to_chat(): void
+    {
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                ['text' => "🎯 Домашнее задание: Квадратные уравнения\n1. Решить x^2 - 4 = 0\n2. Решить x^2 - 5x + 6 = 0\n3. Найти дискриминант\n4. Задача с параметром\n5. Сложная задача\nОтветы: 1) +-2; 2) 2, 3"],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $tutor = User::factory()->create(['role' => UserRole::Tutor]);
+        $student = User::factory()->create(['role' => UserRole::Student, 'name' => 'Алексей Ученик']);
+
+        \App\Domain\Subscription\Models\Subscription::create([
+            'tutor_id' => $tutor->id,
+            'plan' => \App\Domain\Subscription\Enums\SubscriptionPlan::PRO,
+            'status' => \App\Domain\Subscription\Enums\SubscriptionStatus::ACTIVE,
+            'starts_at' => now(),
+            'renews_at' => now()->addMonth(),
+        ]);
+
+        $lesson = Lesson::create([
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'subject' => 'Математика',
+            'start_time' => now()->subHour(),
+            'end_time' => now(),
+            'duration_minutes' => 60,
+            'price' => 40.00,
+            'platform_commission' => 4.00,
+            'net_amount' => 36.00,
+            'status' => Lesson::STATUS_CONFIRMED,
+        ]);
+
+        $this->actingAs($tutor);
+
+        // Step 1: Generate
+        $genResponse = $this->postJson('/admin/ai-copilot/quick-homework', [
+            'lesson_id' => $lesson->id,
+            'custom_topic' => 'Квадратные уравнения',
+        ]);
+
+        $genResponse->assertOk();
+        $genResponse->assertJson([
+            'success' => true,
+            'topic' => 'Квадратные уравнения',
+        ]);
+        $this->assertStringContainsString('Квадратные уравнения', $genResponse->json('homework'));
+
+        // Step 2: Send to chat
+        $sendResponse = $this->postJson('/admin/ai-copilot/quick-homework', [
+            'lesson_id' => $lesson->id,
+            'custom_topic' => 'Квадратные уравнения',
+            'send_to_chat' => true,
+            'edited_text' => '1. Решить x^2 - 4 = 0\n2. Решить x^2 - 5x + 6 = 0',
+        ]);
+
+        $sendResponse->assertOk();
+        $sendResponse->assertJson([
+            'success' => true,
+            'sent_to_chat' => true,
+        ]);
+
+        $this->assertDatabaseHas('homework_assignments', [
+            'lesson_id' => $lesson->id,
+            'tutor_id' => $tutor->id,
+            'student_id' => $student->id,
+            'source' => 'maya_quick_homework',
+        ]);
+
+        $this->assertDatabaseHas('messages', [
+            'sender_id' => $tutor->id,
+        ]);
+    }
 }
+

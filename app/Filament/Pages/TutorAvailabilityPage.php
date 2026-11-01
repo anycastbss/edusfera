@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\DB;
 
 class TutorAvailabilityPage extends Page
 {
@@ -16,9 +17,9 @@ class TutorAvailabilityPage extends Page
 
     protected static string $view = 'filament.pages.tutor-availability-page';
 
-    protected static ?string $navigationLabel = 'Рабочие часы';
+    protected static ?string $navigationLabel = 'Свободные часы';
 
-    protected static ?string $title = 'Рабочие часы и слоты для записи';
+    protected static ?string $title = 'Свободные часы';
 
     protected static ?int $navigationSort = 3;
 
@@ -82,16 +83,18 @@ class TutorAvailabilityPage extends Page
             }
         })->validate();
 
-        TutorAvailability::query()->where('user_id', auth()->id())->delete();
+        DB::transaction(function (): void {
+            TutorAvailability::query()->where('user_id', auth()->id())->delete();
 
-        collect($this->availability)->each(function (array $row): void {
-            TutorAvailability::query()->create([
-                'user_id' => auth()->id(),
-                'day_of_week' => (int) $row['day_of_week'],
-                'start_time' => $row['start_time'],
-                'end_time' => $row['end_time'],
-                'is_active' => (bool) $row['is_active'],
-            ]);
+            collect($this->availability)->each(function (array $row): void {
+                TutorAvailability::query()->create([
+                    'user_id' => auth()->id(),
+                    'day_of_week' => (int) $row['day_of_week'],
+                    'start_time' => $row['start_time'],
+                    'end_time' => $row['end_time'],
+                    'is_active' => (bool) $row['is_active'],
+                ]);
+            });
         });
 
         Notification::make()
@@ -187,10 +190,11 @@ class TutorAvailabilityPage extends Page
                 if ($isActive) {
                     $cursor = CarbonImmutable::parse($date->format('Y-m-d').' '.$startTime, config('booking.display_timezone'));
                     $end = CarbonImmutable::parse($date->format('Y-m-d').' '.$endTime, config('booking.display_timezone'));
+                    $duration = (int) config('booking.slot_duration_minutes', 60);
 
-                    while ($cursor->lt($end)) {
+                    while ($cursor->addMinutes($duration)->lte($end)) {
                         $slots->push($cursor->format('H:i'));
-                        $cursor = $cursor->addHour();
+                        $cursor = $cursor->addMinutes($duration);
                     }
                 }
 
@@ -215,7 +219,7 @@ class TutorAvailabilityPage extends Page
         $user = auth()->user();
 
         return Filament::getCurrentPanel()?->getId() === 'admin'
-            && ($user?->isTutor() || $user?->isAdmin());
+            && (bool) $user?->isTutor();
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -223,12 +227,12 @@ class TutorAvailabilityPage extends Page
         $user = auth()->user();
 
         return Filament::getCurrentPanel()?->getId() === 'admin'
-            && ($user?->isTutor() || $user?->isAdmin());
+            && (bool) $user?->isTutor();
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Занятия';
+        return 'Уроки и ученики';
     }
 
     private function weekDays(): array

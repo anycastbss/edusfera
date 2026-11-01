@@ -57,9 +57,15 @@ final class ClassroomTokenService
             );
         }
 
-        if (in_array($lesson->status, [Lesson::STATUS_CANCELLED], true) || $lesson->payment_status === Lesson::PAYMENT_UNPAID) {
+        if ($lesson->status === Lesson::STATUS_CANCELLED) {
             throw new LessonAccessDeniedException(
-                "Cannot enter classroom for cancelled or unpaid lesson {$lessonId}."
+                "Cannot enter classroom for cancelled lesson {$lessonId}."
+            );
+        }
+
+        if (! in_array($lesson->status, [Lesson::STATUS_CONFIRMED, Lesson::STATUS_COMPLETED], true)) {
+            throw new LessonAccessDeniedException(
+                "Lesson {$lessonId} must be confirmed before entering classroom."
             );
         }
 

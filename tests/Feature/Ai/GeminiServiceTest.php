@@ -130,6 +130,8 @@ class GeminiServiceTest extends TestCase
             'status' => 'active',
             'starts_at' => now(),
             'current_period_end' => now()->addMonth(),
+            'ai_generations_used_this_month' => 10,
+            'ai_generations_period' => now()->format('Y-m'),
         ]);
 
         $this->actingAs($tutor);

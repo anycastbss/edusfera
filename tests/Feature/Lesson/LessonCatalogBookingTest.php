@@ -196,4 +196,56 @@ class LessonCatalogBookingTest extends TestCase
 
         Notification::assertSentTo($this->tutor, LessonBookedTutorNotification::class);
     }
+
+    public function test_student_can_book_after_browsing_catalog(): void
+    {
+        Notification::fake();
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->actingAs($this->student)->get(route('catalog'));
+        }
+
+        $slotFormatted = $this->bookingSlot->format('Y-m-d H:i');
+
+        $response = $this->actingAs($this->student)->post(route('tutors.book', $this->profile), [
+            'slot' => $slotFormatted,
+            'name' => 'Дмитрий Ученик',
+            'phone' => '+375294445566',
+            'package' => 'single',
+            'terms' => '1',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('tutors.show', [
+            'tutor' => $this->profile,
+            'date' => $this->bookingSlot->format('Y-m-d'),
+        ]));
+    }
+
+    public function test_booking_throttling_redirects_back_with_friendly_error(): void
+    {
+        Notification::fake();
+
+        // Simulate exceeding booking rate limit
+        $limiterKey = md5('booking'.$this->student->id);
+        for ($i = 0; $i < 105; $i++) {
+            \Illuminate\Support\Facades\RateLimiter::hit($limiterKey);
+        }
+
+        $slotFormatted = $this->bookingSlot->format('Y-m-d H:i');
+
+        $response = $this->actingAs($this->student)
+            ->from(route('tutors.show', $this->profile))
+            ->post(route('tutors.book', $this->profile), [
+                'slot' => $slotFormatted,
+                'name' => 'Дмитрий Ученик',
+                'phone' => '+375294445566',
+                'package' => 'single',
+                'terms' => '1',
+            ]);
+
+        $response->assertRedirect(route('tutors.show', $this->profile));
+        $response->assertSessionHasErrors(['slot']);
+    }
 }
+

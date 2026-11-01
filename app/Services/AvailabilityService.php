@@ -22,6 +22,15 @@ class AvailabilityService
         string $endTime,
         ?int $excludeId = null,
     ): void {
+        $startTime = TutorAvailability::normalizeTimeString($startTime) ?? $startTime;
+        $endTime = TutorAvailability::normalizeTimeString($endTime) ?? $endTime;
+
+        if ($startTime >= $endTime) {
+            throw ValidationException::withMessages([
+                'end_time' => 'Время окончания должно быть позже времени начала.',
+            ]);
+        }
+
         $query = TutorAvailability::query()
             ->where('user_id', $userId)
             ->where('day_of_week', $dayOfWeek)

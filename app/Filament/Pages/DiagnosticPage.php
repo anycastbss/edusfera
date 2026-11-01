@@ -62,9 +62,13 @@ class DiagnosticPage extends Page
 
     public static function canAccess(): bool
     {
+        if (\Filament\Facades\Filament::getCurrentPanel()?->getId() === 'site-admin') {
+            return false;
+        }
+
         $user = auth()->user();
 
-        return $user && ($user->isStudent() || $user->isParent() || $user->isAdmin());
+        return $user && ($user->isStudent() || $user->isParent());
     }
 
     public static function getNavigationGroup(): ?string

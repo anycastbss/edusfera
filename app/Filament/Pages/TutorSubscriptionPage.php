@@ -86,10 +86,19 @@ class TutorSubscriptionPage extends Page
 
     public static function canAccess(): bool
     {
+        if (\Filament\Facades\Filament::getCurrentPanel()?->getId() === 'site-admin') {
+            return false;
+        }
+
         /** @var User|null $user */
         $user = Auth::user();
 
-        return $user !== null && ($user->isTutor() || $user->isAdmin());
+        return $user !== null && $user->isTutor();
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Профиль и документы';
     }
 
     public function mount(SubscriptionService $service, ?string $orderId = null): void
@@ -115,7 +124,15 @@ class TutorSubscriptionPage extends Page
         $this->subscription = Subscription::where('tutor_id', $user->id)->first();
 
         if (! $this->subscription) {
-            $this->subscription = $service->startTrial($user, SubscriptionPlan::PRO);
+            $this->subscription = Subscription::create([
+                'tutor_id' => $user->id,
+                'plan' => SubscriptionPlan::PRO,
+                'status' => SubscriptionStatus::EXPIRED,
+                'is_founder' => false,
+                'current_period_starts_at' => now(),
+                'current_period_ends_at' => now(),
+                'is_onboarded' => true,
+            ]);
         }
 
         $this->invoices = SubscriptionInvoice::where('subscription_id', $this->subscription->id)
@@ -293,6 +310,30 @@ class TutorSubscriptionPage extends Page
             ->doesntExist();
     }
 
+    public function getActivePromoInfoProperty(): ?array
+    {
+        if (! $this->subscription) {
+            return null;
+        }
+
+        $invoice = SubscriptionInvoice::where('subscription_id', $this->subscription->id)
+            ->where('status', InvoiceStatus::PAID)
+            ->where(function ($q) {
+                $q->whereNotNull('promo_code_id')
+                    ->orWhere('payment_method', 'promo');
+            })
+            ->latest()
+            ->first();
+
+        if (! $invoice) {
+            return null;
+        }
+
+        $code = $invoice->promoCode?->code ?? ($invoice->payload['promo_code'] ?? null);
+
+        return $code ? ['code' => $code, 'invoice' => $invoice] : null;
+    }
+
     public function openPaymentModal(string $planCode): void
     {
         $this->checkoutPlanCode = $planCode;
@@ -317,7 +358,8 @@ class TutorSubscriptionPage extends Page
         $this->promoSuccessMessage = null;
 
         try {
-            $code = trim((string) $this->promoCode);
+            $code = strtoupper(trim((string) $this->promoCode));
+            $this->promoCode = $code;
             if (empty($code)) {
                 $this->promoErrorMessage = 'Введите промокод.';
 
@@ -633,44 +675,19 @@ class TutorSubscriptionPage extends Page
     }
 
     /**
-     * Confirm trial plan during onboarding and proceed to the admin dashboard.
+     * Confirm plan during onboarding or proceed to payment modal.
      */
     public function activateTrialAndStart(?string $planName = null, ?SubscriptionService $service = null): void
     {
-        $user = Auth::user();
-        if (! $user) {
+        if ($this->subscription && $this->subscription->isActive()) {
+            $this->subscription->update(['is_onboarded' => true]);
+            session()->forget('subscription_required');
+            $this->redirect('/admin');
+
             return;
         }
 
-        $service = $service ?? app(SubscriptionService::class);
-        $plan = ! empty($planName) ? (SubscriptionPlan::tryFrom($planName) ?? SubscriptionPlan::PRO) : SubscriptionPlan::PRO;
-        $trialDays = $plan->trialDays();
-        $now = CarbonImmutable::now();
-
-        if (! $this->subscription) {
-            $this->subscription = $service->startTrial($user, $plan);
-        } else {
-            $this->subscription->update([
-                'plan' => $plan,
-                'status' => SubscriptionStatus::TRIAL,
-                'trial_ends_at' => $now->addDays($trialDays),
-                'current_period_starts_at' => $now,
-                'current_period_ends_at' => $now->addDays($trialDays),
-            ]);
-        }
-
-        $this->subscription->is_onboarded = true;
-        $this->subscription->save();
-
-        session()->forget('subscription_required');
-
-        Notification::make()
-            ->title('Пробный период активирован!')
-            ->body('Тариф «'.$this->subscription->plan->title().'» ('.$trialDays.' '.trans_choice('день|дня|дней', $trialDays).' бесплатно) активирован. Добро пожаловать!')
-            ->success()
-            ->send();
-
-        $this->redirect('/admin');
+        $this->openPaymentModal($planName ?: 'pro');
     }
 
     public function closeCardModal(): void

@@ -99,8 +99,11 @@
                     </div>
 
                     <div class="student-spotlight-details">
-                        <div class="student-tutor-avatar-lg">
-                            {{ $tutorInitial }}
+                        <div class="student-tutor-avatar-wrap">
+                            <div class="student-tutor-avatar-lg">
+                                {{ $tutorInitial }}
+                            </div>
+                            <span class="student-tutor-online-badge" title="Преподаватель на связи"></span>
                         </div>
                         <div class="student-spotlight-info">
                             <h3>{{ $subject }}</h3>
@@ -109,16 +112,16 @@
                                 <span>•</span>
                                 <span>🕒 {{ $nextLesson->start_time->translatedFormat('j F (D), H:i') }} – {{ $nextLesson->end_time->format('H:i') }}</span>
                                 @if(($nextLesson->payment_status ?? '') === \App\Models\Lesson::PAYMENT_PAID)
-                                    <span class="student-status-badge student-status-badge--paid">✓ Согласовано</span>
+                                    <span class="student-status-badge student-status-badge--paid">✓✓ Согласовано</span>
                                 @else
-                                    <span class="student-status-badge student-status-badge--unpaid">Запланирован</span>
+                                    <span class="student-status-badge student-status-badge--unpaid">⏳ Запланирован</span>
                                 @endif
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     @if($isLiveNow || $meetingJoinAvailable)
                         <a href="{{ $classroomUrl }}" target="_blank" class="student-spotlight-cta student-spotlight-cta--live">
                             <span>🚀</span>
@@ -131,28 +134,54 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                         </a>
                     @endif
+
+                    @if($tutor)
+                        <a href="/admin/messages?user={{ $tutor->id }}" class="student-chip-btn" style="padding: 11px 16px; border-radius: 14px; font-weight: 700;" title="Написать преподавателю">
+                            <span>💬</span>
+                            <span>Чат</span>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
     @else
         <div class="student-spotlight-card student-spotlight-card--empty">
-            <div style="font-size: 36px; margin-bottom: 8px;">✨</div>
-            <h3 style="margin: 0 0 6px; font-size: 1.2rem; font-weight: 800; color: var(--stu-text-main);">
-                Готовы к новому уроку?
-            </h3>
-            <p style="margin: 0 auto 18px; font-size: 0.9rem; color: var(--stu-text-muted); max-width: 520px; line-height: 1.5;">
-                Выберите проверенного репетитора для подготовки к ЦТ/ЦЭ или школьной программе, либо начните со стартовой диагностики знаний.
-            </p>
-            <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-                <a href="/tutors" class="student-chip-btn student-chip-btn--primary" style="padding: 10px 20px; font-size: 14px;">
-                    <span>🔍</span>
-                    <span>Выбрать репетитора в каталоге</span>
-                </a>
-                <a href="/admin/diagnostic" class="student-chip-btn" style="padding: 10px 18px; font-size: 14px;">
-                    <span>🎯</span>
-                    <span>Пройти диагностику</span>
-                </a>
-            </div>
+            <div style="font-size: 36px; margin-bottom: 8px;">🎯</div>
+            @if($primaryGoal)
+                <h3 style="margin: 0 0 6px; font-size: 1.2rem; font-weight: 800; color: var(--stu-text-main);">
+                    Траектория сформирована: {{ $primaryGoal->subject }}
+                </h3>
+                <p style="margin: 0 auto 18px; font-size: 0.9rem; color: var(--stu-text-muted); max-width: 520px; line-height: 1.5;">
+                    Ваша стартовая цель — <strong>{{ $primaryGoal->target_score ?? 85 }} баллов</strong>. Преподаватели увидят зафиксированные темы в вашем профиле и сразу составят персональный план.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="/tutors?subject={{ urlencode($primaryGoal->subject) }}" class="student-chip-btn student-chip-btn--primary" style="padding: 10px 20px; font-size: 14px;">
+                        <span>🔍</span>
+                        <span>Подобрать репетитора по предмету {{ $primaryGoal->subject }}</span>
+                    </a>
+                    <a href="/student/onboarding?edit=1" class="student-chip-btn" style="padding: 10px 18px; font-size: 14px;" title="Изменить цель или предмет">
+                        <span>⚙️</span>
+                        <span>Настроить цель</span>
+                    </a>
+                </div>
+            @else
+                <h3 style="margin: 0 0 6px; font-size: 1.2rem; font-weight: 800; color: var(--stu-text-main);">
+                    Готовы к первому уроку?
+                </h3>
+                <p style="margin: 0 auto 18px; font-size: 0.9rem; color: var(--stu-text-muted); max-width: 520px; line-height: 1.5;">
+                    Настройте учебную цель и выберите проверенного репетитора для подготовки к ЦТ/ЦЭ или школьной программе.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="/student/onboarding?edit=1" class="student-chip-btn student-chip-btn--primary" style="padding: 10px 20px; font-size: 14px;">
+                        <span>🎯</span>
+                        <span>Настроить профиль и цель</span>
+                    </a>
+                    <a href="/tutors" class="student-chip-btn" style="padding: 10px 18px; font-size: 14px;">
+                        <span>🔍</span>
+                        <span>Каталог репетиторов</span>
+                    </a>
+                </div>
+            @endif
         </div>
     @endif
 

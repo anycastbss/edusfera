@@ -124,7 +124,7 @@ class TransactionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Финансы';
+        return 'Финансы и SaaS';
     }
 
     public static function shouldRegisterNavigation(): bool

@@ -84,6 +84,8 @@ Route::post('/api/auth/reset-password', [AuroraAuthController::class, 'resetPass
     ->middleware('throttle:15,1,reset_pass');
 Route::post('/api/subscription/init-alfa-sdk', [AuroraAuthController::class, 'initSubscriptionAlfaSdk'])
     ->middleware('throttle:15,1,alfa_sdk');
+Route::post('/api/user/switch-role', [AuroraAuthController::class, 'switchRole'])
+    ->middleware('auth');
 
 Route::get('/student/onboarding', [StudentOnboardingApiController::class, 'showOnboardingPage'])
     ->middleware(['web', 'auth'])

@@ -14,12 +14,20 @@ class NewsController extends Controller
      */
     public function index(Request $request)
     {
+        $category = $request->query('category');
+
         $articles = NewsArticle::query()
             ->published()
+            ->category($category)
             ->orderBy('published_at', 'desc')
-            ->paginate(9);
+            ->paginate(9)
+            ->withQueryString();
 
-        return view('news.index', compact('articles'));
+        $trainingCount = NewsArticle::query()->published()->where('category', NewsArticle::CATEGORY_TRAINING)->count();
+        $newsCount = NewsArticle::query()->published()->where('category', NewsArticle::CATEGORY_NEWS)->count();
+        $totalCount = NewsArticle::query()->published()->count();
+
+        return view('news.index', compact('articles', 'category', 'trainingCount', 'newsCount', 'totalCount'));
     }
 
     /**

@@ -23,6 +23,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +37,88 @@ class ClassroomController extends Controller
 {
     public function __construct(private readonly ClassroomService $classroomService) {}
 
+    public function testRoom(Request $request): View
+    {
+        $user = $request->user();
+        if (! $user) {
+            abort(401);
+        }
+
+        $lesson = Lesson::query()->firstOrCreate(
+            [
+                'tutor_id' => $user->id,
+                'notes' => 'Тестирование камеры, звука и интерактивной доски',
+            ],
+            [
+                'student_id' => $user->id,
+                'status' => Lesson::STATUS_CONFIRMED,
+                'start_time' => now()->subMinutes(5),
+                'end_time' => now()->addHours(2),
+                'duration_minutes' => 60,
+                'price' => 0.00,
+                'platform_commission' => 0.00,
+                'net_amount' => 0.00,
+                'payment_status' => Lesson::PAYMENT_PAID,
+            ]
+        );
+
+        return $this->show($lesson, $request);
+    }
+
     public function show(Lesson $lesson, Request $request): View
     {
         $user = $request->user();
 
+        // 1. One-click confirm by tutor or admin upon opening classroom
+        if ($lesson->status === Lesson::STATUS_PENDING && ($request->has('confirm') || $request->isMethod('post')) && ($user->id === $lesson->tutor_id || $user->isAdmin())) {
+            $lesson->update(['status' => Lesson::STATUS_CONFIRMED]);
+        }
+
+        // 2. Pending Lesson: Show friendly waiting view instead of raw 403
         if ($lesson->status === Lesson::STATUS_PENDING) {
-            abort(403, 'Занятие ожидает подтверждения репетитором. Сначала подтвердите заявку в панели управления.');
+            $lesson->loadMissing('tutor', 'student');
+            return view('classroom.waiting', [
+                'lesson' => $lesson,
+                'user' => $user,
+                'reason' => 'pending',
+                'isTutor' => ($user->id === $lesson->tutor_id || $user->isAdmin()),
+            ]);
+        }
+
+        // 3. Completed or Cancelled Lesson: Show informative ended view
+        if (in_array($lesson->status, [Lesson::STATUS_CANCELLED, Lesson::STATUS_COMPLETED], true)) {
+            $hasActiveSession = ClassroomSession::query()
+                ->where('lesson_id', $lesson->id)
+                ->whereIn('status', [ClassroomSession::STATUS_WAITING, ClassroomSession::STATUS_ACTIVE])
+                ->exists();
+            if (! $hasActiveSession) {
+                $lesson->loadMissing('tutor', 'student');
+                return view('classroom.waiting', [
+                    'lesson' => $lesson,
+                    'user' => $user,
+                    'reason' => 'ended',
+                    'isTutor' => ($user->id === $lesson->tutor_id || $user->isAdmin()),
+                ]);
+            }
+        }
+
+        // 4. Too early check (>2 hours before scheduled start)
+        if ($lesson->start_time) {
+            $earliest = $lesson->start_time->copy()->subHours(2);
+            $hasActiveSession = ClassroomSession::query()
+                ->where('lesson_id', $lesson->id)
+                ->whereIn('status', [ClassroomSession::STATUS_WAITING, ClassroomSession::STATUS_ACTIVE])
+                ->exists();
+
+            if (now()->isBefore($earliest) && ! $hasActiveSession && ! $user->isAdmin() && $user->id !== $lesson->tutor_id) {
+                $lesson->loadMissing('tutor', 'student');
+                return view('classroom.waiting', [
+                    'lesson' => $lesson,
+                    'user' => $user,
+                    'reason' => 'too_early',
+                    'isTutor' => false,
+                ]);
+            }
         }
 
         if (! $this->classroomService->canAccess($lesson, $user)) {
@@ -62,50 +139,24 @@ class ClassroomController extends Controller
 
         $lesson->loadMissing('tutor.tutorProfile', 'student');
 
-        $studentId = $lesson->student_id;
-
-        $goals = StudentGoal::query()
-            ->where('student_id', $studentId)
-            ->where('tutor_id', $lesson->tutor_id)
-            ->where('status', 'active')
-            ->latest('id')
-            ->get();
-
-        $progress = ProgressSnapshot::query()
-            ->where('student_id', $studentId)
-            ->where('tutor_id', $lesson->tutor_id)
-            ->latest('snapshot_date')
-            ->limit(5)
-            ->get();
-
-        $homework = HomeworkAssignment::query()
-            ->where('student_id', $studentId)
-            ->where('tutor_id', $lesson->tutor_id)
-            ->latest('id')
-            ->limit(10)
-            ->get();
-
-        $skillGaps = SkillGap::query()
-            ->where('student_id', $studentId)
-            ->where('status', 'open')
-            ->latest('id')
-            ->get();
+        $requestedRole = (string) $request->query('role');
+        $isTutor = ($user->id === $lesson->tutor_id || $user->isAdmin()) && ($requestedRole !== 'student');
+        $userRole = $isTutor ? 'tutor' : 'student';
 
         $liveKitService = app(LiveKitService::class);
         $liveKitConfigured = $liveKitService->isConfigured();
-        $liveKitToken = $liveKitConfigured ? $liveKitService->generateToken($lesson, $user) : null;
+        $liveKitToken = $liveKitConfigured ? $liveKitService->generateToken($lesson, $user, 7200, $userRole) : null;
         $liveKitWsUrl = $liveKitConfigured ? $liveKitService->getWsUrl() : null;
 
         $joinToken = substr(hash_hmac('sha256', 'classroom_join_'.$lesson->id, (string) config('app.key')), 0, 16);
         $studentInviteUrl = route('classroom.join', ['lesson' => $lesson->id, 'token' => $joinToken]);
 
-        $requestedRole = (string) $request->query('role');
-        $isTutor = ($user->id === $lesson->tutor_id || $user->isAdmin()) && ($requestedRole !== 'student');
-        $userRole = $isTutor ? 'tutor' : 'student';
-
         $jitsiSecret = substr(hash_hmac('sha256', 'jitsi_room_'.$lesson->id.'_'.$session->room_id, (string) config('app.key')), 0, 12);
         $jitsiRoomName = 'edusfera_'.$lesson->id.'_'.$jitsiSecret;
         $jitsiDomain = (string) config('classroom.jitsi_domain', 'meet.jit.si');
+
+        $tutorUser = $lesson->tutor;
+        $maxLessonDurationMinutes = $tutorUser ? app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->maxLessonDurationMinutes($tutorUser) : 60;
 
         return view('classroom.show', [
             'lesson' => $lesson,
@@ -120,15 +171,12 @@ class ClassroomController extends Controller
             'jitsiRoomName' => $jitsiRoomName,
             'studentInviteUrl' => $studentInviteUrl,
             'userRole' => $userRole,
-            'goals' => $goals,
-            'progress' => $progress,
-            'homework' => $homework,
-            'skillGaps' => $skillGaps,
             'aiChatHistory' => $session->meta['ai_chat_history'] ?? [],
+            'maxLessonDurationMinutes' => $maxLessonDurationMinutes,
         ]);
     }
 
-    public function join(Lesson $lesson, Request $request): RedirectResponse
+    public function join(Lesson $lesson, Request $request): Response|RedirectResponse
     {
         $expectedToken = substr(hash_hmac('sha256', 'classroom_join_'.$lesson->id, (string) config('app.key')), 0, 16);
         $providedToken = (string) $request->query('token');
@@ -137,24 +185,80 @@ class ClassroomController extends Controller
             abort(403, 'Недействительная ссылка приглашения на урок.');
         }
 
-        if ($lesson->status === Lesson::STATUS_CANCELLED) {
-            abort(403, 'Этот урок был отменен.');
-        }
-
         $student = $lesson->student;
         if (! $student) {
             abort(404, 'Ученик для данного урока не найден.');
         }
 
         $currentUser = $request->user();
-        if ($currentUser && ($currentUser->id === $lesson->tutor_id || $currentUser->isAdmin())) {
-            return redirect()->route('classroom.show', ['lesson' => $lesson, 'role' => 'student']);
+        if (! $currentUser) {
+            Auth::login($student, false);
+            $request->session()->regenerate();
+            $currentUser = $student;
         }
 
-        Auth::login($student, true);
-        $request->session()->regenerate();
+        if (in_array($lesson->status, [Lesson::STATUS_CANCELLED, Lesson::STATUS_COMPLETED], true)) {
+            $hasActiveSession = ClassroomSession::query()
+                ->where('lesson_id', $lesson->id)
+                ->whereIn('status', [ClassroomSession::STATUS_WAITING, ClassroomSession::STATUS_ACTIVE])
+                ->exists();
+            if (! $hasActiveSession) {
+                $lesson->loadMissing('tutor', 'student');
+                return response()->view('classroom.waiting', [
+                    'lesson' => $lesson,
+                    'user' => $currentUser,
+                    'reason' => 'ended',
+                    'isTutor' => false,
+                ]);
+            }
+        }
 
-        return redirect()->route('classroom.show', $lesson);
+        if ($lesson->status === Lesson::STATUS_PENDING) {
+            $lesson->loadMissing('tutor', 'student');
+            return response()->view('classroom.waiting', [
+                'lesson' => $lesson,
+                'user' => $currentUser,
+                'reason' => 'pending',
+                'isTutor' => ($currentUser->id === $lesson->tutor_id || $currentUser->isAdmin()),
+            ]);
+        }
+
+        if ($lesson->start_time) {
+            $earliest = $lesson->start_time->copy()->subHours(2);
+            $hasActiveSession = ClassroomSession::query()
+                ->where('lesson_id', $lesson->id)
+                ->whereIn('status', [ClassroomSession::STATUS_WAITING, ClassroomSession::STATUS_ACTIVE])
+                ->exists();
+
+            if (now()->isBefore($earliest) && ! $hasActiveSession && ! $currentUser->isAdmin() && $currentUser->id !== $lesson->tutor_id) {
+                $lesson->loadMissing('tutor', 'student');
+                return response()->view('classroom.waiting', [
+                    'lesson' => $lesson,
+                    'user' => $currentUser,
+                    'reason' => 'too_early',
+                    'isTutor' => false,
+                ]);
+            }
+        }
+
+        return redirect()->route('classroom.show', ['lesson' => $lesson, 'role' => 'student']);
+    }
+
+    public function status(Lesson $lesson, Request $request): JsonResponse
+    {
+        $hasActiveSession = ClassroomSession::query()
+            ->where('lesson_id', $lesson->id)
+            ->whereIn('status', [ClassroomSession::STATUS_WAITING, ClassroomSession::STATUS_ACTIVE])
+            ->exists();
+
+        $canEnter = in_array($lesson->status, [Lesson::STATUS_CONFIRMED, Lesson::STATUS_COMPLETED], true) || $hasActiveSession;
+
+        return response()->json([
+            'status' => $lesson->status instanceof \BackedEnum ? $lesson->status->value : $lesson->status,
+            'can_enter' => $canEnter,
+            'has_active_session' => $hasActiveSession,
+            'redirect_url' => route('classroom.show', $lesson),
+        ]);
     }
 
     public function end(Lesson $lesson, Request $request): RedirectResponse
@@ -606,12 +710,18 @@ class ClassroomController extends Controller
         }
 
         $validated = $request->validate([
-            'message' => ['required', 'string', 'max:2000'],
+            'message' => ['nullable', 'string', 'max:2000', 'required_without:prompt'],
+            'prompt' => ['nullable', 'string', 'max:2000'],
             'history' => ['nullable', 'array', 'max:30'],
             'history.*.role' => ['nullable', 'string', 'in:user,assistant,model'],
             'history.*.text' => ['nullable', 'string', 'max:3000'],
             'history.*.content' => ['nullable', 'string', 'max:3000'],
         ]);
+
+        $messageText = trim((string) ($validated['message'] ?? $validated['prompt'] ?? ''));
+        if ($messageText === '') {
+            return response()->json(['error' => 'Message is required'], 422);
+        }
 
         $lesson->loadMissing('tutor.tutorProfile', 'student');
 
@@ -623,7 +733,7 @@ class ClassroomController extends Controller
         $history = ! empty($validated['history']) ? $validated['history'] : $sessionHistory;
 
         $result = $aiService->chat(
-            $validated['message'],
+            $messageText,
             $session->room_id,
             $lesson,
             $user,
@@ -637,7 +747,7 @@ class ClassroomController extends Controller
         $sessionHistory[] = [
             'id' => $userMsgId,
             'role' => 'user',
-            'text' => $validated['message'],
+            'text' => $messageText,
             'timestamp' => now('UTC')->toIso8601String(),
         ];
 
@@ -695,7 +805,7 @@ class ClassroomController extends Controller
         }
 
         $validated = $request->validate([
-            'type' => ['required', 'string', 'in:offer,answer,candidate,candidates,hangup,ping,hello,ready,restart,screenshare-state,wb-action,wb_broadcast,chat-message'],
+            'type' => ['required', 'string', 'in:offer,answer,candidate,candidates,hangup,ping,hello,ready,restart,screenshare-state,wb-action,wb_broadcast,chat-message,media-state'],
             'payload' => ['nullable'],
             'client_id' => ['nullable', 'string', 'max:100'],
             'role' => ['nullable', 'string', 'in:tutor,student'],
@@ -714,7 +824,7 @@ class ClassroomController extends Controller
 
         $nowMs = (int) (microtime(true) * 1000);
         $clientId = $validated['client_id'] ?? $request->header('X-Client-ID') ?? ('user_'.$user->id);
-        $role = $validated['role'] ?? (($user->id === $lesson->tutor_id || $user->isAdmin()) ? 'tutor' : 'student');
+        $role = $validated['role'] ?? ($request->header('X-Client-Role')) ?? (($user->id === $lesson->tutor_id || $user->isAdmin()) ? 'tutor' : 'student');
 
         $newSignal = [
             'id' => (string) Str::uuid(),
@@ -796,10 +906,14 @@ class ClassroomController extends Controller
         $nowMs = (int) (microtime(true) * 1000);
 
         // Strict role resolution: tutor only listens to student, student only listens to tutor
-        // Respects role override when tutor/admin is testing student perspective via ?role=student
+        // Respects explicit role passed from client (query param or header) to support testing and multiple tabs
         $requestedRole = (string) ($request->query('role') ?? $request->header('X-Client-Role'));
-        $isTutorRole = ($user->id === $lesson->tutor_id || $user->isAdmin()) && ($requestedRole !== 'student');
-        $userRole = $isTutorRole ? 'tutor' : 'student';
+        if ($requestedRole === 'tutor' || $requestedRole === 'student') {
+            $userRole = $requestedRole;
+        } else {
+            $isTutorRole = ($user->id === $lesson->tutor_id || $user->isAdmin()) && ($requestedRole !== 'student');
+            $userRole = $isTutorRole ? 'tutor' : 'student';
+        }
         $expectedPeerRole = ($userRole === 'tutor') ? 'student' : 'tutor';
 
         $cacheKey = 'classroom_signals_'.$lesson->id;
@@ -819,13 +933,13 @@ class ClassroomController extends Controller
 
         // Return only signals from the counterpart participant
         $incoming = array_values(array_filter($signals, static function (array $item) use ($user, $clientId, $userRole, $expectedPeerRole, $sinceSeq, $minTimestamp): bool {
-            // 1. NEVER receive own signals by user ID
-            if ((int) ($item['sender_id'] ?? 0) === (int) $user->id) {
+            // 1. NEVER receive own signals by client ID
+            if (! empty($clientId) && ! empty($item['client_id']) && $item['client_id'] === $clientId) {
                 return false;
             }
 
-            // 2. NEVER receive own signals by client ID
-            if (! empty($clientId) && ! empty($item['client_id']) && $item['client_id'] === $clientId) {
+            // 2. NEVER receive own signals by user ID if client ID is matching or not specified
+            if ((int) ($item['sender_id'] ?? 0) === (int) $user->id && (empty($clientId) || empty($item['client_id']))) {
                 return false;
             }
 
@@ -910,10 +1024,17 @@ class ClassroomController extends Controller
             $request->session()->save();
         }
 
-        $elements = $request->input('elements', []);
-        $version = (int) $request->input('version', (int) (microtime(true) * 1000));
-        $clientId = (string) $request->input('client_id', '');
-        $isLocked = $request->has('is_locked') ? (bool) $request->input('is_locked') : null;
+        $validated = $request->validate([
+            'elements' => ['nullable', 'array', 'max:5000'],
+            'version' => ['nullable', 'numeric'],
+            'client_id' => ['nullable', 'string', 'max:100'],
+            'is_locked' => ['nullable', 'boolean'],
+        ]);
+
+        $elements = $validated['elements'] ?? [];
+        $version = (int) ($validated['version'] ?? (int) (microtime(true) * 1000));
+        $clientId = (string) ($validated['client_id'] ?? '');
+        $isLocked = isset($validated['is_locked']) ? (bool) $validated['is_locked'] : null;
 
         $cacheKey = 'classroom_wb_'.$lesson->id;
         $prev = Cache::get($cacheKey, []);

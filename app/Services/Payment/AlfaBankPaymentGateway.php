@@ -53,10 +53,10 @@ class AlfaBankPaymentGateway implements PaymentGatewayInterface
             $description = 'Пополнение баланса Edusfera (Пользователь #'.($data['user_id'] ?? 0).')';
             $orderNumber = 'wallet_'.($data['user_id'] ?? 0).'_'.time();
         } elseif ($isSubscription) {
-            $returnUrl = route('filament.admin.pages.tutor-subscription-page', ['payment' => 'success']);
-            $failUrl = route('filament.admin.pages.tutor-subscription-page', ['payment' => 'failed']);
-            $description = 'Оплата подписки Edusfera (Преподаватель #'.($data['user_id'] ?? 0).')';
-            $orderNumber = 'sub_'.($data['user_id'] ?? 0).'_'.time();
+            $returnUrl = $data['return_url'] ?? route('filament.admin.pages.tutor-subscription-page', ['payment' => 'success']);
+            $failUrl = $data['fail_url'] ?? route('filament.admin.pages.tutor-subscription-page', ['payment' => 'failed']);
+            $description = $data['description'] ?? ('Оплата подписки Edusfera (Преподаватель #'.($data['user_id'] ?? 0).')');
+            $orderNumber = $data['order_number'] ?? ('sub_'.($data['user_id'] ?? 0).'_'.time());
         } else {
             $lessonId = $data['lesson_id'] ?? 0;
             $returnUrl = route('checkout.success', ['lesson' => $lessonId]);

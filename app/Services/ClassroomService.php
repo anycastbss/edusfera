@@ -68,7 +68,7 @@ class ClassroomService
             return true;
         }
 
-        if (! in_array($user->id, [$lesson->tutor_id, $lesson->student_id], true)) {
+        if (! in_array($user->id, array_filter([$lesson->tutor_id, $lesson->student_id, $lesson->parent_id]), true)) {
             return false;
         }
 

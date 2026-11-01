@@ -49,6 +49,7 @@ return [
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'proxy' => env('GEMINI_PROXY'),
         'use_xbox_dns' => env('GEMINI_USE_XBOX_DNS', true),
+        'dns_servers' => env('GEMINI_DNS_SERVERS', '181.215.40.49,31.58.216.201'),
     ],
 
     'ledger' => [
@@ -63,8 +64,7 @@ return [
     ],
 
     'analytics' => [
-        'yandex_metrika_id' => env('YANDEX_METRIKA_ID', ''),
+        'yandex_metrika_id' => env('YANDEX_METRIKA_ID', '113978262'),
         'google_tag_id' => env('GOOGLE_TAG_ID', ''),
     ],
-
 ];

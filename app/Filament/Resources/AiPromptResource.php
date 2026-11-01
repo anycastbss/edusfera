@@ -117,7 +117,7 @@ class AiPromptResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Управление ИИ и Моделями';
+        return 'Управление платформой';
     }
 
     public static function shouldRegisterNavigation(): bool

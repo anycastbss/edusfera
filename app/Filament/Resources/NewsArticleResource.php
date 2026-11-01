@@ -45,6 +45,13 @@ class NewsArticleResource extends Resource
                             ->unique(table: 'news.news_articles', column: 'slug', ignoreRecord: true)
                             ->maxLength(255),
 
+                        Forms\Components\Select::make('category')
+                            ->label('Тема / Категория')
+                            ->options(NewsArticle::categories())
+                            ->default(NewsArticle::CATEGORY_TRAINING)
+                            ->required()
+                            ->columnSpanFull(),
+
                         Forms\Components\RichEditor::make('content')
                             ->label('Содержимое')
                             ->required()
@@ -94,6 +101,15 @@ class NewsArticleResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->wrap(),
+                Tables\Columns\TextColumn::make('category')
+                    ->label('Тема')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => NewsArticle::categories()[$state] ?? ($state ?: 'Общее'))
+                    ->color(fn (?string $state): string => match ($state) {
+                        NewsArticle::CATEGORY_TRAINING => 'success',
+                        NewsArticle::CATEGORY_NEWS => 'info',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -140,7 +156,7 @@ class NewsArticleResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Управление сайтом';
+        return 'Контент';
     }
 
     public static function shouldRegisterNavigation(): bool

@@ -16,14 +16,104 @@ import {
 } from 'lucide-react';
 import AiFormattedOutput from './AiFormattedOutput';
 
-const SUBJECTS = [
-    { id: 'Математика', label: 'Математика', icon: '📐', desc: 'Алгебра, геометрия, ЦТ/ЦЭ' },
-    { id: 'Физика', label: 'Физика', icon: '⚡', desc: 'Механика, оптика, законы' },
-    { id: 'Русский язык', label: 'Русский язык', icon: '📝', desc: 'Орфография, пунктуация' },
-    { id: 'Английский язык', label: 'Английский язык', icon: '🇬🇧', desc: 'Grammar, Lexis, CT' },
-    { id: 'Химия', label: 'Химия', icon: '🧪', desc: 'Реакции, формулы, задачи' },
-    { id: 'Биология', label: 'Биология', icon: '🧬', desc: 'Анатомия, генетика, ЦЭ' },
+export const SUBJECTS = [
+    { id: 'Математика', label: 'Математика', icon: '📐', desc: 'Алгебра, геометрия, экзамены' },
+    { id: 'Физика', label: 'Физика', icon: '⚡', desc: 'Механика, электродинамика, оптика' },
+    { id: 'Русский язык', label: 'Русский язык', icon: '📝', desc: 'Орфография, пунктуация, нормы' },
+    { id: 'Белорусский язык', label: 'Белорусский язык', icon: '🇧🇾', desc: 'Фанетыка, правапіс, сінтаксіс' },
+    { id: 'Английский язык', label: 'Английский язык', icon: '🇬🇧', desc: 'Grammar, vocabulary, speaking' },
+    { id: 'Химия', label: 'Химия', icon: '🧪', desc: 'Неорганика, органика, ОВР, расчеты' },
+    { id: 'Биология', label: 'Биология', icon: '🧬', desc: 'Генетика, анатомия, цитология' },
+    { id: 'История Беларуси', label: 'История Беларуси', icon: '🏛️', desc: 'Периоды, даты, термины, культура' },
+    { id: 'Обществоведение', label: 'Обществоведение', icon: '⚖️', desc: 'Право, экономика, социология' },
+    { id: 'Информатика', label: 'Информатика', icon: '💻', desc: 'Алгоритмы, Python, C++, базы данных' },
 ];
+
+export const SUBJECT_QUICK_TOPICS = {
+    'Математика': [
+        'Логарифмические неравенства с переменным основанием',
+        'Стереометрия: углы и расстояния в правильных пирамидах',
+        'Тригонометрические уравнения и отбор корней на окружности',
+        'Производная функции и геометрический смысл касательной',
+        'Текстовые задачи на движение и сплавы',
+    ],
+    'Физика': [
+        'Закон сохранения механической энергии и импульса',
+        'Кинематика: равноускоренное движение и баллистика',
+        'Законы постоянного тока: смешанное соединение проводников',
+        'Уравнение Менделеева-Клапейрона и изопроцессы',
+        'Электромагнитная индукция и закон Фарадея',
+    ],
+    'Русский язык': [
+        'Правописание Н и НН в различных частях речи',
+        'Правописание НЕ и НИ со всеми частями речи',
+        'Пунктуация в сложноподчиненных и бессоюзных предложениях',
+        'Слитное, дефисное и раздельное написание наречий',
+        'Обособленные члены предложения (причастные обороты)',
+    ],
+    'Белорусский язык': [
+        'Правапіс галосных О, Э, А, Я і пераход у ненаціскным становішчы',
+        'Правапіс прыстаўных і ўстаўных зычных і галосных',
+        'Складаназалежныя сказы і знакі прыпынку ў іх',
+        'Правапіс мяккага знака і апострафа',
+        'Правапіс вялікай і малой літар у складаных назвах',
+    ],
+    'Английский язык': [
+        'Conditionals 0, 1, 2, 3 and Mixed Conditionals',
+        'Phrasal Verbs & Dependent Prepositions in Context',
+        'Passive Voice & Impersonal Structures',
+        'Reported Speech and Sequence of Tenses',
+        'Modal Verbs for Deduction and Speculation',
+    ],
+    'Химия': [
+        'Электролитическая диссоциация и ОВР (электронный баланс)',
+        'Электролиз водных растворов и расплавов солей',
+        'Расчетные задачи на массовую долю и избыток/недостаток',
+        'Генетическая связь углеводородов и кислородсодержащих веществ',
+        'Химическое равновесие и принцип Ле Шателье',
+    ],
+    'Биология': [
+        'Молекулярная генетика: биосинтез белка (транскрипция, трансляция)',
+        'Законы Менделя и генетика пола (наследование признаков)',
+        'Кровеносная система и иммунитет человека',
+        'Фотосинтез: световая и темновая фазы, цикл Кальвина',
+        'Эволюция органического мира и факторы антропогенеза',
+    ],
+    'История Беларуси': [
+        'Становление государственности на белорусских землях (Полоцкое княжество)',
+        'Великое Княжество Литовское: государственное устройство и Статуты',
+        'Беларусь в составе Российской империи (реформы XIX века)',
+        'Беларусь в годы Великой Отечественной войны: партизанское движение',
+        'Общественно-политическое развитие Республики Беларусь',
+    ],
+    'Обществоведение': [
+        'Социальная структура общества и стратификация',
+        'Правовая система и основы конституционного права',
+        'Рыночная экономика, инфляция и налоговая система',
+        'Политическая система, институты власти и правовое государство',
+        'Познание, истина и духовная культура личности',
+    ],
+    'Информатика': [
+        'Алгоритмы сортировки и бинарный поиск на Python',
+        'Двоичное кодирование чисел и логические выражения',
+        'Динамическое программирование: классические задачи',
+        'Реляционные базы данных и базовые запросы SQL',
+        'Обработка строковых данных и списков на Python',
+    ],
+};
+
+export const SUBJECT_PLACEHOLDERS = {
+    'Математика': 'Например: Логарифмические неравенства с переменным основанием',
+    'Физика': 'Например: Закон сохранения энергии в механике',
+    'Русский язык': 'Например: Правописание Н и НН в суффиксах',
+    'Белорусский язык': 'Напрыклад: Правапіс галосных О, Э, А, Я',
+    'Английский язык': 'Например: Conditionals 0, 1, 2, 3 and Mixed',
+    'Химия': 'Например: Электролитическая диссоциация и ОВР',
+    'Биология': 'Например: Молекулярная генетика и синтез белка',
+    'История Беларуси': 'Например: Великое Княжество Литовское и Статуты',
+    'Обществоведение': 'Например: Социальная стратификация и мобильность',
+    'Информатика': 'Например: Динамическое программирование на Python',
+};
 
 const GRADES = [
     { 
@@ -61,14 +151,6 @@ const DURATIONS = [
     { value: '60 минут', label: '60 мин', sub: 'Стандарт' },
     { value: '90 минут', label: '90 мин', sub: 'Интенсив' },
     { value: '120 минут', label: '120 мин', sub: 'Пара' },
-];
-
-const QUICK_TOPICS = [
-    { label: 'Логарифмические неравенства с переменным основанием', subject: 'Математика' },
-    { label: 'Закон сохранения энергии в механике', subject: 'Физика' },
-    { label: 'Правописание НЕ и НИ с разными частями речи', subject: 'Русский язык' },
-    { label: 'Conditional Sentences (Type 1, 2, 3 and Mixed)', subject: 'Английский язык' },
-    { label: 'Электролитическая диссоциация и ОВР', subject: 'Химия' },
 ];
 
 export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = 'Математика', onOpenLibrary }) {
@@ -221,7 +303,7 @@ export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = '
                             className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 flex items-center gap-1 cursor-pointer"
                         >
                             <Sparkles className="w-3 h-3" />
-                            <span>Промпты ЦТ</span>
+                            <span>Каталог промптов</span>
                         </button>
                     </div>
 
@@ -230,7 +312,7 @@ export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = '
                             type="text"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            placeholder="Например: Логарифмические неравенства с переменным основанием"
+                            placeholder={SUBJECT_PLACEHOLDERS[subject] || 'Введите тему занятия...'}
                             className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 dark:bg-slate-800/90 text-xs px-3.5 py-3 font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#7D39EB] focus:ring-4 focus:ring-violet-500/10 transition-all"
                             required
                         />
@@ -245,23 +327,26 @@ export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = '
                         )}
                     </div>
 
-                    {/* Quick Preset Chips */}
+                    {/* Quick Preset Chips for Selected Subject */}
                     <div>
-                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                            Быстрый выбор темы:
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+                                Рекомендуемые темы ({subject}):
+                            </span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                            {QUICK_TOPICS.map((item, idx) => (
+                            {(SUBJECT_QUICK_TOPICS[subject] || SUBJECT_QUICK_TOPICS['Математика'] || []).map((topicItem, idx) => (
                                 <button
                                     key={idx}
                                     type="button"
-                                    onClick={() => {
-                                        setTopic(item.label);
-                                        setSubject(item.subject);
-                                    }}
-                                    className="text-[11px] px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-[#FAF8FF] dark:hover:bg-violet-950/40 text-slate-700 dark:text-slate-300 hover:text-[#7D39EB] dark:hover:text-violet-300 transition-all border border-slate-200/80 dark:border-slate-700 text-left font-medium cursor-pointer"
+                                    onClick={() => setTopic(topicItem)}
+                                    className={`text-[11px] px-2.5 py-1.5 rounded-xl transition-all border text-left font-medium cursor-pointer ${
+                                        topic === topicItem
+                                            ? 'bg-violet-100 dark:bg-violet-950/80 text-[#7D39EB] dark:text-violet-300 border-[#7D39EB]'
+                                            : 'bg-slate-50 dark:bg-slate-800 hover:bg-[#FAF8FF] dark:hover:bg-violet-950/40 text-slate-700 dark:text-slate-300 hover:text-[#7D39EB] dark:hover:text-violet-300 border-slate-200/80 dark:border-slate-700'
+                                    }`}
                                 >
-                                    {item.label}
+                                    {topicItem}
                                 </button>
                             ))}
                         </div>

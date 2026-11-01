@@ -7,6 +7,7 @@ namespace App\Filament\Pages\Auth;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\MultiAccountService;
+use App\Traits\DetectsMobileDevice;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -20,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class Login extends \Filament\Pages\Auth\Login
 {
+    use DetectsMobileDevice;
+
     protected static string $view = 'filament.admin.pages.auth.login';
 
     protected static string $layout = 'filament-panels::components.layout.base';
@@ -27,6 +30,11 @@ class Login extends \Filament\Pages\Auth\Login
     public function mount(): void
     {
         parent::mount();
+
+        if ($this->isMobileDevice()) {
+            $this->redirect(route('login'), navigate: false);
+            return;
+        }
 
         $redirectTo = request()->query('redirect_to');
 
@@ -131,13 +139,20 @@ class Login extends \Filament\Pages\Auth\Login
         $redirectTo = session()->pull('auth.redirect_to');
 
         if (is_string($redirectTo) && $this->isSafeRedirect($redirectTo)) {
+            if ($this->isMobileDevice() && str_starts_with($redirectTo, '/admin')) {
+                return route('mobile.cabinet');
+            }
             return $redirectTo;
         }
 
         $user = auth()->user();
 
         if (! $user) {
-            return '/admin';
+            return $this->isMobileDevice() ? route('mobile.cabinet') : '/admin';
+        }
+
+        if ($this->isMobileDevice()) {
+            return route('mobile.cabinet');
         }
 
         if ($user->isTutor()) {

@@ -255,7 +255,7 @@ class DisputeResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Финансы';
+        return 'Пользователи и модерация';
     }
 
     public static function shouldRegisterNavigation(): bool

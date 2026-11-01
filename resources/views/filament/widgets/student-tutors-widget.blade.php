@@ -41,25 +41,31 @@
                     @endphp
 
                     <div class="student-list-item">
-                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                            <div class="student-tutor-avatar-lg" style="width: 42px; height: 42px; font-size: 16px; border-radius: 12px; background: linear-gradient(135deg, #10B981, #059669);">
-                                {{ $tutorInitial }}
+                        <div style="display: flex; align-items: center; gap: 14px; min-width: 0;">
+                            <div class="student-tutor-avatar-wrap">
+                                <div class="student-tutor-avatar-lg" style="width: 46px; height: 46px; font-size: 17px; background: linear-gradient(135deg, #7D39EB, #9047FF);">
+                                    {{ $tutorInitial }}
+                                </div>
+                                <span class="student-tutor-online-badge"></span>
                             </div>
                             <div style="min-width: 0;">
-                                <div style="font-size: 0.95rem; font-weight: 800; color: var(--stu-text-main); line-height: 1.2;">
-                                    {{ $tutorName }}
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 0.98rem; font-weight: 800; color: var(--stu-text-main); line-height: 1.2;">
+                                        {{ $tutorName }}
+                                    </span>
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 9999px; background: #7D39EB; color: #FFFFFF; font-size: 10px; font-weight: 900;" title="Проверенный преподаватель Edusfera">✓</span>
                                 </div>
-                                <div style="font-size: 0.82rem; color: var(--stu-text-muted); margin-top: 2px;">
+                                <div style="font-size: 0.84rem; color: var(--stu-text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     {{ $subjects }}
                                 </div>
                             </div>
                         </div>
 
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <a href="/admin/messages" class="student-chip-btn" style="padding: 6px 10px; font-size: 12px;" title="Написать сообщение">
+                            <a href="/admin/messages?user={{ $tutor->id }}" class="student-chip-btn student-chip-btn--primary" style="padding: 7px 12px; font-size: 12px; border-radius: 12px;" title="Написать сообщение">
                                 <span>💬 Чат</span>
                             </a>
-                            <a href="/admin/lessons" class="student-chip-btn" style="padding: 6px 10px; font-size: 12px;" title="История и расписание">
+                            <a href="/admin/lessons" class="student-chip-btn" style="padding: 7px 12px; font-size: 12px; border-radius: 12px;" title="История и расписание">
                                 <span>Занятия</span>
                             </a>
                         </div>

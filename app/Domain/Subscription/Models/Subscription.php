@@ -28,6 +28,9 @@ class Subscription extends Model
         'grace_period_ends_at',
         'canceled_at',
         'responses_used_this_month',
+        'responses_period',
+        'ai_generations_used_this_month',
+        'ai_generations_period',
         'payment_token',
         'is_onboarded',
     ];
@@ -45,6 +48,7 @@ class Subscription extends Model
             'grace_period_ends_at' => 'datetime',
             'canceled_at' => 'datetime',
             'responses_used_this_month' => 'integer',
+            'ai_generations_used_this_month' => 'integer',
         ];
     }
 
@@ -98,11 +102,11 @@ class Subscription extends Model
             default => null,
         };
 
-        if (! $target) {
+        if (! $target || $target->lte($now)) {
             return 0;
         }
 
-        return (int) max(0, $now->diffInDays($target, false));
+        return (int) max(0, ceil($now->diffInHours($target, false) / 24));
     }
 
     public function isPro(): bool

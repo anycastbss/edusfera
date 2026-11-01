@@ -478,6 +478,13 @@ SVG;
                             </p>
                         </div>
 
+                        <label class="co-agree-check" style="display:flex;align-items:flex-start;gap:0.55rem;font-size:0.78rem;color:#475569;margin-top:1rem;margin-bottom:0.85rem;text-align:left;line-height:1.45;cursor:pointer;">
+                            <input type="checkbox" name="agree_terms" id="agree_terms" required checked style="margin-top:2px;accent-color:#7D39EB;">
+                            <span>
+                                Я принимаю условия <a href="{{ route('legal.offer') }}" target="_blank" style="color:#0f172a;font-weight:600;text-decoration:underline;">Публичной оферты</a>, <a href="{{ route('legal.payment-security') }}" target="_blank" style="color:#0f172a;font-weight:600;text-decoration:underline;">Правил оплаты</a>, <a href="{{ route('legal.refund') }}" target="_blank" style="color:#0f172a;font-weight:600;text-decoration:underline;">Правил возврата</a> и даю согласие на обработку данных по <a href="{{ route('legal.privacy') }}" target="_blank" style="color:#0f172a;font-weight:600;text-decoration:underline;">Закону № 99-З</a>.
+                            </span>
+                        </label>
+
                         <button type="submit" class="btn btn-primary" id="checkout-submit">Оплатить {!! $selectedButtonLabel !!}</button>
                         <div class="co-fineprint">
                             Нажимая кнопку, вы соглашаетесь с

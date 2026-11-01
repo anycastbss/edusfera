@@ -16,16 +16,20 @@ const SUBJECTS = [
     { id: 'Математика', label: 'Математика', icon: '📐' },
     { id: 'Физика', label: 'Физика', icon: '⚡' },
     { id: 'Русский язык', label: 'Русский язык', icon: '📝' },
+    { id: 'Белорусский язык', label: 'Белорусский язык', icon: '🇧🇾' },
     { id: 'Английский язык', label: 'Английский язык', icon: '🇬🇧' },
     { id: 'Химия', label: 'Химия', icon: '🧪' },
     { id: 'Биология', label: 'Биология', icon: '🧬' },
+    { id: 'История Беларуси', label: 'История Беларуси', icon: '🏛️' },
+    { id: 'Обществоведение', label: 'Обществоведение', icon: '⚖️' },
+    { id: 'Информатика', label: 'Информатика', icon: '💻' },
 ];
 
 const QUESTION_COUNTS = [
     { value: 3, label: '3 зад.', sub: 'Экспресс' },
     { value: 5, label: '5 зад.', sub: 'Стандарт' },
     { value: 8, label: '8 зад.', sub: 'Проверочная' },
-    { value: 10, label: '10 зад.', sub: 'Мини-ЦТ' },
+    { value: 10, label: '10 зад.', sub: 'Мини-тест' },
 ];
 
 const DIFFICULTIES = [
@@ -65,13 +69,91 @@ const FORMATS = [
     { id: 'Только Часть А (4-5 вариантов с дистракторами)', label: 'Только Часть А' },
 ];
 
-const QUICK_QUIZ_TOPICS = [
-    { label: 'Стереометрия: расстояния и углы в пирамидах (Часть Б)', subject: 'Математика' },
-    { label: 'Тригонометрические уравнения с отбором корней', subject: 'Математика' },
-    { label: 'Законы постоянного тока и расчет смешанных цепей', subject: 'Физика' },
-    { label: 'Пунктуация в бессоюзных и сложносочиненных предложениях', subject: 'Русский язык' },
-    { label: 'Phrasal Verbs & Prepositions (CT 2026)', subject: 'Английский язык' },
-];
+const SUBJECT_QUIZ_TOPICS = {
+    'Математика': [
+        'Стереометрия: расстояния и углы в пирамидах (Часть Б)',
+        'Тригонометрические уравнения с отбором корней на окружности',
+        'Логарифмические неравенства с переменным основанием',
+        'Задачи на движение, смеси, сплавы и совместную работу',
+        'Исследование функции с помощью производной и касательные',
+    ],
+    'Физика': [
+        'Законы постоянного тока и расчет смешанных цепей',
+        'Закон сохранения импульса и механической энергии',
+        'Идеальный газ: изопроцессы и уравнение Клапейрона',
+        'Электромагнитная индукция и закон Фарадея',
+        'Геометрическая оптика: построение хода лучей в линзах',
+    ],
+    'Русский язык': [
+        'Пунктуация в бессоюзных и сложносочиненных предложениях',
+        'Правописание Н и НН в причастиях и отглагольных прилагательных',
+        'Слитное и раздельное написание НЕ с различными частями речи',
+        'Правописание корней с чередованием гласных',
+        'Обособленные согласованные определения и приложения',
+    ],
+    'Белорусский язык': [
+        'Правапіс галосных О, Э, А, Я і пераход у ненаціскным становішчы',
+        'Правапіс прыстаўных зычных і спалучэнняў зычных',
+        'Знакі прыпынку ў складаназалежных сказах з некалькімі даданымі',
+        'Правапіс часціц НЕ і НІ з рознымі часцінамі мовы',
+        'Правапіс мяккага знака і апострафа',
+    ],
+    'Английский язык': [
+        'Phrasal Verbs & Dependent Prepositions in Exam Tasks',
+        'Mixed Conditionals and Wish / If only structures',
+        'Passive Voice & Complex Object transformations',
+        'Word Formation: Prefixes, Suffixes & Negative Particles',
+        'Tense Revision: Past Simple vs Present Perfect vs Past Perfect',
+    ],
+    'Химия': [
+        'Окислительно-восстановительные реакции (электронный баланс)',
+        'Электролиз водных растворов солей и закон Фарадея',
+        'Расчет массовой доли растворенного вещества при разбавлении',
+        'Генетическая цепочка превращений органических веществ',
+        'Качественные реакции на катионы и анионы',
+    ],
+    'Биология': [
+        'Задачи по молекулярной биологии: биосинтез белка',
+        'Генетические задачи: группы крови и сцепленное наследование',
+        'Строение и органоиды эукариотической клетки',
+        'Кровеносная и выделительная системы человека',
+        'Экологические пирамиды и цепи питания',
+    ],
+    'История Беларуси': [
+        'Важнейшие битвы и договоры ВКЛ (Грюнвальд, Статуты)',
+        'Полоцкое и Туровское княжества: политический строй',
+        'Люблинская и Брестская церковная унии: причины и последствия',
+        'Культура Беларуси в эпоху Возрождения и Просвещения',
+        'Освобождение Беларуси в 1944 г. (операция Багратион)',
+    ],
+    'Обществоведение': [
+        'Формы правления, политические режимы и разделение властей',
+        'Гражданское и уголовное право: правоспособность и дееспособность',
+        'Экономические циклы, инфляция и функции денег',
+        'Социальный статус, роли и мобильность',
+        'Познание мира, критерии истины и мировоззрение',
+    ],
+    'Информатика': [
+        'Трассировка алгоритмов и циклов (анализ вывода кода)',
+        'Системы счисления: двоичная, восьмеричная, шестнадцатеричная',
+        'Логические таблицы истинности и упрощение булевых выражений',
+        'Поиск и сортировка элементов в массиве на Python',
+        'Рекурсивные алгоритмы и динамическое программирование',
+    ],
+};
+
+const SUBJECT_QUIZ_PLACEHOLDERS = {
+    'Математика': 'Напр.: Стереометрия, углы между скрещивающимися прямыми',
+    'Физика': 'Напр.: Законы постоянного тока и расчет сопротивления цепи',
+    'Русский язык': 'Напр.: Правописание суффиксов причастий и отглагольных прилагательных',
+    'Белорусский язык': 'Напр.: Знакі прыпынку ў складаных сказах',
+    'Английский язык': 'Напр.: Mixed Conditionals and Phrasal Verbs',
+    'Химия': 'Напр.: Окислительно-восстановительные реакции и электролиз',
+    'Биология': 'Напр.: Задачи на сцепленное наследование и группы крови',
+    'История Беларуси': 'Напр.: Государственный строй ВКЛ и Статуты 1529, 1566, 1588 гг.',
+    'Обществоведение': 'Напр.: Формы правления и основы конституционного строя',
+    'Информатика': 'Напр.: Алгоритмы поиска и таблицы истинности на Python',
+};
 
 export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject = 'Математика', onOpenLibrary }) {
     const [subject, setSubject] = useState(initialSubject || 'Математика');
@@ -222,7 +304,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                             className="text-[11px] font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 flex items-center gap-1 cursor-pointer"
                         >
                             <Sparkles className="w-3 h-3" />
-                            <span>Промпты ЦТ</span>
+                            <span>Каталог промптов</span>
                         </button>
                     </div>
 
@@ -231,7 +313,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                             type="text"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            placeholder="Напр.: Стереометрия, углы между скрещивающимися прямыми"
+                            placeholder={SUBJECT_QUIZ_PLACEHOLDERS[subject] || 'Введите тему заданий...'}
                             className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 dark:bg-slate-800/90 text-xs px-3.5 py-3 font-semibold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#7D39EB] focus:ring-4 focus:ring-violet-500/10 transition-all"
                             required
                         />
@@ -247,21 +329,24 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                     </div>
 
                     <div>
-                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                            Популярные темы ЦТ 2026:
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+                                Рекомендуемые темы ({subject}):
+                            </span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                            {QUICK_QUIZ_TOPICS.map((item, idx) => (
+                            {(SUBJECT_QUIZ_TOPICS[subject] || SUBJECT_QUIZ_TOPICS['Математика'] || []).map((item, idx) => (
                                 <button
                                     key={idx}
                                     type="button"
-                                    onClick={() => {
-                                        setTopic(item.label);
-                                        setSubject(item.subject);
-                                    }}
-                                    className="text-[11px] px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-[#FAF8FF] dark:hover:bg-violet-950/40 text-slate-700 dark:text-slate-300 hover:text-[#7D39EB] dark:hover:text-violet-300 transition-all border border-slate-200/80 dark:border-slate-700 text-left font-medium cursor-pointer"
+                                    onClick={() => setTopic(item)}
+                                    className={`text-[11px] px-2.5 py-1.5 rounded-xl transition-all border text-left font-medium cursor-pointer ${
+                                        topic === item
+                                            ? 'bg-violet-100 dark:bg-violet-950/80 text-[#7D39EB] dark:text-violet-300 border-[#7D39EB]'
+                                            : 'bg-slate-50 dark:bg-slate-800 hover:bg-[#FAF8FF] dark:hover:bg-violet-950/40 text-slate-700 dark:text-slate-300 hover:text-[#7D39EB] dark:hover:text-violet-300 border-slate-200/80 dark:border-slate-700'
+                                    }`}
                                 >
-                                    {item.label}
+                                    {item}
                                 </button>
                             ))}
                         </div>

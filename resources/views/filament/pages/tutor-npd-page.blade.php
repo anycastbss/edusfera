@@ -12,6 +12,7 @@
         $receiptsPendingCount = $data['receiptsPendingCount'] ?? 0;
         $selectedLesson = $data['selectedLesson'] ?? null;
         $canUseNpd = $data['canUseNpd'] ?? false;
+        $canUseOneClickNpd = $data['canUseOneClickNpd'] ?? false;
     @endphp
 
     <div class="space-y-8">
@@ -360,7 +361,27 @@
                         </p>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        @if ($canUseOneClickNpd)
+                            <button type="button"
+                                    wire:click="generateOneClickReceipts"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs px-4 py-2.5 shadow-md shadow-emerald-500/20 transition-all active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span>Сформировать данные для чеков НПД в 1 клик</span>
+                            </button>
+                        @else
+                            <button type="button"
+                                    wire:click="notifyOneClickNpdUpgradeRequired"
+                                    class="inline-flex items-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-4 py-2.5 border border-dashed border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                                    title="Доступно на тарифе Частная практика (40 BYN)">
+                                <span class="text-amber-500">🔒</span>
+                                <span>Сформировать данные для чеков НПД в 1 клик</span>
+                                <span class="text-[10px] rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5">Доступно на тарифе Частная практика (40 BYN)</span>
+                            </button>
+                        @endif
+
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                             Выбито чеков: {{ $receiptsIssuedCount }}
                         </span>

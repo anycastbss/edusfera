@@ -116,7 +116,7 @@ class MessagesPage extends Page
 
     public function sendMessage(): void
     {
-        if (! $this->conversationId) {
+        if (! $this->conversationId || trim($this->messageText) === '') {
             return;
         }
 
@@ -129,6 +129,88 @@ class MessagesPage extends Page
         $this->messageText = '';
         $this->warningMessage = $result['warning'];
         app(ChatService::class)->markAsRead(auth()->id(), $this->conversationId);
+    }
+
+    public function sendOptimisticMessage(string $text, string $clientId): ?array
+    {
+        $text = trim($text);
+        if (! $this->conversationId || $text === '') {
+            return null;
+        }
+
+        $result = app(ChatService::class)->sendMessage(
+            conversationId: $this->conversationId,
+            senderId: auth()->id(),
+            message: $text,
+        );
+
+        $msg = $result['message'];
+        app(ChatService::class)->markAsRead(auth()->id(), $this->conversationId);
+
+        return [
+            'client_id' => $clientId,
+            'id' => $msg->id,
+            'message' => $msg->message,
+            'formatted' => (string) $this->formatMessage($msg)->toHtml(),
+            'sender_id' => $msg->sender_id,
+            'created_at' => $msg->created_at->setTimezone(config('booking.display_timezone'))->format('H:i'),
+            'is_read' => $msg->is_read,
+        ];
+    }
+
+    public function pingTyping(): void
+    {
+        if (! $this->conversationId || ! auth()->check()) {
+            return;
+        }
+
+        cache()->put("chat_typing_{$this->conversationId}_" . auth()->id(), true, now()->addSeconds(4));
+    }
+
+    public function checkNewMessages(int $sinceId): array
+    {
+        if (! $this->conversationId) {
+            return ['messages' => [], 'is_typing' => false, 'read_ids' => []];
+        }
+
+        $newMessages = Message::query()
+            ->where('conversation_id', $this->conversationId)
+            ->where('id', '>', $sinceId)
+            ->oldest('created_at')
+            ->limit(50)
+            ->get();
+
+        if ($newMessages->isNotEmpty()) {
+            app(ChatService::class)->markAsRead(auth()->id(), $this->conversationId);
+        }
+
+        $selectedConv = $this->selectedConversation();
+        $otherUserId = $selectedConv?->tutor_id === auth()->id()
+            ? $selectedConv?->student_id
+            : $selectedConv?->tutor_id;
+
+        $isTyping = $otherUserId ? (bool) cache()->get("chat_typing_{$this->conversationId}_{$otherUserId}", false) : false;
+
+        $readIds = Message::query()
+            ->where('conversation_id', $this->conversationId)
+            ->where('sender_id', auth()->id())
+            ->where('is_read', true)
+            ->pluck('id')
+            ->all();
+
+        return [
+            'messages' => $newMessages->map(fn (Message $m) => [
+                'id' => $m->id,
+                'message' => $m->message,
+                'formatted' => (string) $this->formatMessage($m)->toHtml(),
+                'sender_id' => $m->sender_id,
+                'is_system' => (bool) $m->is_system,
+                'created_at' => $m->created_at->setTimezone(config('booking.display_timezone'))->format('H:i'),
+                'is_read' => $m->is_read,
+            ])->values()->all(),
+            'is_typing' => $isTyping,
+            'read_ids' => $readIds,
+        ];
     }
 
     public function pickReviewRating(int $rating): void
@@ -253,11 +335,21 @@ class MessagesPage extends Page
     public function getViewData(): array
     {
         $selectedConversation = $this->selectedConversation();
+        $messages = $this->selectedConversationMessages();
 
         return [
             'conversations' => $this->conversations(),
             'selectedConversation' => $selectedConversation,
-            'messages' => $this->selectedConversationMessages(),
+            'messages' => $messages,
+            'initialMessages' => $messages->map(fn (Message $m) => [
+                'id' => $m->id,
+                'message' => $m->message,
+                'formatted' => (string) $this->formatMessage($m)->toHtml(),
+                'sender_id' => $m->sender_id,
+                'is_system' => (bool) $m->is_system,
+                'created_at' => $m->created_at->setTimezone(config('booking.display_timezone'))->format('H:i'),
+                'is_read' => $m->is_read,
+            ])->values()->all(),
             'contactsUnlocked' => $selectedConversation ? app(ChatService::class)->hasUnlockedContactsForConversation($selectedConversation) : false,
             'contactActions' => $selectedConversation ? $this->contactActions($selectedConversation) : [],
             'quickReplies' => $this->quickReplies(),
@@ -272,7 +364,7 @@ class MessagesPage extends Page
         $panelId = Filament::getCurrentPanel()?->getId();
 
         if ($panelId === 'site-admin') {
-            return $user?->isAdmin() ?? false;
+            return false;
         }
 
         return in_array($user?->role, [UserRole::Tutor, UserRole::Student, UserRole::Parent], true);
@@ -280,8 +372,12 @@ class MessagesPage extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return Filament::getCurrentPanel()?->getId() === 'site-admin'
-            ? 'Коммуникация'
+        if (Filament::getCurrentPanel()?->getId() === 'site-admin') {
+            return 'Коммуникация';
+        }
+
+        return auth()->user()?->isTutor()
+            ? 'Уроки и ученики'
             : 'Связь';
     }
 
@@ -299,12 +395,17 @@ class MessagesPage extends Page
 
     public function getHeading(): string
     {
-        return 'Сообщения';
+        return '';
     }
 
     public function getSubheading(): ?string
     {
-        return 'Все диалоги по урокам и обращениям из каталога собраны здесь.';
+        return null;
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [];
     }
 
     private function conversations(): Collection
@@ -324,6 +425,11 @@ class MessagesPage extends Page
             ])
             ->orderByDesc('last_message_at')
             ->get();
+
+        // One dialog per tutor-student pair:
+        $conversations = $conversations->unique(function (Conversation $c): string {
+            return $c->tutor_id . '_' . $c->student_id;
+        })->values();
 
         $search = mb_strtolower(trim($this->search));
 
@@ -375,7 +481,7 @@ class MessagesPage extends Page
             ->with('sender')
             ->where('conversation_id', $this->conversationId)
             ->latest('created_at')
-            ->limit(60)
+            ->limit(100)
             ->get()
             ->sortBy('created_at')
             ->values();
@@ -400,10 +506,14 @@ class MessagesPage extends Page
     {
         $content = app(ChatService::class)->sanitizeMessageForDisplay($message->message);
         // SECURITY (M5): e() MUST be called before any regex that produces HtmlString.
-        // Removing this escape or reordering will open XSS.
         $content = e($content);
-        $content = preg_replace('/\[(контакты скрыты)\]/u', '<span class="ef-masked">[$1]</span>', $content) ?? $content;
-        $content = preg_replace('/\[(платежные данные скрыты)\]/u', '<span class="ef-masked">[$1]</span>', $content) ?? $content;
+
+        // Turn links into clickable URLs
+        $content = preg_replace(
+            '/(https?:\/\/[^\s<]+)/iu',
+            '<a href="$1" target="_blank" rel="noopener noreferrer" class="ef-link">$1</a>',
+            $content
+        ) ?? $content;
 
         return new HtmlString(nl2br($content));
     }

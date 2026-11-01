@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Edusfera — Промо 9:16 (30 секунд)</title>
+  <meta name="viewport" content="width=1080, height=1920, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-shadow: 0 24px 60px -8px rgba(15, 23, 42, 0.08), 0 6px 18px -2px rgba(15, 23, 42, 0.04);
+      --card-shadow-elevated: 0 36px 80px -10px rgba(15, 23, 42, 0.16), 0 12px 28px -4px rgba(15, 23, 42, 0.08);
+      --color-primary: #7D39EB;
+      --color-primary-light: #F3E8FF;
+      --color-lime: #84CC16;
+      --color-emerald: #10B981;
+      --color-cyan: #0284C7;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --text-sub: #94A3B8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      background: #F1F5F9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      position: relative;
+      user-select: none;
+    }
+
+    /* 3D Scene Viewport */
+    #viewport {
+      width: 1080px;
+      height: 1920px;
+      perspective: 1400px;
+      perspective-origin: 50% 50%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+    }
+
+    /* 3D Camera Rig */
+    #camera {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-style: preserve-3d;
+      transform-origin: 540px 960px;
+    }
+
+    /* Ambient Background Plane */
+    .bg-plane {
+      position: absolute;
+      width: 1600px;
+      height: 2400px;
+      top: -240px;
+      left: -260px;
+      transform: translateZ(-160px);
+      background: 
+        radial-gradient(circle at 20% 25%, rgba(125, 57, 235, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 70%, rgba(16, 185, 129, 0.10) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, #FFFFFF 0%, #F1F5F9 100%);
+      pointer-events: none;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(203, 213, 225, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(203, 213, 225, 0.35) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+    }
+
+    /* Floating ambient geometric blobs */
+    .floating-accent {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(40px);
+      pointer-events: none;
+    }
+    .blob-1 { width: 400px; height: 400px; background: rgba(125, 57, 235, 0.15); top: 15%; left: 10%; transform: translateZ(-100px); }
+    .blob-2 { width: 350px; height: 350px; background: rgba(56, 189, 248, 0.12); bottom: 20%; right: 5%; transform: translateZ(-80px); }
+
+    /* Scene Container */
+    .scene {
+      position: absolute;
+      width: 1080px;
+      height: 1920px;
+      top: 0;
+      left: 0;
+      transform-style: preserve-3d;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .scene.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Universal UI Card styling */
+    .ui-card {
+      background: var(--card-bg);
+      border-radius: 28px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+      padding: 36px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+    }
+
+    /* Persistent Top Banner / Branding */
+    .app-header {
+      position: absolute;
+      top: 70px;
+      left: 60px;
+      right: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      transform: translateZ(80px);
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-logo-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #7D39EB, #9047FF);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(125, 57, 235, 0.35);
+    }
+    .brand-logo-icon svg {
+      width: 30px;
+      height: 30px;
+      fill: #FFFFFF;
+    }
+    .brand-name {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-main);
+    }
+    .brand-name span {
+      color: var(--color-primary);
+    }
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #FFFFFF;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      border: 1px solid #E2E8F0;
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--color-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--color-emerald);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Top Scene Category Pill */
+    .scene-category-pill {
+      position: absolute;
+      top: 155px;
+      left: 60px;
+      background: rgba(125, 57, 235, 0.1);
+      color: var(--color-primary);
+      padding: 10px 22px;
+      border-radius: 9999px;
+      font-size: 19px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      transform: translateZ(60px);
+      border: 1px solid rgba(125, 57, 235, 0.2);
+    }
+
+    /* Top Headline overlay for legible messaging */
+    .scene-headline {
+      position: absolute;
+      top: 220px;
+      left: 60px;
+      right: 60px;
+      font-size: 46px;
+      line-height: 1.15;
+      font-weight: 900;
+      color: var(--text-main);
+      letter-spacing: -1.2px;
+      transform: translateZ(90px);
+    }
+    .scene-headline span {
+      color: var(--color-primary);
+    }
+
+    /* --- SCENE 1 STYLES --- */
+    #scene1 .schedule-board {
+      position: absolute;
+      top: 360px;
+      left: 60px;
+      width: 960px;
+      transform: translateZ(20px);
+    }
+    .tutor-profile-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .tutor-meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .tutor-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #E0E7FF, #C7D2FE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #4338CA;
+    }
+    .tutor-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .tutor-role {
+      font-size: 19px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .lesson-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 22px 28px;
+      margin-bottom: 18px;
+    }
+    .lesson-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-primary);
+      background: #F3E8FF;
+      padding: 8px 16px;
+      border-radius: 12px;
+    }
+    .lesson-info {
+      flex: 1;
+      margin-left: 24px;
+    }
+    .lesson-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .lesson-student {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .lesson-status-pill {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid #A7F3D0;
+    }
+
+    /* Action Button for Scene 1 */
+    .btn-create-lesson {
+      width: 100%;
+      height: 84px;
+      background: linear-gradient(135deg, #7D39EB, #6929D6);
+      border-radius: 22px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: #FFFFFF;
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 16px 36px rgba(125, 57, 235, 0.35);
+      margin-top: 16px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-create-lesson.hovered {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 24px 44px rgba(125, 57, 235, 0.45);
+    }
+    .btn-create-lesson.pressed {
+      transform: translateY(2px) scale(0.97);
+    }
+
+    /* Pop-out Modal for Scene 1 -> 2 */
+    .modal-create-lesson {
+      position: absolute;
+      top: 480px;
+      left: 90px;
+      width: 900px;
+      background: #FFFFFF;
+      border-radius: 32px;
+      border: 1px solid #E2E8F0;
+      box-shadow: var(--card-shadow-elevated);
+      padding: 44px;
+      transform: translateZ(120px) scale(0.85);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .modal-create-lesson.visible {
+      transform: translateZ(120px) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* --- SCENE 2 STYLES (Guest Link) --- */
+    #scene2 .guest-link-card {
+      position: absolute;
+      top: 400px;
+      left: 70px;
+      width: 940px;
+      transform: translateZ(60px);
+    }
+    .guest-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #FEF3C7;
+      color: #D97706;
+      border: 1px solid #FDE68A;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+    }
+    .modal-desc {
+      font-size: 21px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 32px;
+    }
+    .link-copy-box {
+      background: #F8FAFC;
+      border: 2px dashed #CBD5E1;
+      border-radius: 20px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    .link-url-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .btn-copy-link {
+      background: #7D39EB;
+      color: #FFFFFF;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(125, 57, 235, 0.3);
+      transition: all 0.25s ease;
+    }
+    .btn-copy-link.copied {
+      background: var(--color-emerald);
+      box-shadow: 0 10px 28px rgba(16, 185, 129, 0.4);
+    }
+    .feature-points {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: 10px;
+    }
+    .feature-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 21px;
+      font-weight: 600;
+      color: #1E293B;
+    }
+    .feature-icon-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #F0FDF4;
+      color: #16A34A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    /* Floating Toast Notification */
+    .toast-pill {
+      position: absolute;
+      top: 1240px;
+      left: 120px;
+      right: 120px;
+      background: #0F172A;
+      color: #FFFFFF;
+      padding: 24px 36px;
+      border-radius: 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 22px;
+      font-weight: 600;
+      transform: translateZ(160px) translateY(40px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-pill.visible {
+      transform: translateZ(160px) translateY(0);
+      opacity: 1;
+    }
+    .toast-check-icon {
+      width: 44px;
+      height: 44px;
+      background: #10B981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    /* --- SCENE 3 STYLES (Classroom: Board + Video) --- */
+    #scene3 .classroom-board {
+      position: absolute;
+      top: 360px;
+      left: 60px;
+      width: 960px;
+      height: 1040px;
+      background: #FFFFFF;
+      border-radius: 32px;
+      border: 1px solid #CBD5E1;
+      box-shadow: var(--card-shadow);
+      padding: 36px;
+      transform: translateZ(0px);
+      display: flex;
+      flex-direction: column;
+    }
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #F1F5F9;
+      margin-bottom: 24px;
+    }
+    .board-subject-tag {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .canvas-math-area {
+      flex: 1;
+      border: 2px dashed #E2E8F0;
+      border-radius: 24px;
+      background: #FAFAFC;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+    }
+    .math-formula-box {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 18px;
+      padding: 20px 28px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+      width: fit-content;
+      margin-bottom: 24px;
+    }
+    .math-formula-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .math-formula-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      color: #1E293B;
+    }
+    .interactive-check-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #FFFFFF;
+      border: 2px solid #E2E8F0;
+      border-radius: 18px;
+      padding: 20px 26px;
+      width: fit-content;
+      font-size: 22px;
+      font-weight: 700;
+      color: #334155;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+    .interactive-check-step.completed {
+      border-color: #10B981;
+      background: #F0FDF4;
+      color: #065F46;
+      box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
+    }
+    .check-box-square {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 2px solid #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: transparent;
+      transition: all 0.2s ease;
+    }
+    .interactive-check-step.completed .check-box-square {
+      background: #10B981;
+      border-color: #10B981;
+      color: #FFFFFF;
+    }
+
+    /* Floating Video Island on Foreground (Scene 3) */
+    .video-island {
+      position: absolute;
+      top: 420px;
+      right: 90px;
+      width: 360px;
+      background: rgba(18, 18, 24, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 28px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 32px 70px rgba(0, 0, 0, 0.35);
+      padding: 20px;
+      transform: translateZ(150px);
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .video-tile {
+      height: 150px;
+      border-radius: 18px;
+      background: #272732;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-tile.tutor-stream {
+      background: linear-gradient(135deg, #3730A3, #4338CA);
+    }
+    .video-tile.student-stream {
+      background: linear-gradient(135deg, #065F46, #047857);
+    }
+    .avatar-icon-video {
+      font-size: 40px;
+    }
+    .video-name-tag {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .audio-wave-bars {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+      height: 18px;
+    }
+    .audio-bar {
+      width: 4px;
+      background: #C6FF33;
+      border-radius: 2px;
+      height: 6px;
+      animation: soundWave 0.8s infinite alternate ease-in-out;
+    }
+    .audio-bar:nth-child(2) { animation-delay: 0.2s; height: 14px; }
+    .audio-bar:nth-child(3) { animation-delay: 0.4s; height: 8px; }
+
+    /* Student Reaction Bubble */
+    .reaction-bubble {
+      position: absolute;
+      top: 820px;
+      right: 110px;
+      background: #FFFFFF;
+      color: #0F172A;
+      padding: 16px 24px;
+      border-radius: 20px;
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+      transform: translateZ(180px) scale(0);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 2px solid #E2E8F0;
+    }
+    .reaction-bubble.visible {
+      transform: translateZ(180px) scale(1);
+    }
+
+    /* --- SCENE 4 STYLES (Finance & Climax) --- */
+    #scene4 .finance-card {
+      position: absolute;
+      top: 360px;
+      left: 60px;
+      width: 960px;
+      transform: translateZ(30px);
+    }
+    .finance-stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 28px 0;
+    }
+    .stat-box {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 22px;
+      padding: 26px;
+    }
+    .stat-label {
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+    .stat-value.highlight {
+      color: var(--color-primary);
+    }
+    .npd-info-box {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: 20px;
+      padding: 22px 28px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .npd-shield-icon {
+      font-size: 36px;
+    }
+    .npd-text-block {
+      flex: 1;
+    }
+    .npd-text-heading {
+      font-size: 21px;
+      font-weight: 700;
+      color: #166534;
+    }
+    .npd-text-sub {
+      font-size: 17px;
+      color: #15803D;
+      margin-top: 4px;
+    }
+    .btn-create-receipt {
+      width: 100%;
+      height: 84px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-radius: 22px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: #FFFFFF;
+      font-size: 24px;
+      font-weight: 800;
+      box-shadow: 0 16px 36px rgba(16, 185, 129, 0.35);
+      transition: all 0.25s ease;
+    }
+    .btn-create-receipt.sent {
+      background: #0F172A;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.25);
+    }
+
+    /* Final Outro Lockup (Scene 4 end) */
+    .outro-overlay {
+      position: absolute;
+      top: 1080px;
+      left: 60px;
+      right: 60px;
+      text-align: center;
+      transform: translateZ(100px);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .outro-overlay.visible {
+      opacity: 1;
+    }
+    .outro-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: linear-gradient(135deg, #7D39EB, #9333EA);
+      color: #FFFFFF;
+      font-size: 26px;
+      font-weight: 800;
+      padding: 24px 54px;
+      border-radius: 9999px;
+      box-shadow: 0 20px 48px rgba(125, 57, 235, 0.45);
+      margin-top: 24px;
+    }
+    .outro-bullets {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+      font-size: 19px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    /* --- THE PROMINENT OVERSIZED CURSOR --- */
+    #cursor {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 44px;
+      height: 44px;
+      z-index: 9999;
+      pointer-events: none;
+      transform: translateZ(280px);
+      transition: transform 0.05s linear;
+      filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.3));
+    }
+    #cursor svg {
+      width: 44px;
+      height: 44px;
+      transform-origin: 0% 0%;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #cursor.click svg {
+      transform: scale(0.82) rotate(-5deg);
+    }
+    .click-ripple {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(125, 57, 235, 0.4);
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .click-ripple.pulse {
+      animation: rippleAnim 0.45s ease-out forwards;
+    }
+
+    @keyframes rippleAnim {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
+    }
+
+    @keyframes soundWave {
+      0% { height: 4px; }
+      100% { height: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="viewport">
+  <div id="camera">
+    <!-- Deep Ambient Plane with Parallax Grid -->
+    <div class="bg-plane">
+      <div class="bg-grid"></div>
+      <div class="floating-accent blob-1"></div>
+      <div class="floating-accent blob-2"></div>
+    </div>
+
+    <!-- Persistent Header -->
+    <div class="app-header">
+      <div class="brand-lockup">
+        <div class="brand-logo-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+            <path d="M2 17L12 22L22 17"></path>
+            <path d="M2 12L12 17L22 12"></path>
+          </svg>
+        </div>
+        <div class="brand-name">Edusfera<span>.by</span></div>
+      </div>
+      <div class="header-badge">
+        <div class="live-dot"></div>
+        <span>Кабинет репетитора</span>
+      </div>
+    </div>
+
+    <!-- Category Pill -->
+    <div id="categoryPill" class="scene-category-pill">Быстрое расписание</div>
+
+    <!-- Dynamic Main Headline -->
+    <div id="mainHeadline" class="scene-headline">
+      Создай и начни урок<br><span>за 3 секунды</span>
+    </div>
+
+    <!-- ================= SCENE 1: SCHEDULE & CREATION ================= -->
+    <div id="scene1" class="scene active">
+      <div class="ui-card schedule-board">
+        <div class="tutor-profile-strip">
+          <div class="tutor-meta">
+            <div class="tutor-avatar">АС</div>
+            <div>
+              <div class="tutor-name">Анна Смирнова</div>
+              <div class="tutor-role">Репетитор по математике (ЦТ / ЦЭ)</div>
+            </div>
+          </div>
+          <div class="lesson-status-pill">Статус: Доступна</div>
+        </div>
+
+        <div style="font-size: 20px; font-weight: 700; color: #64748B; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Расписание на сегодня • 28 октября</div>
+
+        <div class="lesson-item">
+          <div class="lesson-time">15:00</div>
+          <div class="lesson-info">
+            <div class="lesson-title">Алгебра • 10 класс (Тригонометрия)</div>
+            <div class="lesson-student">Ученик: Даниил К.</div>
+          </div>
+          <div class="lesson-status-pill">Завершен ✓</div>
+        </div>
+
+        <div class="lesson-item" style="border-color: #C7D2FE; background: #EEF2FF;">
+          <div class="lesson-time" style="background: #7D39EB; color: #FFF;">17:00</div>
+          <div class="lesson-info">
+            <div class="lesson-title">Геометрия • 9 класс (Планиметрия)</div>
+            <div class="lesson-student">Ученик: Максим В. (Гостевой вход)</div>
+          </div>
+          <div class="lesson-status-pill" style="background: #E0E7FF; color: #4338CA; border-color: #C7D2FE;">Следующий ⏳</div>
+        </div>
+
+        <button id="btnCreateLesson" class="btn-create-lesson">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Запланировать новый урок
+        </button>
+      </div>
+
+      <!-- Pop-out Modal in Scene 1 -->
+      <div id="modalLesson" class="modal-create-lesson">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+          <div style="font-size: 28px; font-weight: 800; color: #0F172A;">Новое занятие</div>
+          <div style="background: #F1F5F9; padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 16px; color: #64748B;">Шаг 1 из 2</div>
+        </div>
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 18px; padding: 20px; margin-bottom: 20px;">
+          <div style="font-size: 16px; font-weight: 600; color: #64748B; margin-bottom: 6px;">Предмет и тема</div>
+          <div style="font-size: 22px; font-weight: 700; color: #0F172A;">Геометрия • Подготовка к экзамену</div>
+        </div>
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 18px; padding: 20px; margin-bottom: 24px;">
+          <div style="font-size: 16px; font-weight: 600; color: #64748B; margin-bottom: 6px;">Тип подключения</div>
+          <div style="font-size: 22px; font-weight: 700; color: #7D39EB;">⚡ Мгновенная гостевая ссылка</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SCENE 2: GUEST ACCESS LINK ================= -->
+    <div id="scene2" class="scene">
+      <div class="ui-card guest-link-card">
+        <div class="guest-tag">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/></svg>
+          Вход без регистрации
+        </div>
+        <div class="modal-title">Гостевой доступ для ученика</div>
+        <div class="modal-desc">
+          Ученику не нужно регистрироваться, скачивать программы или вводить пароли. Отправьте ссылку — он сразу окажется в классе.
+        </div>
+
+        <div class="link-copy-box">
+          <div>
+            <div style="font-size: 15px; font-weight: 600; color: #94A3B8; margin-bottom: 4px;">Ссылка на виртуальный класс</div>
+            <div class="link-url-text">edusfera.by/join/geo9-88f2</div>
+          </div>
+          <button id="btnCopyLink" class="btn-copy-link">
+            <svg id="copyIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span id="copyBtnText">Скопировать</span>
+          </button>
+        </div>
+
+        <div class="feature-points">
+          <div class="feature-row">
+            <div class="feature-icon-circle">✓</div>
+            <span>Вход в 1 клик с телефона, планшета или ноутбука</span>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon-circle">✓</div>
+            <span>Шифрованное WebRTC-соединение и живое HD-видео</span>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon-circle">✓</div>
+            <span>Интерактивная доска синхронизируется мгновенно</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Toast for Scene 2 -->
+      <div id="toastScene2" class="toast-pill">
+        <div class="toast-check-icon">✓</div>
+        <div>
+          <div style="font-size: 21px; font-weight: 700;">Ссылка скопирована в буфер!</div>
+          <div style="font-size: 17px; color: #94A3B8; margin-top: 2px;">Отправьте её ученику в любой мессенджер</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SCENE 3: VIRTUAL CLASSROOM ================= -->
+    <div id="scene3" class="scene">
+      <div class="classroom-board">
+        <div class="board-header">
+          <div class="board-subject-tag">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            Интерактивная доска • Теорема синусов
+          </div>
+          <div style="display:flex; gap: 8px;">
+            <div style="background:#F1F5F9; padding: 8px 14px; border-radius: 10px; font-weight: 700; color:#475569; font-size: 16px;">Сетка 5mm</div>
+            <div style="background:#ECFDF5; padding: 8px 14px; border-radius: 10px; font-weight: 700; color:#059669; font-size: 16px;">Live Sync ⚡</div>
+          </div>
+        </div>
+
+        <div class="canvas-math-area">
+          <div class="math-formula-box">
+            <div class="math-formula-title">Базовое соотношение</div>
+            <div class="math-formula-text">a / sin(α) = b / sin(β) = 2R</div>
+          </div>
+
+          <!-- Illustrated Triangle diagram in SVG -->
+          <svg width="420" height="260" viewBox="0 0 420 260" style="margin: 10px 0;">
+            <polygon points="60,220 360,220 240,40" fill="rgba(125, 57, 235, 0.08)" stroke="#7D39EB" stroke-width="4" stroke-linejoin="round"/>
+            <circle cx="60" cy="220" r="8" fill="#7D39EB"/>
+            <circle cx="360" cy="220" r="8" fill="#7D39EB"/>
+            <circle cx="240" cy="40" r="8" fill="#7D39EB"/>
+            <text x="40" y="245" font-family="Inter" font-weight="800" font-size="22" fill="#0F172A">A</text>
+            <text x="375" y="245" font-family="Inter" font-weight="800" font-size="22" fill="#0F172A">B</text>
+            <text x="240" y="25" font-family="Inter" font-weight="800" font-size="22" fill="#0F172A" text-anchor="middle">C (90°)</text>
+            <!-- Highlight arc -->
+            <path d="M 100 220 A 40 40 0 0 0 85 190" fill="none" stroke="#10B981" stroke-width="4"/>
+            <text x="110" y="200" font-family="JetBrains Mono" font-weight="700" font-size="18" fill="#10B981">α = 30°</text>
+          </svg>
+
+          <div id="checkStepInteractive" class="interactive-check-step">
+            <div class="check-box-square">✓</div>
+            <span>Шаг 1: Сторона BC вычислена верно</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating LiveKit Video Island -->
+      <div class="video-island">
+        <div class="video-tile tutor-stream">
+          <div class="avatar-icon-video">👩‍🏫</div>
+          <div class="video-name-tag">Анна (Репетитор)</div>
+          <div class="audio-wave-bars">
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+            <div class="audio-bar"></div>
+          </div>
+        </div>
+        <div class="video-tile student-stream">
+          <div class="avatar-icon-video">👨‍🎓</div>
+          <div class="video-name-tag">Максим (Гость)</div>
+        </div>
+      </div>
+
+      <!-- Student Live Reaction Badge -->
+      <div id="reactionBubble" class="reaction-bubble">
+        <span style="font-size: 28px;">💡</span>
+        <span>Максим: «Всё понятно!»</span>
+      </div>
+    </div>
+
+    <!-- ================= SCENE 4: FINANCE & CLIMAX ================= -->
+    <div id="scene4" class="scene">
+      <div class="ui-card finance-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size: 18px; font-weight: 700; color: #64748B; text-transform: uppercase;">Статистика доходов</div>
+            <div style="font-size: 34px; font-weight: 900; color: #0F172A; margin-top: 4px;">Октябрь 2026</div>
+          </div>
+          <div style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; padding:10px 20px; border-radius:9999px; font-size:18px; font-weight:700;">
+            ✓ Расчет прозрачен
+          </div>
+        </div>
+
+        <div class="finance-stat-grid">
+          <div class="stat-box">
+            <div class="stat-label">Проведено уроков</div>
+            <div class="stat-value">28</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Расчетный доход</div>
+            <div class="stat-value highlight">1 680 <span style="font-size:24px; font-weight:700;">BYN</span></div>
+          </div>
+        </div>
+
+        <div class="npd-info-box">
+          <div class="npd-shield-icon">🇧🇾</div>
+          <div class="npd-text-block">
+            <div class="npd-text-heading">Налог на профессиональный доход (НПД)</div>
+            <div class="npd-text-sub">Автоматическое формирование электронного чека для налоговой (МНС РБ)</div>
+          </div>
+        </div>
+
+        <button id="btnCreateReceipt" class="btn-create-receipt">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span id="receiptBtnText">Сформировать чек НПД</span>
+        </button>
+      </div>
+
+      <!-- Outro Headline and Call to action -->
+      <div id="outroOverlay" class="outro-overlay">
+        <div style="font-size: 54px; font-weight: 900; color: #0F172A; letter-spacing: -1.5px; line-height: 1.1;">
+          Edusfera<br><span style="color: #7D39EB;">Управляй преподаванием легко</span>
+        </div>
+        <div class="outro-bullets">
+          <span>⚡ Без паролей</span>
+          <span>•</span>
+          <span>🎯 Видео + Доска</span>
+          <span>•</span>
+          <span>💼 Чеки НПД</span>
+        </div>
+        <div class="outro-cta-btn">
+          Попробовать бесплатно на edusfera.by
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- #camera -->
+</div> <!-- #viewport -->
+
+<!-- PROMINENT OVERSIZED CURSOR -->
+<div id="cursor">
+  <div class="click-ripple" id="clickRipple"></div>
+  <svg viewBox="0 0 32 32">
+    <!-- Sleek macOS-style arrow cursor -->
+    <path d="M5.5 2.5L24.5 17.5L14.5 18.5L20.5 28.5L16.5 30.5L10.5 20.5L3.5 25.5L5.5 2.5Z" 
+          fill="#1E293B" 
+          stroke="#FFFFFF" 
+          stroke-width="2.5" 
+          stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<script>
+  // Global Deterministic State & Animation Engine
+  const cameraEl = document.getElementById('camera');
+  const cursorEl = document.getElementById('cursor');
+  const clickRipple = document.getElementById('clickRipple');
+  
+  const categoryPill = document.getElementById('categoryPill');
+  const mainHeadline = document.getElementById('mainHeadline');
+  
+  // Scene elements
+  const scene1 = document.getElementById('scene1');
+  const scene2 = document.getElementById('scene2');
+  const scene3 = document.getElementById('scene3');
+  const scene4 = document.getElementById('scene4');
+
+  const btnCreateLesson = document.getElementById('btnCreateLesson');
+  const modalLesson = document.getElementById('modalLesson');
+
+  const btnCopyLink = document.getElementById('btnCopyLink');
+  const copyBtnText = document.getElementById('copyBtnText');
+  const copyIcon = document.getElementById('copyIcon');
+  const toastScene2 = document.getElementById('toastScene2');
+
+  const checkStepInteractive = document.getElementById('checkStepInteractive');
+  const reactionBubble = document.getElementById('reactionBubble');
+
+  const btnCreateReceipt = document.getElementById('btnCreateReceipt');
+  const receiptBtnText = document.getElementById('receiptBtnText');
+  const outroOverlay = document.getElementById('outroOverlay');
+
+  // Math helper for smooth Hermite / Bezier interpolation
+  function easeInOutQuad(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+  }
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  // Exact deterministic render function called for every frame t (0 to 30 seconds)
+  window.renderAt = function(t) {
+    t = Math.max(0, Math.min(30.0, t));
+
+    // Reset default states
+    scene1.classList.remove('active');
+    scene2.classList.remove('active');
+    scene3.classList.remove('active');
+    scene4.classList.remove('active');
+
+    btnCreateLesson.classList.remove('hovered', 'pressed');
+    modalLesson.classList.remove('visible');
+
+    btnCopyLink.classList.remove('copied');
+    copyBtnText.textContent = "Скопировать";
+    toastScene2.classList.remove('visible');
+
+    checkStepInteractive.classList.remove('completed');
+    reactionBubble.classList.remove('visible');
+
+    btnCreateReceipt.classList.remove('sent');
+    receiptBtnText.textContent = "Сформировать чек НПД";
+    outroOverlay.classList.remove('visible');
+
+    cursorEl.classList.remove('click');
+    clickRipple.classList.remove('pulse');
+
+    let camX = 0, camY = 0, camZ = 0, rotX = 0, rotY = 0, zoom = 1.0;
+    let cursorX = 850, cursorY = 400, cursorVisible = true;
+
+    // ==========================================
+    // SCENE 1: (0.0s - 7.0s) Быстрое расписание
+    // ==========================================
+    if (t < 7.0) {
+      scene1.classList.add('active');
+      categoryPill.textContent = "Быстрое планирование";
+      mainHeadline.innerHTML = "Создай и начни урок<br><span>за 3 секунды</span>";
+
+      // Camera motion: gentle tilt & slow push
+      let p1 = t / 7.0;
+      rotX = lerp(6.0, 1.5, easeInOutQuad(p1));
+      rotY = lerp(-6.0, -1.0, easeInOutQuad(p1));
+      camZ = lerp(-40, 20, p1);
+
+      // Button is around (540, 790)
+      if (t < 1.5) {
+        let cp = t / 1.5;
+        cursorX = lerp(960, 680, easeInOutCubic(cp));
+        cursorY = lerp(120, 620, easeInOutCubic(cp));
+      } else if (t < 3.2) {
+        let cp = (t - 1.5) / 1.7;
+        cursorX = lerp(680, 540, easeInOutCubic(cp));
+        cursorY = lerp(620, 790, easeInOutCubic(cp));
+        btnCreateLesson.classList.add('hovered');
+      } else if (t < 3.9) {
+        // CLICK ACTION ON BUTTON
+        cursorX = 540;
+        cursorY = 790;
+        cursorEl.classList.add('click');
+        btnCreateLesson.classList.add('pressed');
+        clickRipple.classList.add('pulse');
+      } else {
+        // Modal reveals
+        modalLesson.classList.add('visible');
+        let cp = (t - 3.9) / 3.1;
+        cursorX = lerp(540, 620, easeInOutQuad(cp));
+        cursorY = lerp(790, 700, easeInOutQuad(cp));
+      }
+    }
+
+    // ==========================================
+    // SCENE 2: (7.0s - 14.0s) Гостевой доступ без регистрации
+    // ==========================================
+    else if (t < 14.0) {
+      scene2.classList.add('active');
+      categoryPill.textContent = "Без регистрации";
+      mainHeadline.innerHTML = "Ученик входит в класс<br><span>в 1 клик без паролей</span>";
+
+      let p2 = (t - 7.0) / 7.0;
+      rotX = lerp(3.0, -2.0, easeInOutQuad(p2));
+      rotY = lerp(4.0, -2.0, easeInOutQuad(p2));
+      camZ = lerp(0, 30, p2);
+
+      // Target of copy button is approx (790, 640)
+      if (t < 9.2) {
+        let cp = (t - 7.0) / 2.2;
+        cursorX = lerp(350, 790, easeInOutCubic(cp));
+        cursorY = lerp(850, 640, easeInOutCubic(cp));
+      } else if (t < 9.9) {
+        // CLICK COPY BUTTON
+        cursorX = 790;
+        cursorY = 640;
+        cursorEl.classList.add('click');
+        clickRipple.classList.add('pulse');
+      } else {
+        // Success state
+        btnCopyLink.classList.add('copied');
+        copyBtnText.textContent = "Скопировано! ✓";
+        toastScene2.classList.add('visible');
+
+        let cp = (t - 9.9) / 4.1;
+        cursorX = lerp(790, 540, easeInOutQuad(cp));
+        cursorY = lerp(640, 1150, easeInOutQuad(cp));
+      }
+    }
+
+    // ==========================================
+    // SCENE 3: (14.0s - 22.0s) Виртуальный класс: Доска + Видео
+    // ==========================================
+    else if (t < 22.0) {
+      scene3.classList.add('active');
+      categoryPill.textContent = "Виртуальный класс";
+      mainHeadline.innerHTML = "Интерактивная доска<br><span>и живое видео в браузере</span>";
+
+      let p3 = (t - 14.0) / 8.0;
+      rotX = lerp(-2.0, 4.0, easeInOutQuad(p3));
+      rotY = lerp(-4.0, 3.5, easeInOutQuad(p3));
+      camZ = lerp(10, 40, p3);
+
+      if (t < 16.5) {
+        // Moving cursor onto whiteboard drawing area
+        let cp = (t - 14.0) / 2.5;
+        cursorX = lerp(200, 300, easeInOutCubic(cp));
+        cursorY = lerp(1100, 750, easeInOutCubic(cp));
+      } else if (t < 18.2) {
+        // Marking/checking interactive step (target: checkbox around 220, 890)
+        let cp = (t - 16.5) / 1.7;
+        cursorX = lerp(300, 220, easeInOutCubic(cp));
+        cursorY = lerp(750, 890, easeInOutCubic(cp));
+      } else if (t < 18.8) {
+        // CLICK on checkmark step
+        cursorX = 220;
+        cursorY = 890;
+        cursorEl.classList.add('click');
+        clickRipple.classList.add('pulse');
+      } else {
+        // Checkmark completed & student reaction pops up
+        checkStepInteractive.classList.add('completed');
+        reactionBubble.classList.add('visible');
+
+        let cp = (t - 18.8) / 3.2;
+        cursorX = lerp(220, 680, easeInOutQuad(cp));
+        cursorY = lerp(890, 800, easeInOutQuad(cp));
+      }
+    }
+
+    // ==========================================
+    // SCENE 4: (22.0s - 30.0s) Финансы, чеки НПД и финал
+    // ==========================================
+    else {
+      scene4.classList.add('active');
+      categoryPill.textContent = "Прозрачные финансы";
+      mainHeadline.innerHTML = "Чеки для налога НПД<br><span>формируются в 1 клик</span>";
+
+      let p4 = (t - 22.0) / 8.0;
+      
+      if (t < 26.5) {
+        rotX = lerp(4.0, 1.0, easeInOutQuad((t - 22.0) / 4.5));
+        rotY = lerp(3.0, 0.0, easeInOutQuad((t - 22.0) / 4.5));
+        camZ = lerp(20, -10, (t - 22.0) / 4.5);
+
+        // Target: Receipt button (~540, 790)
+        if (t < 24.5) {
+          let cp = (t - 22.0) / 2.5;
+          cursorX = lerp(750, 540, easeInOutCubic(cp));
+          cursorY = lerp(450, 790, easeInOutCubic(cp));
+        } else if (t < 25.2) {
+          // CLICK RECEIPT BUTTON
+          cursorX = 540;
+          cursorY = 790;
+          cursorEl.classList.add('click');
+          clickRipple.classList.add('pulse');
+        } else {
+          btnCreateReceipt.classList.add('sent');
+          receiptBtnText.textContent = "Чек передан в МНС РБ ✓";
+          cursorX = 540;
+          cursorY = 790;
+        }
+      } else {
+        // Grand Final Outro (26.5s - 30.0s): Pull back camera, show outro lockup
+        btnCreateReceipt.classList.add('sent');
+        receiptBtnText.textContent = "Чек передан в МНС РБ ✓";
+        outroOverlay.classList.add('visible');
+
+        let cp = (t - 26.5) / 3.5;
+        rotX = lerp(1.0, 0.0, easeInOutQuad(cp));
+        rotY = 0;
+        camZ = lerp(-10, -120, easeInOutQuad(cp)); // Pull back for grand vista
+        cursorX = lerp(540, 540, cp);
+        cursorY = lerp(715, 1440, easeInOutCubic(cp));
+        if (t > 28.5) {
+          cursorEl.classList.add('click'); // Click on final CTA
+        }
+      }
+    }
+
+    // Apply 3D Camera Transform
+    cameraEl.style.transform = `
+      translate3d(${camX}px, ${camY}px, ${camZ}px) 
+      rotateX(${rotX}deg) 
+      rotateY(${rotY}deg) 
+      scale(${zoom})
+    `;
+
+    // Apply Cursor coordinates
+    cursorEl.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 280px)`;
+  };
+
+  // Default initial preview at 0.0s
+  window.renderAt(0.0);
+
+  // Real-time playback helper for browser testing
+  let startTime = null;
+  let isPlaying = false;
+  function animate(timestamp) {
+    if (!startTime) startTime = timestamp;
+    let elapsed = (timestamp - startTime) / 1000.0;
+    if (elapsed > 30.0) elapsed = 30.0;
+    window.renderAt(elapsed);
+    if (elapsed < 30.0 && isPlaying) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  window.playPreview = function() {
+    isPlaying = true;
+    startTime = null;
+    requestAnimationFrame(animate);
+  };
+</script>
+
+</body>
+</html>

@@ -122,6 +122,34 @@ function ExcalidrawWhiteboard({ options = {} }) {
             } catch (e) {}
         };
 
+        // Register global helpers for undo and redo
+        window.undoExcalidraw = () => {
+            try {
+                if (excalidrawAPI?.history) {
+                    excalidrawAPI.history.undo();
+                } else {
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'z',
+                        code: 'KeyZ',
+                        ctrlKey: !navigator.platform.toUpperCase().includes('MAC'),
+                        metaKey: navigator.platform.toUpperCase().includes('MAC'),
+                        bubbles: true
+                    });
+                    document.dispatchEvent(event);
+                }
+            } catch (e) {
+                console.warn('[Excalidraw] Undo error:', e);
+            }
+        };
+
+        window.redoExcalidraw = () => {
+            try {
+                if (excalidrawAPI?.history) {
+                    excalidrawAPI.history.redo();
+                }
+            } catch (e) {}
+        };
+
         return () => {
             if (trailingTimer.current) clearTimeout(trailingTimer.current);
             delete window.__onRemoteExcalidrawScene;
@@ -132,6 +160,8 @@ function ExcalidrawWhiteboard({ options = {} }) {
             delete window.__onExcalidrawThemeToggle;
             delete window.getExcalidrawElements;
             delete window.clearExcalidrawBoard;
+            delete window.undoExcalidraw;
+            delete window.redoExcalidraw;
         };
     }, [excalidrawAPI]);
 

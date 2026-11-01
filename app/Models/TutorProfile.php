@@ -28,6 +28,12 @@ class TutorProfile extends Model
         });
     }
 
+    protected $attributes = [
+        'is_public' => true,
+        'is_white_label' => false,
+        'comfort_vision_mode' => false,
+    ];
+
     protected $fillable = [
         'user_id',
         'subjects',
@@ -49,6 +55,13 @@ class TutorProfile extends Model
         'students_prepared_count',
         'max_recent_score',
         'diagnostic_supported',
+        'is_public',
+        'is_white_label',
+        'comfort_vision_mode',
+        'is_council_expert',
+        'council_number',
+        'council_certificate_number',
+        'council_joined_at',
         'intro_video_url',
         'trial_lesson_minutes',
         'avatar_path',
@@ -76,6 +89,12 @@ class TutorProfile extends Model
             'students_prepared_count' => 'integer',
             'max_recent_score' => 'integer',
             'diagnostic_supported' => 'boolean',
+            'is_public' => 'boolean',
+            'is_white_label' => 'boolean',
+            'comfort_vision_mode' => 'boolean',
+            'is_council_expert' => 'boolean',
+            'council_number' => 'integer',
+            'council_joined_at' => 'datetime',
             'trial_lesson_minutes' => 'integer',
             'is_verified' => 'boolean',
             'verification_submitted_at' => 'datetime',
@@ -84,6 +103,47 @@ class TutorProfile extends Model
             'contact_bypass_attempts' => 'integer',
             'search_penalized_until' => 'datetime',
         ];
+    }
+
+    public function isCouncilExpert(): bool
+    {
+        return (bool) $this->is_council_expert;
+    }
+
+    public static function councilQuotaTotal(): int
+    {
+        return 30;
+    }
+
+    public static function councilQuotaLeft(): int
+    {
+        $taken = static::query()->where('is_council_expert', true)->count();
+        return max(0, static::councilQuotaTotal() - $taken);
+    }
+
+    public function joinCouncil(): bool
+    {
+        if ($this->is_council_expert) {
+            return true;
+        }
+
+        $nextNumber = (int) (static::query()->max('council_number') ?? 0) + 1;
+        $formattedNum = str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+
+        $this->update([
+            'is_council_expert' => true,
+            'council_number' => $nextNumber,
+            'council_certificate_number' => "МС-2026/{$formattedNum}",
+            'council_joined_at' => now(),
+            'is_public' => false, // Защита личной школы: по умолчанию скрыт в приватный режим
+        ]);
+
+        return true;
+    }
+
+    public function scopePublic($query)
+    {
+        return $query->where('is_public', true);
     }
 
     public function user(): BelongsTo
@@ -187,5 +247,14 @@ class TutorProfile extends Model
         }
 
         return asset('storage/'.$clean);
+    }
+
+    public function getSubjectAttribute(): ?string
+    {
+        if (is_array($this->subjects) && ! empty($this->subjects)) {
+            return (string) $this->subjects[0];
+        }
+
+        return null;
     }
 }

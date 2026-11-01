@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @include('partials.pwa-meta')
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Edusfera для репетиторов — Больше не ищите учеников. Преподавайте.</title>
     <meta name="description" content="Edusfera приводит заявки от родителей, ведёт расписание, сама напоминает ученикам о занятиях и считает ваш доход. Первый месяц бесплатно.">
     <meta name="keywords" content="работа репетитором беларусь, ученики для репетитора, платформа для репетиторов минск, преподавание цт цэ, репетиторство онлайн">
@@ -51,9 +51,9 @@
         {
           "@type": "Service",
           "name": "Платформа для репетиторов Edusfera",
-          "serviceType": "Образовательная SaaS платформа",
+          "serviceType": "SaaS платформа для репетиторов",
           "provider": {
-            "@type": "EducationalOrganization",
+            "@type": "Organization",
             "name": "Edusfera",
             "url": "https://edusfera.by/"
           },
@@ -297,6 +297,7 @@
 
         [x-cloak] { display: none !important; }
     </style>
+    @include('partials.analytics')
 </head>
 <body x-data="{ scrolled: false, mobileOpen: false }" @scroll.window="scrolled = (window.pageYOffset > 20)" class="nexum-body min-h-screen bg-[#010101] text-white selection:bg-[#C6FF33] selection:text-black font-sans overflow-x-hidden antialiased">
     <div id="for-tutors-app" class="w-full">
@@ -339,6 +340,11 @@
                         $user = auth()->user();
                         $unreadMessagesCount = app(\App\Services\ChatUnreadCounter::class)->countForUser($user);
                         $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                        $isAdmin = $user->isAdmin();
+                        $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                        $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+                        $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
                     @endphp
                     
                     <div x-data="{ open: false }" class="relative">
@@ -357,9 +363,9 @@
                         </button>
 
                         <div x-show="open" x-transition.opacity.scale.95 style="display: none;" class="absolute right-0 mt-3 w-64 bg-[#0B0F19] rounded-2xl border border-slate-700/80 shadow-2xl p-2.5 z-50 backdrop-blur-2xl">
-                            <a href="/admin" class="block px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">Личный кабинет</a>
-                            <a href="/admin/transactions" class="block px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">Мои финансы</a>
-                            <a href="/admin/messages" class="flex items-center justify-between px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">
+                            <a href="{{ $cabinetUrl }}" class="block px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">Личный кабинет</a>
+                            <a href="{{ $lessonsUrl }}" class="block px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">Мои занятия</a>
+                            <a href="{{ $messagesUrl }}" class="flex items-center justify-between px-4 py-3 text-xs font-bold text-white hover:bg-white/10 rounded-xl transition-colors">
                                 <span>Сообщения</span>
                                 @if($unreadMessagesCount > 0)
                                     <span class="bg-[#C6FF33] text-black px-2 py-0.5 rounded-full text-[10px] font-black">{{ $unreadMessagesCount }}</span>
@@ -564,6 +570,102 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── SPECIAL BLOCK: ОБЩЕСТВЕННЫЙ МЕТОДИЧЕСКИЙ СОВЕТ EDUSFERA ─── -->
+    <section class="py-20 md:py-28 border-b border-white/10 bg-gradient-to-b from-[#0B0F19] to-[#010101] relative overflow-hidden">
+        <!-- Ambient Gold & Purple Glow -->
+        <div class="absolute top-1/2 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/2 -right-40 w-96 h-96 bg-[#7D39EB]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-4xl mx-auto text-center mb-14">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono-tech text-xs font-bold uppercase tracking-wider mb-6">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                    <span>🏛️ ЗАКРЫТАЯ КВОТА: 30 ПЕДАГОГОВ БЕЛАРУСИ · ЭКСПЕРТНЫЙ СОВЕТ</span>
+                </div>
+                
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight mb-6 font-rimma">
+                    Мы не продаём вам IT-сервисы. <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-100 to-white">
+                        Мы просим авторитетных учителей принять работу.
+                    </span>
+                </h2>
+                
+                <p class="text-base sm:text-lg text-slate-300 leading-relaxed max-w-3xl mx-auto font-normal">
+                    Команда белорусских разработчиков Edusfera создала национальную платформу с заботой об опытных педагогах: мы разработали режим <strong>«Комфортное зрение 50+»</strong> (крупный шрифт 18–19px без мелких кнопок) и <strong>«Приватный кабинет»</strong> (полное скрытие расценок и контактов от посторонних). Чтобы цифровой класс стал по-настоящему удобным и родным, мы учреждаем <strong>Общественный методический совет</strong> и приглашаем 30 авторитетных учителей со стажем оценить нашу работу.
+                </p>
+            </div>
+
+            <!-- 3 Privileges Cards Grid -->
+            <div class="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-12">
+                <!-- Privilege 1 -->
+                <div class="wb-card bg-[#0F172A]/80 border-amber-500/30 p-7 sm:p-8 flex flex-col justify-between hover:border-amber-400/60 transition-all shadow-xl">
+                    <div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl mb-5">
+                            🎖️
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-3">Статус эксперта и свидетельство для портфолио</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Каждому члену совета навсегда присваивается бейдж <strong>«Эксперт Методического совета Edusfera»</strong> и выдается номерное официальное Свидетельство с печатью — для аттестации и подтверждения педагогической категории.
+                        </p>
+                    </div>
+                    <div class="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-amber-400 font-bold uppercase tracking-wider">
+                        Привилегия №1 · Бессрочно
+                    </div>
+                </div>
+
+                <!-- Privilege 2 -->
+                <div class="wb-card bg-[#0F172A]/80 border-[#C6FF33]/30 p-7 sm:p-8 flex flex-col justify-between hover:border-[#C6FF33]/60 transition-all shadow-xl">
+                    <div>
+                        <div class="w-12 h-12 rounded-2xl bg-[#C6FF33]/10 border border-[#C6FF33]/30 flex items-center justify-center text-2xl mb-5">
+                            🎁
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-3">Полный тариф PRO (40 BYN) на 30 дней бесплатно</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Безлимитные по времени уроки в защищенном видеоклассе LiveKit SFU, интерактивная доска, автоматические чеки НПД для МНС РБ и помощь ИИ-Методиста — без привязки карт и обязательств.
+                        </p>
+                    </div>
+                    <div class="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-[#C6FF33] font-bold uppercase tracking-wider">
+                        Привилегия №2 · Экономия 40 BYN
+                    </div>
+                </div>
+
+                <!-- Privilege 3 -->
+                <div class="wb-card bg-[#0F172A]/80 border-violet-500/30 p-7 sm:p-8 flex flex-col justify-between hover:border-violet-400/60 transition-all shadow-xl">
+                    <div>
+                        <div class="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-2xl mb-5">
+                            🔒
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-3">Приватный кабинет: работа только со своими</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Право в 1 клик полностью скрыть анкету и расценки из каталога и поисковиков. Ваши постоянные ученики переходят по прямой ссылке в персональную комнату без чужих преподавателей рядом.
+                        </p>
+                    </div>
+                    <div class="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-violet-400 font-bold uppercase tracking-wider">
+                        Привилегия №3 · 100% приватность
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call to action inside council box -->
+            <div class="max-w-3xl mx-auto bg-gradient-to-r from-amber-500/15 via-[#7D39EB]/15 to-transparent border border-amber-500/30 rounded-2xl p-6 sm:p-8 text-center backdrop-blur-xl">
+                <div class="text-sm font-semibold text-amber-200 mb-2">
+                    Квота строго ограничена: принимаем заявки от первых 30 педагогов Республики Беларусь
+                </div>
+                <div class="text-xs text-slate-400 mb-6">
+                    Вход без сложных паролей · Прямая связь с разработчиками · Официальное свидетельство эксперта
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="/register?role=tutor&plan=pro&source=council" class="wb-btn text-black font-extrabold py-3.5 px-8 text-sm sm:text-base rounded-xl shadow-lg transition-transform hover:-translate-y-0.5" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">
+                        🎖️ Принять приглашение и войти в совет →
+                    </a>
+                    <a href="https://t.me/edusferaby" target="_blank" class="wb-btn wb-btn-secondary text-sm py-3.5 px-6">
+                        ✈️ Задать вопрос разработчикам в Telegram
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -1016,10 +1118,10 @@
 
                         <ul class="space-y-3 text-xs text-slate-300 mb-8">
                             <li class="flex items-start gap-2.5">
-                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Неограниченно своих учеников</strong> и карточек в CRM
+                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Неограниченно своих учеников</strong> в личном журнале
                             </li>
                             <li class="flex items-start gap-2.5">
-                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Виртуальный класс (SFU)</strong> с видео до 45 мин
+                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Защищенный онлайн-класс</strong> с видеосвязью и доской
                             </li>
                             <li class="flex items-start gap-2.5">
                                 <span class="text-[#C6FF33] font-bold">✓</span> <strong>Интерактивная доска</strong> и демонстрация экрана
@@ -1133,7 +1235,7 @@
                                 <span class="text-[#C6FF33] font-bold">✓</span> <strong>Видео-визитка прямо в каталоге</strong> (x3 конверсия)
                             </li>
                             <li class="flex items-start gap-2.5">
-                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Свой брендинг класса (White-label)</strong>: ваш логотип
+                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>Режим «Личная школа»</strong>: ваш логотип, скрывает каталог и конкурентов
                             </li>
                             <li class="flex items-start gap-2.5">
                                 <span class="text-[#C6FF33] font-bold">✓</span> <strong>Синхронизация с Google Calendar</strong>
@@ -1217,7 +1319,7 @@
                                 <td colspan="4" class="py-2.5 px-4 font-mono-tech text-[10px] uppercase tracking-wider text-slate-400 font-bold">2. Виртуальный класс и занятия</td>
                             </tr>
                             <tr>
-                                <td class="py-3 px-4">Длительность 1 занятия в виртуальном классе SFU</td>
+                                <td class="py-3 px-4">Длительность 1 занятия в защищенном онлайн-классе</td>
                                 <td class="py-3 px-4 text-center text-slate-400">До 45 мин</td>
                                 <td class="py-3 px-4 text-center text-white">До 120 мин</td>
                                 <td class="py-3 px-4 text-center text-[#C6FF33] font-bold bg-white/5">Без лимита</td>
@@ -1229,7 +1331,7 @@
                                 <td class="py-3 px-4 text-center text-[#C6FF33] font-bold bg-white/5">✓</td>
                             </tr>
                             <tr>
-                                <td class="py-3 px-4">Свой брендинг класса (White-label)</td>
+                                <td class="py-3 px-4">Собственный логотип и оформление (Личная школа)</td>
                                 <td class="py-3 px-4 text-center text-slate-600">✕</td>
                                 <td class="py-3 px-4 text-center text-slate-600">✕</td>
                                 <td class="py-3 px-4 text-center text-[#C6FF33] font-bold bg-white/5">✓</td>

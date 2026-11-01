@@ -111,6 +111,22 @@ class AlfaBankWebhookController extends Controller
         $isFailed = in_array($operation, ['declined', 'failed', 'error'], true)
             || in_array($status, ['6', 'failed', 'declined', 'error'], true);
 
+        if (($isSuccess || $isAuthorized) && empty($transactionId)) {
+            Log::channel('payments')->warning('alfabank_webhook_missing_transaction_id_for_success', [
+                'operation' => $operation,
+                'status' => $status,
+                'orderNumber' => $orderNumber,
+                'ip' => $clientIp,
+            ]);
+
+            $this->logWebhook($request, $operation, null, 422, 'Transaction ID is strictly required for payment confirmation.');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction ID is strictly required for payment confirmation.',
+            ], 422);
+        }
+
         // 4. Верификация через шлюз Альфа-Банка для предотвращения несанкционированных вызовов
         if (! empty($transactionId) && ($isSuccess || $isAuthorized)) {
             if (! $gateway->verifyPayment($transactionId)) {

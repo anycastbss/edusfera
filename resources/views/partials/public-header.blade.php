@@ -8,6 +8,11 @@
     $roleLabel = $user ? \App\Services\MultiAccountService::roleLabel($user->role) : '';
     $linkedAccounts = $user ? app(\App\Services\MultiAccountService::class)->getLinkedAccounts() : [];
 
+    $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+    $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+    $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
+    $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+
     $baseClass = $dark
         ? 'border-white/15 bg-black text-white'
         : 'border-gray-200 bg-white text-gray-900';
@@ -24,9 +29,11 @@
             <a href="{{ route('home') }}" class="inline-flex min-h-10 items-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
                 Главная
             </a>
-            <a href="{{ route('tutors.index') }}" class="inline-flex min-h-10 items-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
-                Каталог
-            </a>
+            @if(! app(\App\Services\WhiteLabelService::class)->isWhiteLabelActive())
+                <a href="{{ route('tutors.index') }}" class="inline-flex min-h-10 items-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
+                    Каталог
+                </a>
+            @endif
             <a href="{{ route('for-tutors') }}" class="inline-flex min-h-10 items-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
                 Я — репетитор
             </a>
@@ -35,7 +42,7 @@
             </a>
 
             @auth
-                <a href="/admin/messages" class="relative inline-flex min-h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
+                <a href="{{ $messagesUrl }}" class="relative inline-flex min-h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">
                     Сообщения
                     @if ($notificationsCount > 0)
                         <span class="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
@@ -59,34 +66,31 @@
                         <div class="px-3 py-1.5 text-xs text-gray-500 border-b border-gray-100 mb-1">
                             {{ $roleLabel }} · {{ $user->email }}
                         </div>
-                        <a href="/admin" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-bold text-[#7D39EB] transition hover:bg-purple-50">
+                        <a href="{{ $cabinetUrl }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-bold text-[#7D39EB] transition hover:bg-purple-50">
                             🚀 Личный кабинет
                         </a>
 
                         @if($isTutor)
-                            <a href="/admin/tutor-subscription-page" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $isAdmin ? '/admin/tutor-subscription-page' : ($isMobileDevice ? '/m?tab=finance' : '/cabinet?tab=finance') }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Управление тарифом
                             </a>
-                            <a href="/admin/tutor-availability-page" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $isAdmin ? '/admin/tutor-availability-page' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons') }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Расписание
                             </a>
-                            <a href="/admin/lessons" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $lessonsUrl }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Мои занятия
-                            </a>
-                            <a href="/admin/transactions" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
-                                Мои финансы
                             </a>
                         @elseif($isStudentOrParent)
-                            <a href="/admin/lessons" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $lessonsUrl }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Мои занятия
                             </a>
-                            <a href="/admin/diagnostic" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $isAdmin ? '/admin/diagnostic' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons') }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 ИИ-Диагностика
                             </a>
-                            <a href="/admin/homework" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $isAdmin ? '/admin/homework' : ($isMobileDevice ? '/m?tab=homework' : '/cabinet?tab=homework') }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Домашние задания
                             </a>
-                            <a href="/admin/wallet" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                            <a href="{{ $isAdmin ? '/admin/wallet' : ($isMobileDevice ? '/m?tab=wallet' : '/cabinet?tab=wallet') }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                                 Учёт денег
                             </a>
                         @elseif($isAdmin)
@@ -98,7 +102,7 @@
                             </a>
                         @endif
 
-                        <a href="/admin/messages" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
+                        <a href="{{ $messagesUrl }}" class="flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold transition hover:bg-gray-100">
                             Сообщения
                         </a>
 

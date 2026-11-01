@@ -31,8 +31,8 @@ class SubscriptionTest extends TestCase
         $this->assertEquals(0, SubscriptionPlan::START->maxResponsesPerMonth());
 
         $startFeatures = SubscriptionPlan::START->features();
-        $this->assertCount(5, $startFeatures);
-        $this->assertContains('CRM и расписание уроков', $startFeatures);
+        $this->assertCount(7, $startFeatures);
+        $this->assertContains('До 5 активных учеников', $startFeatures);
 
         // PRO Plan
         $this->assertEquals(4000, SubscriptionPlan::PRO->monthlyPriceKopecks());
@@ -43,9 +43,8 @@ class SubscriptionTest extends TestCase
 
         $proFeatures = SubscriptionPlan::PRO->features();
         $this->assertCount(7, $proFeatures);
-        $this->assertContains('Все возможности тарифа «Стандарт»', $proFeatures);
-        $this->assertContains('ИИ-диагностика знаний (тесты РИКЗ)', $proFeatures);
-        $this->assertContains('ИИ-помощник (конспекты, ДЗ, тесты)', $proFeatures);
+        $this->assertContains('До 15 активных учеников', $proFeatures);
+        $this->assertContains('50 генераций ИИ в месяц (Сборник заданий ЦТ/ЦЭ, авто-домашка)', $proFeatures);
 
         // PREMIUM Plan
         $this->assertEquals(6000, SubscriptionPlan::PREMIUM->monthlyPriceKopecks());
@@ -108,6 +107,15 @@ class SubscriptionTest extends TestCase
         ]);
         $this->assertFalse($sub->isInGracePeriod());
         $this->assertFalse($sub->isActive());
+
+        // Hours remaining in final 24 hours should round up to 1 day and trigger isExpiringSoon
+        $sub->update([
+            'status' => SubscriptionStatus::ACTIVE,
+            'current_period_ends_at' => now()->addHours(18),
+            'grace_period_ends_at' => null,
+        ]);
+        $this->assertEquals(1, $sub->daysRemaining());
+        $this->assertTrue($sub->isExpiringSoon());
     }
 
     public function test_subscription_feature_gate_rules(): void
@@ -123,26 +131,56 @@ class SubscriptionTest extends TestCase
         $this->assertTrue($gate->canUseAiTools($trialTutor));
         $this->assertTrue($gate->canUseNpd($trialTutor));
         $this->assertTrue($gate->canCustomizeBranding($trialTutor));
+        $this->assertTrue($gate->canHideProfile($trialTutor));
+        $this->assertNull($gate->maxActiveStudents($trialTutor));
+        $this->assertTrue($gate->canUseOneClickNpd($trialTutor));
+        $this->assertNull($gate->maxLessonDurationMinutes($trialTutor));
 
-        // 2. Active START tutor
+        // 2. Active START / BASIC tutor (20 BYN limits)
         $startTutor = User::factory()->create(['role' => UserRole::Tutor]);
         $service->subscribe($startTutor, SubscriptionPlan::START, 1);
 
         $this->assertTrue($gate->canAccessClassroom($startTutor));
-        $this->assertFalse($gate->canUseAiTools($startTutor));
+        $this->assertTrue($gate->canUseAiTools($startTutor)); // Allowed under 10 queries
+        $this->assertSame(10, $gate->maxAiGenerationsPerMonth($startTutor));
         $this->assertFalse($gate->canUseNpd($startTutor));
+        $this->assertFalse($gate->canUseOneClickNpd($startTutor));
         $this->assertFalse($gate->canCustomizeBranding($startTutor));
+        $this->assertFalse($gate->canHideProfile($startTutor));
+        $this->assertSame(5, $gate->maxActiveStudents($startTutor));
+        $this->assertSame(60, $gate->maxLessonDurationMinutes($startTutor));
+        $this->assertFalse($gate->canUseWhiteLabel($startTutor));
 
-        // 3. Active PRO tutor
+        // When 10 AI queries are used on Basic, canUseAiTools becomes false
+        $subStart = $service->getSubscription($startTutor);
+        $subStart->update(['ai_generations_used_this_month' => 10]);
+        $this->assertFalse($gate->canUseAiTools($startTutor));
+
+        // 3. Active PRO tutor (40 BYN)
         $proTutor = User::factory()->create(['role' => UserRole::Tutor]);
         $service->subscribe($proTutor, SubscriptionPlan::PRO, 1);
 
         $this->assertTrue($gate->canAccessClassroom($proTutor));
         $this->assertTrue($gate->canUseAiTools($proTutor));
+        $this->assertNull($gate->maxAiGenerationsPerMonth($proTutor));
         $this->assertTrue($gate->canUseNpd($proTutor));
+        $this->assertTrue($gate->canUseOneClickNpd($proTutor));
         $this->assertTrue($gate->canCustomizeBranding($proTutor));
+        $this->assertTrue($gate->canHideProfile($proTutor));
+        $this->assertNull($gate->maxActiveStudents($proTutor));
+        $this->assertNull($gate->maxLessonDurationMinutes($proTutor));
+        $this->assertFalse($gate->canUseWhiteLabel($proTutor));
 
-        // 4. Expired subscription
+        // 4. Active PREMIUM tutor (60 BYN)
+        $premiumTutor = User::factory()->create(['role' => UserRole::Tutor]);
+        $service->subscribe($premiumTutor, SubscriptionPlan::PREMIUM, 1);
+
+        $this->assertTrue($gate->canHideProfile($premiumTutor));
+        $this->assertTrue($gate->canUseWhiteLabel($premiumTutor));
+        $this->assertNull($gate->maxActiveStudents($premiumTutor));
+        $this->assertNull($gate->maxLessonDurationMinutes($premiumTutor));
+
+        // 5. Expired subscription
         $sub = $service->getSubscription($proTutor);
         $sub->update([
             'status' => SubscriptionStatus::EXPIRED,
@@ -153,6 +191,20 @@ class SubscriptionTest extends TestCase
         $this->assertFalse($gate->canUseAiTools($proTutor));
         $this->assertFalse($gate->canUseNpd($proTutor));
         $this->assertFalse($gate->canCustomizeBranding($proTutor));
+        $this->assertFalse($gate->canHideProfile($proTutor));
+
+        // 5. Monthly responses reset for PRO tutor
+        $sub->update([
+            'status' => SubscriptionStatus::ACTIVE,
+            'current_period_ends_at' => now()->addMonth(),
+            'responses_used_this_month' => 10,
+            'responses_period' => now()->subMonth()->format('Y-m'),
+        ]);
+
+        $this->assertTrue($gate->canRespondToRequests($proTutor));
+        $sub->refresh();
+        $this->assertEquals(0, $sub->responses_used_this_month);
+        $this->assertEquals(now()->format('Y-m'), $sub->responses_period);
     }
 
     public function test_subscription_service_methods(): void
@@ -220,6 +272,29 @@ class SubscriptionTest extends TestCase
         $sub->refresh();
         $this->assertEquals(SubscriptionStatus::ACTIVE, $sub->status);
         $this->assertTrue($sub->current_period_ends_at->isFuture());
+    }
+
+    public function test_billing_cron_auto_charge_preserves_yearly_period(): void
+    {
+        $tutor = User::factory()->create(['role' => UserRole::Tutor]);
+        $service = app(SubscriptionService::class);
+
+        $sub = $service->subscribe($tutor, SubscriptionPlan::PRO, 12, 'tok_recurrent_valid');
+        $sub->update([
+            'current_period_ends_at' => now()->subMinute(),
+        ]);
+
+        $this->artisan('edusfera:subscriptions-process-billing')
+            ->assertSuccessful();
+
+        $sub->refresh();
+        $this->assertEquals(SubscriptionStatus::ACTIVE, $sub->status);
+        // Should be renewed for approximately 12 months (~365 days) into the future
+        $this->assertGreaterThan(300, now()->diffInDays($sub->current_period_ends_at));
+
+        $latestInvoice = $sub->invoices()->latest('id')->first();
+        $this->assertEquals(12, $latestInvoice->period_months);
+        $this->assertEquals(SubscriptionPlan::PRO->yearlyPriceKopecks(), $latestInvoice->amount_kopecks);
     }
 
     public function test_billing_cron_moves_to_grace_and_notifies_when_charge_fails(): void

@@ -113,7 +113,7 @@ class PublicPagesTest extends TestCase
         $response->assertOk();
         $response->assertSee('Александр Репетиторов');
         $response->assertSee('Личный кабинет');
-        $response->assertSee('Мои финансы');
+        $response->assertSee('Мои занятия');
     }
 
     public function test_storage_fallback_prevents_directory_traversal_and_sensitive_files(): void

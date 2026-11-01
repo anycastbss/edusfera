@@ -53,11 +53,20 @@ class SiteAdminPanelProvider extends PanelProvider
                 'danger' => Color::Hex('#EF4444'),
                 'info' => Color::Hex('#06B6D4'),
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            ->navigationGroups([
+                'Мониторинг и карта системы',
+                'Логи и безопасность',
+                'Управление платформой',
+                'Инструменты инженера',
+                'Пользователи и модерация',
+                'Финансы и SaaS',
+                'Контент',
+            ])
+            ->discoverPages(in: app_path('Filament/SiteAdmin/Pages'), for: 'App\\Filament\\SiteAdmin\\Pages')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([
                 Dashboard::class,
-                MessagesPage::class,
             ])
             ->renderHook(
                 PanelsRenderHook::HEAD_END,

@@ -142,6 +142,19 @@ class PromoCodeService
      * Активировать бесплатную подписку репетитору по промокоду (1/3/6/12 месяцев или пожизненно).
      *
      * @return array{subscription: Subscription, invoice: SubscriptionInvoice, is_lifetime: bool, months: int, plan: SubscriptionPlan}
+    /**
+     * Алиас для активации бесплатной подписки репетитора по промокоду.
+     */
+    public function applyFreeSubscriptionToTutor(
+        PromoCode $promoCode,
+        User $tutor,
+        ?string $requestedPlan = null
+    ): array {
+        return $this->activateFreeSubscriptionViaPromo($promoCode, $tutor, $requestedPlan);
+    }
+
+    /**
+     * Активировать бесплатную подписку для репетитора по промокоду (1/3/6/12 мес или пожизненно).
      */
     public function activateFreeSubscriptionViaPromo(
         PromoCode $promoCode,

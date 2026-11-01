@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Domain\Subscription\Enums\SubscriptionPlan;
+use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\Subscription;
 use App\Domain\Subscription\Services\SubscriptionService;
 use App\Enums\UserRole;
@@ -13,6 +14,7 @@ use App\Models\TutorProfile;
 use App\Models\User;
 use App\Notifications\ResetPasswordCodeNotification;
 use App\Services\Payment\PaymentGatewayInterface;
+use App\Traits\DetectsMobileDevice;
 use Filament\Facades\Filament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,10 +23,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuroraAuthController extends Controller
 {
+    use DetectsMobileDevice;
+
     /**
      * Bcrypt-хеш случайной строки: проверка пароля при ненайденном пользователе,
      * чтобы время ответа не позволяло перечислять существующие e-mail/телефоны.
@@ -41,7 +46,15 @@ class AuroraAuthController extends Controller
                 return redirect('/site-admin');
             }
 
-            return redirect('/admin');
+            if ($user && $user->isAdmin()) {
+                return redirect('/admin');
+            }
+
+            if ($this->isMobileDevice($request)) {
+                return redirect('/m');
+            }
+
+            return redirect('/cabinet');
         }
 
         return view('auth.register');
@@ -127,11 +140,22 @@ class AuroraAuthController extends Controller
             || str_contains((string) $request->path(), 'site-admin')
             || (is_string($requestedRedirect) && str_contains($requestedRedirect, 'site-admin'));
 
-        $redirect = '/admin';
+        $isMobile = $this->isMobileDevice($request);
+        $redirect = $user->isAdmin() ? '/admin' : ($isMobile ? '/m' : '/cabinet');
+        $isValidRedirect = is_string($requestedRedirect)
+            && str_starts_with($requestedRedirect, '/')
+            && ! str_starts_with($requestedRedirect, '//')
+            && ! str_starts_with($requestedRedirect, '/\\')
+            && ! str_contains($requestedRedirect, '\\');
+
         if ($user->isAdmin() && $isSiteAdminContext) {
             $redirect = '/site-admin';
-        } elseif ($requestedRedirect && ! str_starts_with($requestedRedirect, '//')) {
-            $redirect = $requestedRedirect;
+        } elseif ($isValidRedirect) {
+            if (! $user->isAdmin() && str_starts_with($requestedRedirect, '/admin')) {
+                $redirect = $isMobile ? '/m' : '/cabinet';
+            } else {
+                $redirect = $requestedRedirect;
+            }
         }
 
         return response()->json([
@@ -148,11 +172,51 @@ class AuroraAuthController extends Controller
 
     public function register(Request $request)
     {
+        $rawEmail = (string) $request->input('email', '');
+        $email = mb_strtolower(trim($rawEmail));
+        $rawPhone = $request->input('phone');
+        $phone = $rawPhone ? $this->normalizePhone((string) $rawPhone) : null;
+
+        // If an account was previously deleted (soft-deleted), purge the trashed records
+        // and any orphaned tutor data so the user can cleanly re-register without conflicts.
+        if ($email !== '' || $phone !== null) {
+            $trashedUsers = User::onlyTrashed()
+                ->where(function ($query) use ($email, $phone): void {
+                    if ($email !== '') {
+                        $query->where('email', $email);
+                    }
+                    if ($phone !== null) {
+                        $query->orWhere('phone', $phone);
+                    }
+                })
+                ->get();
+
+            foreach ($trashedUsers as $trashed) {
+                $trashed->tutorProfile()?->delete();
+                $trashed->subscription()?->delete();
+                $trashed->availability()->delete();
+                $trashed->tutorBalance()?->delete();
+                $trashed->studentBalance()?->delete();
+                $trashed->forceDelete();
+            }
+        }
+
         $data = $request->validate([
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['nullable', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:50', 'unique:users,phone'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->whereNull('deleted_at'),
+            ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('users', 'phone')->whereNull('deleted_at'),
+            ],
             'password' => ['required', 'string', Password::min(8)->letters()->numbers()],
             'role' => ['nullable', 'string', 'in:student,tutor,parent'],
             'plan' => ['nullable', 'string', 'in:start,pro,basic,premium'],
@@ -195,8 +259,17 @@ class AuroraAuthController extends Controller
                 default => SubscriptionPlan::PRO,
             };
 
-            $sub = app(SubscriptionService::class)->ensureTrialStarted($user, $plan);
-            $sub->update(['is_onboarded' => false]);
+            $sub = Subscription::firstOrCreate(
+                ['tutor_id' => $user->id],
+                [
+                    'plan' => $plan,
+                    'status' => SubscriptionStatus::EXPIRED,
+                    'is_founder' => false,
+                    'current_period_starts_at' => now(),
+                    'current_period_ends_at' => now(),
+                    'is_onboarded' => false,
+                ]
+            );
         }
 
         Auth::login($user, true);
@@ -214,9 +287,7 @@ class AuroraAuthController extends Controller
             'success' => true,
             'role' => $userRole->value,
             'isTutor' => $userRole === UserRole::Tutor,
-            'redirect' => $userRole === UserRole::Tutor
-                ? '/admin/tutor-subscription-page?onboarding=1'
-                : '/admin',
+            'redirect' => ($userRole === UserRole::Tutor || $userRole === UserRole::Student) ? '/onboarding' : '/admin',
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -301,19 +372,18 @@ class AuroraAuthController extends Controller
         $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (! $user) {
-            Log::warning('[PasswordReset] ❌ Пользователь с таким email не найден в базе данных', [
+            Log::info('[PasswordReset] Запрос на сброс пароля для незарегистрированного email', [
                 'email' => $email,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Пользователь с адресом '.$email.' не найден. Проверьте правильность написания email.',
+                'message' => 'Не удалось найти пользователя с указанным адресом электронной почты.',
             ], 422);
         }
 
-        Log::info('[PasswordReset] 2. Пользователь найден', [
+        Log::info('[PasswordReset] Пользователь найден для сброса пароля', [
             'user_id' => $user->id,
-            'email' => $user->email,
         ]);
 
         $code = sprintf('%06d', random_int(100000, 999999));
@@ -326,32 +396,25 @@ class AuroraAuthController extends Controller
             ]
         );
 
-        Log::info("[PasswordReset] 🔑 СГЕНЕРИРОВАН КОД ВОССТАНОВЛЕНИЯ: {$code} (email: {$user->email})");
+        Log::info('[PasswordReset] Код восстановления сгенерирован', ['user_id' => $user->id]);
 
-        Log::info('[PasswordReset] 3. Отправка письма через почтовый драйвер...', [
+        Log::info('[PasswordReset] Отправка письма через почтовый драйвер...', [
             'default_mailer' => config('mail.default'),
-            'smtp_host' => config('mail.mailers.smtp.host'),
-            'smtp_port' => config('mail.mailers.smtp.port'),
-            'smtp_username' => config('mail.mailers.smtp.username'),
-            'smtp_encryption' => config('mail.mailers.smtp.encryption'),
-            'smtp_scheme' => config('mail.mailers.smtp.scheme'),
             'mail_from' => config('mail.from.address'),
         ]);
 
         try {
             $user->notify(new ResetPasswordCodeNotification($code));
-            Log::info("[PasswordReset] ✅ Письмо с кодом успешно передано почтовому серверу для {$email}");
+            Log::info('[PasswordReset] Письмо с кодом успешно передано почтовому серверу', ['user_id' => $user->id]);
         } catch (\Throwable $e) {
-            Log::error('[PasswordReset] ❌ ОШИБКА ОТПРАВКИ ПИСЬМА: '.$e->getMessage(), [
-                'email' => $email,
+            Log::error('[PasswordReset] Ошибка отправки письма: '.$e->getMessage(), [
+                'user_id' => $user->id,
                 'exception' => get_class($e),
-                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Не удалось доставить письмо. Ошибка почтового сервера: '.$e->getMessage().
-                    ' (Код зафиксирован в логах системы).',
+                'message' => 'Не удалось доставить письмо. Пожалуйста, попробуйте позже или обратитесь в поддержку.',
             ], 500);
         }
 
@@ -373,7 +436,7 @@ class AuroraAuthController extends Controller
 
         Log::info('[PasswordReset] Запрос на проверку кода', [
             'email' => $email,
-            'code_entered' => $code,
+            'code_length' => strlen($code),
         ]);
 
         $record = DB::table('password_reset_tokens')
@@ -392,7 +455,7 @@ class AuroraAuthController extends Controller
         $createdAt = Carbon::parse($record->created_at);
         if ($createdAt->addMinutes(15)->isPast()) {
             DB::table('password_reset_tokens')->whereRaw('LOWER(email) = ?', [$email])->delete();
-            Log::warning('[PasswordReset] Срок действия кода истёк', ['email' => $email, 'created_at' => $record->created_at]);
+            Log::warning('[PasswordReset] Срок действия кода истёк', ['email' => $email]);
 
             return response()->json([
                 'success' => false,
@@ -401,7 +464,7 @@ class AuroraAuthController extends Controller
         }
 
         if (! Hash::check($code, $record->token)) {
-            Log::warning('[PasswordReset] Введён неверный код', ['email' => $email, 'entered' => $code]);
+            Log::warning('[PasswordReset] Введён неверный код', ['email' => $email]);
 
             return response()->json([
                 'success' => false,
@@ -517,6 +580,59 @@ class AuroraAuthController extends Controller
             'success' => true,
             'message' => 'Пароль успешно изменён! Вы вошли в систему.',
             'redirect' => '/admin',
+        ]);
+    }
+
+    /**
+     * Switch user role (e.g. from student to tutor).
+     */
+    public function switchRole(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Не авторизован.'], 401);
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', 'string', 'in:tutor,student'],
+        ]);
+
+        $newRole = UserRole::from($validated['role']);
+        if ($user->role === $newRole) {
+            return response()->json([
+                'success' => true,
+                'redirect' => $newRole === UserRole::Tutor
+                    ? ($this->isMobileDevice($request) ? '/m' : '/admin/tutor-subscription-page?onboarding=1')
+                    : ($this->isMobileDevice($request) ? '/m' : '/cabinet'),
+            ]);
+        }
+
+        $user->role = $newRole;
+        $user->save();
+
+        if ($newRole === UserRole::Tutor) {
+            TutorProfile::firstOrCreate(['user_id' => $user->id]);
+            try {
+                $sub = app(SubscriptionService::class)->ensureTrialStarted($user, SubscriptionPlan::PRO);
+                $sub->update(['is_onboarded' => false]);
+            } catch (Throwable $e) {
+                Log::error('Failed to create subscription on role switch: '.$e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'role' => 'tutor',
+                'message' => 'Ваш аккаунт переключен в режим репетитора.',
+                'redirect' => $this->isMobileDevice($request) ? '/m' : '/admin/tutor-subscription-page?onboarding=1',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'role' => 'student',
+            'message' => 'Ваш аккаунт переключен в режим ученика.',
+            'redirect' => $this->isMobileDevice($request) ? '/m' : '/cabinet',
         ]);
     }
 }

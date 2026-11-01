@@ -23,10 +23,22 @@ export default function ForTutorsPage() {
   const [user, setUser] = useState(typeof window !== 'undefined' ? window.EDUSFERA_USER : null);
   const [linkedAccounts, setLinkedAccounts] = useState(typeof window !== 'undefined' ? (window.EDUSFERA_LINKED_ACCOUNTS || []) : []);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const userMenuRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const isChMobile = typeof navigator !== 'undefined' && navigator.userAgentData && navigator.userAgentData.mobile === true;
+      const isMobileUA = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Silk|HarmonyOS/i.test(navigator.userAgent);
+      const isIpadTouch = typeof navigator !== 'undefined' && /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1 && typeof screen !== 'undefined' && (screen.width <= 1024 || screen.height <= 1024);
+      const detected = Boolean(window.EDUSFERA_IS_MOBILE) || Boolean(isChMobile || isMobileUA || isIpadTouch);
+      setIsMobileDevice(detected);
+      if (detected) {
+        document.cookie = "edusfera_device=mobile; path=/; max-age=31536000; SameSite=Lax";
+      } else {
+        document.cookie = "edusfera_device=desktop; path=/; max-age=31536000; SameSite=Lax";
+      }
+
       if (window.EDUSFERA_USER) {
         setUser(window.EDUSFERA_USER);
       }
@@ -35,6 +47,13 @@ export default function ForTutorsPage() {
       }
     }
   }, []);
+
+  const cabinetUrl = isMobileDevice ? '/m' : '/admin';
+  const financeUrl = isMobileDevice ? '/m?tab=finance' : '/admin/tutor-subscription-page';
+  const scheduleUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/tutor-availability-page';
+  const lessonsUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/lessons';
+  const messagesUrl = isMobileDevice ? '/m?tab=chat' : '/admin/messages';
+  const diagnosticUrl = isMobileDevice ? '/m?tab=lessons' : '/admin/diagnostic';
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -214,7 +233,7 @@ export default function ForTutorsPage() {
                     {/* Links */}
                     <div className="space-y-0.5">
                       <a
-                        href="/admin"
+                        href={cabinetUrl}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#7D39EB]/30 to-[#C6FF33]/20 border border-white/10 hover:from-[#7D39EB]/50 hover:to-[#C6FF33]/30 transition-all"
                       >
                         <span className="text-base">🚀</span>
@@ -224,32 +243,25 @@ export default function ForTutorsPage() {
                       {user.role === 'tutor' && (
                         <>
                           <a
-                            href="/admin/tutor-subscription-page"
+                            href={financeUrl}
                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                           >
                             <Sparkles className="w-4 h-4 text-amber-400" />
                             <span>Управление тарифом</span>
                           </a>
                           <a
-                            href="/admin/tutor-availability-page"
+                            href={scheduleUrl}
                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                           >
                             <Calendar className="w-4 h-4 text-emerald-400" />
                             <span>Расписание</span>
                           </a>
                           <a
-                            href="/admin/lessons"
+                            href={lessonsUrl}
                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                           >
                             <BookOpen className="w-4 h-4 text-blue-400" />
                             <span>Мои занятия</span>
-                          </a>
-                          <a
-                            href="/admin/transactions"
-                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
-                          >
-                            <DollarSign className="w-4 h-4 text-[#C6FF33]" />
-                            <span>Мои финансы</span>
                           </a>
                         </>
                       )}
@@ -257,14 +269,14 @@ export default function ForTutorsPage() {
                       {(user.role === 'student' || user.role === 'parent') && (
                         <>
                           <a
-                            href="/admin/lessons"
+                            href={lessonsUrl}
                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                           >
                             <BookOpen className="w-4 h-4 text-blue-400" />
                             <span>Мои занятия</span>
                           </a>
                           <a
-                            href="/admin/diagnostic"
+                            href={diagnosticUrl}
                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                           >
                             <GraduationCap className="w-4 h-4 text-emerald-400" />
@@ -274,7 +286,7 @@ export default function ForTutorsPage() {
                       )}
 
                       <a
-                        href="/admin/messages"
+                        href={messagesUrl}
                         className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                       >
                         <MessageSquare className="w-4 h-4 text-violet-400" />
@@ -418,7 +430,7 @@ export default function ForTutorsPage() {
                   </div>
                 </div>
                 <a 
-                  href="/admin"
+                  href={cabinetUrl}
                   className="block text-center rounded-xl bg-gradient-to-r from-[#7D39EB]/40 to-[#C6FF33]/30 border border-white/20 py-3 text-sm font-semibold text-white"
                 >
                   🚀 Личный кабинет
@@ -622,7 +634,7 @@ export default function ForTutorsPage() {
                       <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                         <div className="flex items-center justify-between text-xs font-bold text-white mb-2">
                           <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-[#C6FF33]" /> Сегодня, 18:00</span>
-                          <span className="text-emerald-400">Оплачено (Эскроу)</span>
+                          <span className="text-emerald-400">Оплачено (ЕРИП)</span>
                         </div>
                         <p className="text-xs text-slate-300">Урок: Геометрия с Дмитрием В.</p>
                       </div>
@@ -657,6 +669,111 @@ export default function ForTutorsPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SPECIAL BLOCK: ОБЩЕСТВЕННЫЙ МЕТОДИЧЕСКИЙ СОВЕТ EDUSFERA ─── */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0B0F19] to-[#010101] border-b border-white/10 relative overflow-hidden">
+        {/* Ambient Gold & Purple Glow */}
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-[#7D39EB]/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="max-w-4xl mx-auto text-center mb-14">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono-tech text-xs font-bold uppercase tracking-wider mb-6">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span>🏛️ ЗАКРЫТАЯ КВОТА: 30 ПЕДАГОГОВ БЕЛАРУСИ · ЭКСПЕРТНЫЙ СОВЕТ</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight mb-6 font-rimma">
+              Мы не продаём вам IT-сервисы. <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-100 to-white">
+                Мы просим авторитетных учителей принять работу.
+              </span>
+            </h2>
+
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-3xl mx-auto font-normal">
+              Команда белорусских разработчиков Edusfera создала национальную платформу с заботой об опытных педагогах: мы разработали режим <strong>«Комфортное зрение 50+»</strong> (крупный шрифт 18–19px без мелких кнопок) и <strong>«Приватный кабинет»</strong> (полное скрытие расценок и контактов от посторонних). Чтобы цифровой класс стал по-настоящему удобным и родным, мы учреждаем <strong>Общественный методический совет</strong> и приглашаем 30 авторитетных учителей со стажем оценить нашу работу.
+            </p>
+          </div>
+
+          {/* 3 Privileges Cards Grid */}
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-12">
+            {/* Privilege 1 */}
+            <div className="bg-[#0F172A]/80 border border-amber-500/30 rounded-3xl p-7 sm:p-8 flex flex-col justify-between hover:border-amber-400/60 transition-all shadow-xl">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl mb-5">
+                  🎖️
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Статус эксперта и свидетельство для портфолио</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Каждому члену совета навсегда присваивается бейдж <strong>«Эксперт Методического совета Edusfera»</strong> и выдается номерное официальное Свидетельство с печатью — для аттестации и подтверждения педагогической категории.
+                </p>
+              </div>
+              <div className="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-amber-400 font-bold uppercase tracking-wider">
+                Привилегия №1 · Бессрочно
+              </div>
+            </div>
+
+            {/* Privilege 2 */}
+            <div className="bg-[#0F172A]/80 border border-[#C6FF33]/30 rounded-3xl p-7 sm:p-8 flex flex-col justify-between hover:border-[#C6FF33]/60 transition-all shadow-xl">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-[#C6FF33]/10 border border-[#C6FF33]/30 flex items-center justify-center text-2xl mb-5">
+                  🎁
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Полный тариф PRO (40 BYN) на 30 дней бесплатно</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Безлимитные по времени уроки в защищенном видеоклассе LiveKit SFU, интерактивная доска, автоматические чеки НПД для МНС РБ и помощь ИИ-Методиста — без привязки карт и обязательств.
+                </p>
+              </div>
+              <div className="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-[#C6FF33] font-bold uppercase tracking-wider">
+                Привилегия №2 · Экономия 40 BYN
+              </div>
+            </div>
+
+            {/* Privilege 3 */}
+            <div className="bg-[#0F172A]/80 border border-violet-500/30 rounded-3xl p-7 sm:p-8 flex flex-col justify-between hover:border-violet-400/60 transition-all shadow-xl">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-2xl mb-5">
+                  🔒
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Приватный кабинет: работа только со своими</h3>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Право в 1 клик полностью скрыть анкету и расценки из каталога и поисковиков. Ваши постоянные ученики переходят по прямой ссылке в персональную комнату без чужих преподавателей рядом.
+                </p>
+              </div>
+              <div className="pt-4 mt-6 border-t border-slate-800 text-[11px] font-mono-tech text-violet-400 font-bold uppercase tracking-wider">
+                Привилегия №3 · 100% приватность
+              </div>
+            </div>
+          </div>
+
+          {/* Call to action inside council box */}
+          <div className="max-w-3xl mx-auto bg-gradient-to-r from-amber-500/15 via-[#7D39EB]/15 to-transparent border border-amber-500/30 rounded-2xl p-6 sm:p-8 text-center backdrop-blur-xl">
+            <div className="text-sm font-semibold text-amber-200 mb-2">
+              Квота строго ограничена: принимаем заявки от первых 30 педагогов Республики Беларусь
+            </div>
+            <div className="text-xs text-slate-400 mb-6">
+              Вход без сложных паролей · Прямая связь с разработчиками · Официальное свидетельство эксперта
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a
+                href="/register?role=tutor&plan=pro&source=council"
+                className="text-black font-extrabold py-3.5 px-8 text-sm sm:text-base rounded-xl shadow-lg transition-transform hover:-translate-y-0.5"
+                style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }}
+              >
+                🎖️ Принять приглашение и войти в совет →
+              </a>
+              <a
+                href="https://t.me/edusferaby"
+                target="_blank"
+                rel="noreferrer"
+                className="py-3.5 px-6 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-medium text-sm transition-all"
+              >
+                ✈️ Задать вопрос разработчикам в Telegram
+              </a>
+            </div>
           </div>
         </div>
       </section>

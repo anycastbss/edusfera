@@ -70,9 +70,13 @@ class PaymentService
             }
 
             if (! $lesson->hasActivePaymentLock()) {
-                throw ValidationException::withMessages([
-                    'payment' => 'Резерв времени истек. Выберите слот заново.',
-                ]);
+                if ($lesson->status !== Lesson::STATUS_CANCELLED && ($lesson->start_time === null || $lesson->start_time->isFuture() || ($lesson->end_time !== null && $lesson->end_time->isFuture()))) {
+                    $lesson->update(['payment_lock_expires_at' => now('UTC')->addMinutes(30)]);
+                } else {
+                    throw ValidationException::withMessages([
+                        'payment' => 'Резерв времени истек. Выберите слот заново.',
+                    ]);
+                }
             }
 
             $currency = (string) config('payments.currency', 'BYN');

@@ -1,0 +1,1593 @@
+<!doctype html>
+<html lang="ru" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>EDUSFERA.BY — Платформа для репетиторов</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+      @font-face {
+        font-family: 'Rimma Sans';
+        src: url('assets/Rimma_sans-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #08090d;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #0e0f10;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        background: #ffffff;
+        overflow: hidden;
+        perspective: 1400px;
+        perspective-origin: center 45%;
+        transform-style: preserve-3d;
+      }
+
+      /* WebGL 3D Canvas Layer */
+      #three-canvas {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        pointer-events: none;
+        z-index: 2;
+        display: block;
+      }
+
+      /* Ambient Light Backdrop */
+      .ambient-canvas {
+        position: absolute;
+        inset: -200px;
+        pointer-events: none;
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      .ambient-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(140px);
+        opacity: 0.65;
+        will-change: transform;
+      }
+
+      .orb-purple {
+        top: -100px;
+        right: -100px;
+        width: 850px;
+        height: 850px;
+        background: radial-gradient(circle, rgba(125, 57, 235, 0.35) 0%, rgba(125, 57, 235, 0) 70%);
+      }
+
+      .orb-lime {
+        bottom: 50px;
+        left: -150px;
+        width: 820px;
+        height: 820px;
+        background: radial-gradient(circle, rgba(198, 255, 51, 0.32) 0%, rgba(198, 255, 51, 0) 70%);
+      }
+
+      .orb-coral {
+        top: 36%;
+        right: -120px;
+        width: 700px;
+        height: 700px;
+        background: radial-gradient(circle, rgba(217, 38, 62, 0.20) 0%, rgba(217, 38, 62, 0) 70%);
+      }
+
+      /* High-Tech Grid Texture */
+      .grid-pattern {
+        position: absolute;
+        inset: -200px;
+        background-size: 54px 54px;
+        background-image: 
+          linear-gradient(to right, rgba(14, 15, 16, 0.035) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(14, 15, 16, 0.035) 1px, transparent 1px);
+        mask-image: radial-gradient(ellipse at center, black 50%, transparent 85%);
+        -webkit-mask-image: radial-gradient(ellipse at center, black 50%, transparent 85%);
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      /* 3D Master Camera Rig */
+      #camera-rig {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        z-index: 10;
+        will-change: transform;
+      }
+
+      /* Universal Safe-Area Centered Scene */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        padding: 140px 90px 220px 90px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        opacity: 0;
+        pointer-events: none;
+        transform-style: preserve-3d;
+      }
+
+      /* Glassmorphic 3D Badge */
+      .pill-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 26px;
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1.5px solid rgba(218, 219, 226, 0.95);
+        border-radius: 100px;
+        box-shadow: 0 12px 32px rgba(14, 15, 16, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+        align-self: flex-start;
+        transform-style: preserve-3d;
+      }
+
+      .pill-badge .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #7d39eb;
+        box-shadow: 0 0 14px rgba(125, 57, 235, 0.85);
+      }
+
+      .pill-badge .dot.coral {
+        background: #d9263e;
+        box-shadow: 0 0 14px rgba(217, 38, 62, 0.85);
+      }
+
+      .pill-badge .dot.lime {
+        background: #059669;
+        box-shadow: 0 0 14px rgba(5, 150, 105, 0.85);
+      }
+
+      .pill-badge span {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #0e0f10;
+      }
+
+      /* Display Titles */
+      .display-title {
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 76px;
+        font-weight: 700;
+        line-height: 1.08;
+        letter-spacing: -0.03em;
+        margin-top: 24px;
+        color: #0e0f10;
+        transform-style: preserve-3d;
+      }
+
+      .highlight-purple {
+        color: #7d39eb;
+        text-shadow: 0 8px 30px rgba(125, 57, 235, 0.28);
+      }
+
+      .highlight-coral {
+        color: #d9263e;
+        text-shadow: 0 8px 30px rgba(217, 38, 62, 0.25);
+      }
+
+      /* ================= SCENE A — 3D KINETIC HOOK (0.0s - 2.0s) ================= */
+      .hook-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        height: 100%;
+        transform-style: preserve-3d;
+        position: relative;
+      }
+
+      .hook-heading-wrap {
+        z-index: 25;
+        position: relative;
+        max-width: 900px;
+        transform-style: preserve-3d;
+      }
+
+      .hook-line-wrap {
+        overflow: hidden;
+        margin-bottom: -6px;
+        transform-style: preserve-3d;
+      }
+
+      .hook-word {
+        font-family: 'Rimma Sans', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.04;
+        display: inline-block;
+        will-change: transform, opacity;
+        transform-style: preserve-3d;
+      }
+
+      .hook-word.word-1 {
+        font-size: 84px;
+        color: #0e0f10;
+      }
+
+      .hook-word.word-2 {
+        font-size: 94px;
+        color: #7d39eb;
+      }
+
+      .hook-word.word-3 {
+        font-size: 102px;
+        color: #0e0f10;
+      }
+
+      /* 3D Floating Spatial Cards */
+      .hook-floating-cards {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 20;
+        transform-style: preserve-3d;
+      }
+
+      .hook-task-card {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 2px solid rgba(229, 231, 235, 0.95);
+        border-radius: 26px;
+        padding: 24px 30px;
+        box-shadow: 
+          0 30px 60px rgba(14, 15, 16, 0.16),
+          0 10px 20px rgba(125, 57, 235, 0.10),
+          inset 0 1px 2px rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 26px;
+        font-weight: 600;
+        color: #1f2937;
+        width: 720px;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .hook-card-icon {
+        font-size: 32px;
+        flex-shrink: 0;
+      }
+
+      .hook-card-pos-1 {
+        top: 60px;
+        right: 0px;
+      }
+
+      .hook-card-pos-2 {
+        bottom: 240px;
+        left: 0px;
+      }
+
+      .hook-card-pos-3 {
+        bottom: 90px;
+        right: 0px;
+      }
+
+      .hook-freeze-pill {
+        margin-top: 48px;
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 38px;
+        background: #0e0f10;
+        color: #ffffff;
+        border-radius: 100px;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        box-shadow: 0 25px 60px rgba(14, 15, 16, 0.35);
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .hook-freeze-pill .flash-icon {
+        color: #c6ff33;
+        font-size: 28px;
+      }
+
+      /* ================= SCENE B — 3D ISOMETRIC PAIN CASCADE (2.0s - 5.0s) ================= */
+      .pain-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+
+      .pain-subtext {
+        font-size: 28px;
+        color: #4b5563;
+        font-weight: 500;
+        margin-top: 18px;
+        line-height: 1.4;
+        max-width: 860px;
+      }
+
+      .pain-cards-cluster {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        margin-top: 36px;
+        transform-style: preserve-3d;
+      }
+
+      .pain-card-item {
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 2px solid rgba(229, 231, 235, 0.95);
+        border-radius: 28px;
+        padding: 30px 34px;
+        box-shadow: 
+          0 25px 50px rgba(14, 15, 16, 0.10),
+          inset 0 1px 2px rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .pain-icon-badge {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        flex-shrink: 0;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      }
+
+      .pain-icon-badge.blue {
+        background: #eff6ff;
+        color: #2563eb;
+      }
+
+      .pain-icon-badge.red {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+
+      .pain-icon-badge.amber {
+        background: #fffbeb;
+        color: #d97706;
+      }
+
+      .pain-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .pain-card-title {
+        font-size: 30px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .pain-card-desc {
+        font-size: 24px;
+        font-weight: 500;
+        color: #6b7280;
+      }
+
+      .pain-impact-banner {
+        margin-top: 30px;
+        background: #d9263e;
+        color: #ffffff;
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 40px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-align: center;
+        padding: 24px 34px;
+        border-radius: 24px;
+        box-shadow: 0 25px 60px rgba(217, 38, 62, 0.40);
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      /* ================= SCENE C — PRODUCT REVEAL (5.0s - 7.0s) ================= */
+      .reveal-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+
+      .reveal-center-piece {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        margin-top: 20px;
+        transform-style: preserve-3d;
+      }
+
+      .reveal-logo-halo {
+        width: 210px;
+        height: 210px;
+        border-radius: 54px;
+        background: #ffffff;
+        box-shadow: 
+          0 40px 90px rgba(125, 57, 235, 0.45),
+          inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 36px;
+        border: 3px solid #ede9fe;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .reveal-logo-halo img {
+        width: 140px;
+        height: 140px;
+      }
+
+      .reveal-brand-name {
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 96px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #0e0f10;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .reveal-tagline {
+        font-size: 34px;
+        font-weight: 600;
+        color: #4b5563;
+        margin-top: 18px;
+        max-width: 820px;
+        line-height: 1.4;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .reveal-value-capsules {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 36px;
+        max-width: 860px;
+        transform-style: preserve-3d;
+      }
+
+      .value-pill {
+        padding: 14px 26px;
+        background: #ffffff;
+        border: 2px solid #ede9fe;
+        border-radius: 100px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #7d39eb;
+        box-shadow: 0 12px 28px rgba(125, 57, 235, 0.12);
+        transform-style: preserve-3d;
+      }
+
+      /* ================= SCENE D — 3D PRODUCT SHOWCASE (7.0s - 14.0s) ================= */
+      .showcase-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+
+      /* True 3D Floating Device Chassis */
+      .showcase-3d-chassis {
+        position: relative;
+        width: 900px;
+        height: 1060px;
+        background: #0e0f10;
+        border-radius: 48px;
+        padding: 10px;
+        box-shadow: 
+          0 50px 120px -20px rgba(14, 15, 16, 0.45),
+          0 35px 80px -10px rgba(125, 57, 235, 0.35),
+          inset 0 0 0 3px rgba(255, 255, 255, 0.2);
+        margin: 20px auto 0;
+        transform-style: preserve-3d;
+        will-change: transform;
+      }
+
+      .showcase-viewport-box {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        border-radius: 40px;
+        overflow: hidden;
+        transform-style: preserve-3d;
+      }
+
+      /* Sub-scene D1, D2, D3 Panels */
+      .view-panel {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transform-style: preserve-3d;
+        background: #ffffff;
+      }
+
+      .panel-profile-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* Apple / Linear Style 3D Success Glass Widgets */
+      .glass-success-widget {
+        position: absolute;
+        z-index: 70;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 20px;
+        background: rgba(255, 255, 255, 0.95);
+        -webkit-backdrop-filter: blur(24px);
+        backdrop-filter: blur(24px);
+        border: 1.5px solid rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+        pointer-events: none;
+        opacity: 0;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+        max-width: 440px;
+        width: max-content;
+      }
+
+      .widget-trust {
+        top: 130px;
+        right: 24px;
+      }
+
+      .widget-income {
+        bottom: 42px;
+        left: 48px;
+      }
+
+      .widget-booking {
+        top: 130px;
+        right: 24px;
+      }
+
+      .widget-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .widget-icon-box.trust { background: rgba(245, 158, 11, 0.18); }
+      .widget-icon-box.income { background: rgba(16, 185, 129, 0.18); }
+      .widget-icon-box.booking { background: rgba(125, 57, 235, 0.18); }
+
+      .widget-info {
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+      }
+
+      .widget-main {
+        font-family: 'Inter', sans-serif;
+        font-size: 21px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.2;
+      }
+
+      .widget-sub {
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        font-weight: 500;
+        color: #64748b;
+        margin-top: 3px;
+      }
+
+      /* 3D Interactive Slot Click Toast */
+      .slot-click-toast {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 840px;
+        background: #0e0f10;
+        border-radius: 24px;
+        padding: 24px 30px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: #ffffff;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+        z-index: 60;
+        opacity: 0;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .slot-toast-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: #c6ff33;
+        color: #0e0f10;
+        font-size: 26px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .slot-toast-title {
+        font-size: 26px;
+        font-weight: 700;
+      }
+
+      .slot-toast-desc {
+        font-size: 20px;
+        color: #9ca3af;
+        margin-top: 4px;
+      }
+
+      /* Showcase Bottom Benefit Caption Card */
+      .showcase-benefit-card {
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 2px solid rgba(229, 231, 235, 0.95);
+        border-radius: 30px;
+        padding: 28px 36px;
+        box-shadow: 0 25px 60px rgba(14, 15, 16, 0.10);
+        margin-top: 20px;
+        transform-style: preserve-3d;
+      }
+
+      .benefit-title {
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 38px;
+        font-weight: 700;
+        color: #0e0f10;
+        letter-spacing: -0.01em;
+      }
+
+      .benefit-subtitle {
+        font-size: 25px;
+        font-weight: 500;
+        color: #4b5563;
+        line-height: 1.4;
+        margin-top: 6px;
+      }
+
+      /* ================= SCENE E — EMOTIONAL PAYOFF (14.0s - 17.0s) ================= */
+      .payoff-stage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        text-align: center;
+        transform-style: preserve-3d;
+      }
+
+      .payoff-slogan-line {
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 114px;
+        font-weight: 700;
+        line-height: 1.0;
+        letter-spacing: -0.03em;
+        display: block;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .payoff-slogan-line.purple {
+        color: #7d39eb;
+        text-shadow: 0 15px 50px rgba(125, 57, 235, 0.4);
+      }
+
+      .payoff-slogan-line.dark {
+        color: #0e0f10;
+      }
+
+      .payoff-divider {
+        width: 140px;
+        height: 8px;
+        background: #c6ff33;
+        border-radius: 10px;
+        margin: 44px auto;
+        box-shadow: 0 0 30px rgba(198, 255, 51, 0.8);
+        transform-style: preserve-3d;
+      }
+
+      .payoff-sub-message {
+        font-size: 34px;
+        font-weight: 600;
+        color: #374151;
+        letter-spacing: -0.01em;
+        line-height: 1.45;
+        max-width: 860px;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      /* ================= SCENE F — BRAND FINALE (17.0s - 20.0s) ================= */
+      .finale-stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+
+      .finale-brand-mark {
+        width: 200px;
+        height: 200px;
+        border-radius: 50px;
+        background: #ffffff;
+        box-shadow: 
+          0 40px 90px rgba(125, 57, 235, 0.40),
+          inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 34px;
+        border: 2px solid #ede9fe;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .finale-brand-mark img {
+        width: 135px;
+        height: 135px;
+      }
+
+      .finale-logo-wordmark {
+        font-family: 'Rimma Sans', sans-serif;
+        font-size: 114px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #0e0f10;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .finale-tagline {
+        font-size: 38px;
+        font-weight: 600;
+        color: #4b5563;
+        margin-top: 16px;
+        max-width: 840px;
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .finale-feature-row {
+        display: flex;
+        gap: 16px;
+        margin-top: 38px;
+        transform-style: preserve-3d;
+      }
+
+      .feature-capsule {
+        padding: 14px 26px;
+        border-radius: 100px;
+        background: #ffffff;
+        border: 1.5px solid #e5e7eb;
+        font-size: 24px;
+        font-weight: 700;
+        color: #374151;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+
+      .finale-cta-btn {
+        margin-top: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 30px 68px;
+        border-radius: 100px;
+        background: #0e0f10;
+        color: #ffffff;
+        font-size: 34px;
+        font-weight: 700;
+        box-shadow: 0 30px 70px rgba(14, 15, 16, 0.4);
+        border: none;
+        transform-style: preserve-3d;
+        will-change: transform;
+      }
+
+      .finale-cta-btn .cta-arrow {
+        color: #c6ff33;
+        font-size: 38px;
+        display: inline-block;
+      }
+
+      .finale-domain-badge {
+        margin-top: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 40px;
+        background: #f3f4f6;
+        border-radius: 100px;
+        font-size: 32px;
+        font-weight: 800;
+        color: #7d39eb;
+        letter-spacing: 0.05em;
+        border: 2px solid #e5e7eb;
+        transform-style: preserve-3d;
+      }
+
+      /* Progress Bar */
+      .progress-bar-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.04);
+        z-index: 100;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(to right, #7d39eb, #d9263e, #c6ff33);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="20"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- Background Audio Track -->
+      <audio id="bgm" src="audio_track.mp3" data-start="0" data-duration="20"></audio>
+
+      <!-- Ambient Lighting -->
+      <div class="ambient-canvas" data-layout-allow-overflow>
+        <div class="ambient-orb orb-purple" data-layout-allow-overflow></div>
+        <div class="ambient-orb orb-lime" data-layout-allow-overflow></div>
+        <div class="ambient-orb orb-coral" data-layout-allow-overflow></div>
+      </div>
+      <div class="grid-pattern"></div>
+
+      <!-- WEBGL 3D THREE.JS CANVAS -->
+      <canvas id="three-canvas" width="1080" height="1920" data-layout-allow-overflow></canvas>
+
+      <!-- MASTER 3D CAMERA RIG -->
+      <div id="camera-rig">
+
+        <!-- ================= SCENE A — 3D KINETIC HOOK (0.0s - 2.0s) ================= -->
+        <div id="scene1" class="scene">
+          <div class="hook-stage">
+            <div class="hook-heading-wrap">
+              <div class="hook-line-wrap" data-layout-allow-overflow>
+                <div id="h-word-1" class="hook-word word-1" data-layout-allow-overflow>РЕПЕТИТОРСТВО —</div>
+              </div>
+              <div class="hook-line-wrap" data-layout-allow-overflow>
+                <div id="h-word-2" class="hook-word word-2" data-layout-allow-overflow>ЭТО НЕ ТОЛЬКО</div>
+              </div>
+              <div class="hook-line-wrap" data-layout-allow-overflow>
+                <div id="h-word-3" class="hook-word word-3" data-layout-allow-overflow>УРОКИ.</div>
+              </div>
+            </div>
+
+            <!-- Kinetic floating chaos fragments in 3D -->
+            <div class="hook-floating-cards">
+              <div id="h-card-1" class="hook-task-card hook-card-pos-1" data-layout-allow-overflow>
+                <span class="hook-card-icon">💬</span>
+                <span>«Перенесите урок на 19:30, пожалуйста!»</span>
+              </div>
+              <div id="h-card-2" class="hook-task-card hook-card-pos-2" data-layout-allow-overflow>
+                <span class="hook-card-icon">📅</span>
+                <span>Накладка: 2 ученика записались на 17:00</span>
+              </div>
+              <div id="h-card-3" class="hook-task-card hook-card-pos-3" data-layout-allow-overflow>
+                <span class="hook-card-icon">💳</span>
+                <span>«Снова забыли скинуть чек об оплате...»</span>
+              </div>
+            </div>
+
+            <div id="h-freeze-pill" class="hook-freeze-pill" data-layout-allow-overflow>
+              <span class="flash-icon">⚡</span>
+              <span>ОРГАНИЗАЦИОННЫЙ ХАОС</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= SCENE B — REVEAL THE PROBLEM (2.0s - 5.0s) ================= -->
+        <div id="scene2" class="scene">
+          <div class="pain-stage">
+            <div>
+              <div id="p-badge" class="pill-badge">
+                <div class="dot coral"></div>
+                <span>Знакомая ситуация?</span>
+              </div>
+              <h2 id="p-title" class="display-title">
+                Хватит тонуть<br />
+                <span class="highlight-coral">в рутине.</span>
+              </h2>
+              <p id="p-subtext" class="pain-subtext">
+                Переписки, накладки и ручной учёт оплат отнимают драгоценное время.
+              </p>
+            </div>
+
+            <div class="pain-cards-cluster">
+              <div id="p-card-1" class="pain-card-item" data-layout-allow-overflow>
+                <div class="pain-icon-badge blue">💬</div>
+                <div class="pain-card-content">
+                  <div class="pain-card-title">Бесконечные переписки</div>
+                  <div class="pain-card-desc">Вопросы в 5 мессенджерах: «А когда наш урок?»</div>
+                </div>
+              </div>
+              <div id="p-card-2" class="pain-card-item" data-layout-allow-overflow>
+                <div class="pain-icon-badge red">📅</div>
+                <div class="pain-card-content">
+                  <div class="pain-card-title">Накладки в расписании</div>
+                  <div class="pain-card-desc">Отмены за 15 минут до занятия и пустые окна</div>
+                </div>
+              </div>
+              <div id="p-card-3" class="pain-card-item" data-layout-allow-overflow>
+                <div class="pain-icon-badge amber">💳</div>
+                <div class="pain-card-content">
+                  <div class="pain-card-title">Рутинный биллинг</div>
+                  <div class="pain-card-desc">Неловкие напоминания об оплате и проверка чеков</div>
+                </div>
+              </div>
+
+              <div id="p-banner" class="pain-impact-banner" data-layout-allow-overflow>
+                ПОРА НАВЕСТИ ПОРЯДОК
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= SCENE C — PRODUCT REVEAL (5.0s - 7.0s) ================= -->
+        <div id="scene3" class="scene">
+          <div class="reveal-stage">
+            <div>
+              <div id="r-badge" class="pill-badge">
+                <div class="dot"></div>
+                <span>Цифровая платформа</span>
+              </div>
+              <h2 id="r-title" class="display-title">
+                Знакомьтесь:<br />
+                <span class="highlight-purple">Edusfera</span>
+              </h2>
+            </div>
+
+            <div class="reveal-center-piece">
+              <div id="r-logo-halo" class="reveal-logo-halo" data-layout-allow-overflow>
+                <img src="assets/logo.svg" alt="Edusfera" />
+              </div>
+              <h3 id="r-name" class="reveal-brand-name">EDUSFERA.BY</h3>
+              <p id="r-tagline" class="reveal-tagline">
+                Профессиональная платформа для репетиторов Беларуси
+              </p>
+              <div id="r-capsules" class="reveal-value-capsules">
+                <div class="value-pill">0 BYN комиссии</div>
+                <div class="value-pill">Проверка дипломов</div>
+                <div class="value-pill">Умное расписание</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= SCENE D — 3D PRODUCT SHOWCASE (7.0s - 14.0s) ================= -->
+        <div id="scene4" class="scene">
+          <div class="showcase-stage">
+            <div>
+              <div id="sh-badge" class="pill-badge">
+                <div class="dot"></div>
+                <span id="sh-badge-text">Витрина преподавателя</span>
+              </div>
+              <h2 id="sh-title" class="display-title">
+                <span id="sh-title-line1">Ваш профиль</span><br />
+                <span id="sh-title-line2" class="highlight-purple">вызывает доверие</span>
+              </h2>
+            </div>
+
+            <!-- True 3D Device Frame Chassis -->
+            <div id="sh-chassis" class="showcase-3d-chassis" data-layout-allow-overflow>
+              <div id="sh-viewport" class="showcase-viewport-box">
+                
+                <!-- Screen 1: Tutor Profile Card (Galina Z.) -->
+                <div id="view-profile" class="view-panel" data-layout-allow-overflow>
+                  <img class="panel-profile-img" src="assets/screen_tutor_profile.png" style="object-position: center top;" alt="Профиль репетитора" />
+                </div>
+
+                <!-- Screen 2: Real Packages & 0 BYN Commission -->
+                <div id="view-packages" class="view-panel" data-layout-allow-overflow>
+                  <img class="panel-profile-img" src="assets/screen_desktop_tutor.png" style="object-position: 90% 18%; transform: scale(1.15); transform-origin: 90% 18%;" alt="Пакеты занятий" />
+                </div>
+
+                <!-- Screen 3: Authentic Booking Calendar & Free Slots -->
+                <div id="view-calendar" class="view-panel" data-layout-allow-overflow>
+                  <img class="panel-profile-img" src="assets/screen_tutor_calendar_slots.png" style="object-position: center 82%; transform: scale(1.08); transform-origin: center 82%;" alt="Расписание занятий" />
+                  
+                  <!-- Live Confirmation Toast -->
+                  <div id="sh-slot-toast" class="slot-click-toast">
+                    <div class="slot-toast-icon">✓</div>
+                    <div>
+                      <div class="slot-toast-title">Слот 12:00 забронирован</div>
+                      <div class="slot-toast-desc">Занятие подтверждено • Накладки исключены</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Apple/Linear Floating 3D Success Glass Widgets -->
+              <div id="sh-widget-trust" class="glass-success-widget widget-trust">
+                <div class="widget-icon-box trust">⭐️</div>
+                <div class="widget-info">
+                  <div class="widget-main">5.0 · 28 отзывов</div>
+                  <div class="widget-sub">✓ Диплом проверен платформой</div>
+                </div>
+              </div>
+
+              <div id="sh-widget-income" class="glass-success-widget widget-income">
+                <div class="widget-icon-box income">💳</div>
+                <div class="widget-info">
+                  <div class="widget-main">100% средств репетитору</div>
+                  <div class="widget-sub">0 BYN комиссии сервиса</div>
+                </div>
+              </div>
+
+              <div id="sh-widget-booking" class="glass-success-widget widget-booking">
+                <div class="widget-icon-box booking">🔔</div>
+                <div class="widget-info">
+                  <div class="widget-main">Новая запись: 19 окт, 12:00</div>
+                  <div class="widget-sub">Ученик записался в 1 клик</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Benefit Caption Card -->
+            <div id="sh-benefit-box" class="showcase-benefit-card">
+              <div id="sh-benefit-title" class="benefit-title">Ваша визитка в интернете</div>
+              <div id="sh-benefit-sub" class="benefit-subtitle">Диплом проверен платформой • Ученики сразу видят опыт и отзывы</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= SCENE E — EMOTIONAL PAYOFF (14.0s - 17.0s) ================= -->
+        <div id="scene5" class="scene">
+          <div class="payoff-stage">
+            <div id="payoff-badge" class="pill-badge" style="margin-bottom: 36px;">
+              <div class="dot lime"></div>
+              <span>Результат с Edusfera</span>
+            </div>
+
+            <div id="po-slogan-1" class="payoff-slogan-line dark" data-layout-allow-occlusion>МЕНЬШЕ РУТИНЫ.</div>
+            <div id="po-slogan-2" class="payoff-slogan-line purple" data-layout-allow-occlusion>БОЛЬШЕ ВРЕМЕНИ</div>
+            <div id="po-slogan-3" class="payoff-slogan-line dark" data-layout-allow-occlusion>УЧЕНИКАМ.</div>
+
+            <div id="po-divider" class="payoff-divider"></div>
+
+            <p id="po-caption" class="payoff-sub-message">
+              Платформа берёт расписание и запись на себя.<br />
+              Вы просто делитесь знаниями.
+            </p>
+          </div>
+        </div>
+
+        <!-- ================= SCENE F — BRAND FINALE (17.0s - 20.0s) ================= -->
+        <div id="scene6" class="scene">
+          <div class="finale-stage">
+            <div id="fin-mark" class="finale-brand-mark">
+              <img src="assets/logo.svg" alt="Логотип Edusfera" />
+            </div>
+
+            <h2 id="fin-name" class="finale-logo-wordmark">EDUSFERA.BY</h2>
+
+            <p id="fin-tagline" class="finale-tagline">
+              Ваше время — ученикам.
+            </p>
+
+            <div id="fin-features" class="finale-feature-row">
+              <div class="feature-capsule">0 BYN комиссии</div>
+              <div class="feature-capsule">Проверка дипломов</div>
+              <div class="feature-capsule">Умное расписание</div>
+            </div>
+
+            <div id="fin-btn" class="finale-cta-btn">
+              <span>Создайте свою витрину</span>
+              <span class="cta-arrow">→</span>
+            </div>
+
+            <div id="fin-domain" class="finale-domain-badge">
+              edusfera.by
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /camera-rig -->
+
+      <!-- Progress Track -->
+      <div class="progress-bar-container">
+        <div id="timeline-progress" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- THREE.JS 3D ENGINE & GSAP MASTER ORCHESTRATION -->
+    <script>
+      // ================= 1. THREE.JS 3D WEBGL GRAPHICS SETUP =================
+      const canvas3D = document.getElementById("three-canvas");
+      const renderer3D = new THREE.WebGLRenderer({ canvas: canvas3D, alpha: true, antialias: true });
+      renderer3D.setSize(1080, 1920, false);
+      renderer3D.setPixelRatio(1);
+      renderer3D.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer3D.toneMappingExposure = 1.15;
+
+      const scene3D = new THREE.Scene();
+      const camera3D = new THREE.PerspectiveCamera(40, 1080 / 1920, 0.1, 2000);
+      camera3D.position.set(0, 0, 800);
+
+      // 3D Lighting setup
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      scene3D.add(ambientLight);
+
+      const lightPurple = new THREE.PointLight(0x7d39eb, 3.5, 1200);
+      lightPurple.position.set(-300, 400, 300);
+      scene3D.add(lightPurple);
+
+      const lightLime = new THREE.PointLight(0xc6ff33, 2.5, 1200);
+      lightLime.position.set(300, -400, 200);
+      scene3D.add(lightLime);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.6);
+      dirLight.position.set(200, 600, 500);
+      scene3D.add(dirLight);
+
+      // 3D Floating Atmospheric Bokeh / Particle Field
+      const particleCount = 160;
+      const particleGeo = new THREE.BufferGeometry();
+      const particlePositions = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3 + 0] = (Math.sin(i * 12.3) * 520);
+        particlePositions[i * 3 + 1] = (Math.cos(i * 7.7) * 940);
+        particlePositions[i * 3 + 2] = (Math.sin(i * 4.9) * 380) - 80;
+      }
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0xa855f7,
+        size: 6,
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending
+      });
+      const particleField = new THREE.Points(particleGeo, particleMat);
+      scene3D.add(particleField);
+
+      // Deterministic 3D Render Function based on Film Time
+      function render3D(time) {
+        // Subtle ambient particle field drift
+        particleField.rotation.y = time * 0.05;
+        particleField.rotation.x = Math.sin(time * 0.08) * 0.04;
+
+        // Dynamic volumetric lighting path
+        lightPurple.position.x = Math.sin(time * 1.2) * 380;
+        lightPurple.position.y = Math.cos(time * 1.0) * 480 + 120;
+        lightLime.position.x = Math.cos(time * 1.3) * 380;
+        lightLime.position.y = Math.sin(time * 1.1) * 480 - 120;
+
+        renderer3D.render(scene3D, camera3D);
+      }
+
+      // Hook HyperFrames seek event
+      window.addEventListener("hf-seek", (e) => {
+        const t = e.detail ? e.detail.time : 0;
+        render3D(t);
+        if (window.__timelines && window.__timelines["main"]) {
+          window.__timelines["main"].seek(t, false);
+        }
+      });
+
+
+      // ================= 2. GSAP MASTER CINEMATIC 3D TIMELINE =================
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ 
+        paused: true,
+        onUpdate: () => {
+          render3D(tl.time());
+        }
+      });
+
+      // Continuous 20-second progress bar
+      tl.to("#timeline-progress", { width: "100%", duration: 20.0, ease: "none" }, 0);
+
+      // ================= MASTER 3D CAMERA RIG CHOREOGRAPHY =================
+      tl.set("#camera-rig", { z: 0, rotationX: 0, rotationY: 0, rotationZ: 0 }, 0);
+
+      // 0.0 - 2.0s: Hook push into kinetic typography with subtle camera tilt
+      tl.to("#camera-rig", { z: 70, rotationX: 3, rotationY: -2, duration: 2.0, ease: "power2.inOut" }, 0);
+
+      // 2.0 - 5.0s: Pain cascade 3D isometric perspective
+      tl.to("#camera-rig", { z: 40, rotationY: 4, rotationX: 2, duration: 3.0, ease: "power2.out" }, 2.0);
+
+      // 5.0 - 7.0s: Product Reveal 3D swoop
+      tl.to("#camera-rig", { z: 60, rotationY: 0, rotationX: 0, duration: 2.0, ease: "power3.out" }, 5.0);
+
+      // 7.0 - 14.0s: Showcase multi-axis 3D camera path
+      tl.to("#camera-rig", { z: 80, rotationX: 1, duration: 7.0, ease: "power1.inOut" }, 7.0);
+
+      // 14.0 - 17.0s: Emotional Payoff pull-back for serene wide view
+      tl.to("#camera-rig", { z: -30, rotationX: 0, rotationY: 0, duration: 3.0, ease: "power2.out" }, 14.0);
+
+      // 17.0 - 20.0s: Brand Finale confident resting position
+      tl.to("#camera-rig", { z: 0, duration: 3.0, ease: "power3.out" }, 17.0);
+
+
+      // ================= SCENE A — 3D KINETIC HOOK (0.0s - 2.0s) =================
+      tl.set("#scene1", { opacity: 1 }, 0);
+
+      // Kinetic words entrance in 3D
+      tl.fromTo("#h-word-1", 
+        { opacity: 0, y: 70, z: -120, rotationX: 25 }, 
+        { opacity: 1, y: 0, z: 0, rotationX: 0, duration: 0.38, ease: "power4.out" }, 
+        0
+      );
+      tl.fromTo("#h-word-2", 
+        { opacity: 0, x: -70, z: -100, rotationY: -20 }, 
+        { opacity: 1, x: 0, z: 0, rotationY: 0, duration: 0.42, ease: "back.out(1.8)" }, 
+        0.35
+      );
+      tl.fromTo("#h-word-3", 
+        { opacity: 0, y: 60, z: -80, scale: 0.8 }, 
+        { opacity: 1, y: 0, z: 0, scale: 1.0, duration: 0.4, ease: "power4.out" }, 
+        0.7
+      );
+
+      // Floating 3D chaotic cards arriving with true spatial depth & rotation
+      tl.fromTo("#h-card-1", 
+        { opacity: 0, x: 180, z: -250, rotationX: 22, rotationY: -18, rotationZ: 5 }, 
+        { opacity: 1, x: 0, z: 30, rotationX: 8, rotationY: -8, rotationZ: -2, duration: 0.48, ease: "power3.out" }, 
+        0.18
+      );
+      tl.fromTo("#h-card-2", 
+        { opacity: 0, x: -180, z: -200, rotationX: -18, rotationY: 20, rotationZ: -6 }, 
+        { opacity: 1, x: 0, z: 45, rotationX: -6, rotationY: 8, rotationZ: 3, duration: 0.48, ease: "power3.out" }, 
+        0.48
+      );
+      tl.fromTo("#h-card-3", 
+        { opacity: 0, y: 120, z: -180, rotationX: 16, rotationY: -12, rotationZ: 4 }, 
+        { opacity: 1, y: 0, z: 60, rotationX: 4, rotationY: -4, rotationZ: -1, duration: 0.48, ease: "power3.out" }, 
+        0.78
+      );
+
+      // Chaos freeze at 1.35s with 3D accent pill
+      tl.fromTo("#h-freeze-pill", 
+        { opacity: 0, scale: 0.5, z: -150, rotationX: 30 }, 
+        { opacity: 1, scale: 1.0, z: 40, rotationX: 0, duration: 0.35, ease: "back.out(2)" }, 
+        1.35
+      );
+
+      // Scene A 3D zoom-through exit (1.78s - 2.0s)
+      tl.to(["#h-word-1", "#h-word-2", "#h-word-3", "#h-card-1", "#h-card-2", "#h-card-3", "#h-freeze-pill"], {
+        z: 450,
+        scale: 1.4,
+        opacity: 0,
+        duration: 0.25,
+        ease: "power3.in"
+      }, 1.78);
+      tl.to("#scene1", { opacity: 0, duration: 0.15 }, 1.95);
+
+
+      // ================= SCENE B — 3D ISOMETRIC PAIN (2.0s - 5.0s) =================
+      tl.set("#scene2", { opacity: 1 }, 2.0);
+      tl.fromTo("#p-badge", { opacity: 0, y: -20, z: -50 }, { opacity: 1, y: 0, z: 0, duration: 0.3, ease: "power2.out" }, 2.0);
+      tl.fromTo("#p-title", { opacity: 0, y: 30, z: -80 }, { opacity: 1, y: 0, z: 0, duration: 0.4, ease: "power3.out" }, 2.1);
+      tl.fromTo("#p-subtext", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 2.25);
+
+      // Cascading 3D pain cards with spatial angle stagger
+      tl.fromTo("#p-card-1", 
+        { opacity: 0, x: -120, z: -180, rotationY: 20, rotationX: 10 }, 
+        { opacity: 1, x: 0, z: 20, rotationY: 0, rotationX: 0, duration: 0.45, ease: "back.out(1.5)" }, 
+        2.4
+      );
+      tl.fromTo("#p-card-2", 
+        { opacity: 0, x: 120, z: -150, rotationY: -20, rotationX: 8 }, 
+        { opacity: 1, x: 0, z: 35, rotationY: 0, rotationX: 0, duration: 0.45, ease: "back.out(1.5)" }, 
+        2.8
+      );
+      tl.fromTo("#p-card-3", 
+        { opacity: 0, y: 70, z: -120, rotationX: 18 }, 
+        { opacity: 1, y: 0, z: 50, rotationX: 0, duration: 0.45, ease: "back.out(1.5)" }, 
+        3.2
+      );
+      tl.fromTo("#p-banner", 
+        { opacity: 0, scale: 0.8, z: -100, rotationX: -15 }, 
+        { opacity: 1, scale: 1.0, z: 20, rotationX: 0, duration: 0.45, ease: "back.out(1.8)" }, 
+        3.6
+      );
+
+      // 3D Singularity Collapse into the distance (4.65s - 5.0s)
+      tl.to(["#p-card-1", "#p-card-2", "#p-card-3", "#p-banner"], {
+        scale: 0.35,
+        z: -300,
+        rotationX: 30,
+        rotationY: -25,
+        opacity: 0,
+        duration: 0.32,
+        ease: "power3.in"
+      }, 4.65);
+      tl.to("#scene2", { opacity: 0, duration: 0.15 }, 4.9);
+
+
+      // ================= SCENE C — PRODUCT REVEAL (5.0s - 7.0s) =================
+      tl.set("#scene3", { opacity: 1 }, 5.0);
+      tl.fromTo("#r-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 5.0);
+      tl.fromTo("#r-title", { opacity: 0, y: 25, z: -60 }, { opacity: 1, y: 0, z: 0, duration: 0.4, ease: "power3.out" }, 5.1);
+
+      tl.fromTo("#r-logo-halo", 
+        { opacity: 0, scale: 0.25, rotationY: -180, z: -350 }, 
+        { opacity: 1, scale: 1.0, rotationY: 0, z: 40, duration: 0.8, ease: "back.out(1.8)" }, 
+        5.15
+      );
+      tl.fromTo("#r-name", { opacity: 0, y: 30, z: -50 }, { opacity: 1, y: 0, z: 0, duration: 0.5, ease: "power3.out" }, 5.4);
+      tl.fromTo("#r-tagline", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 5.65);
+      tl.fromTo(".value-pill", 
+        { opacity: 0, y: 20, z: -40, scale: 0.8 }, 
+        { opacity: 1, y: 0, z: 20, scale: 1.0, stagger: 0.08, duration: 0.35, ease: "back.out(1.8)" }, 
+        5.55
+      );
+
+      // Scene C Out into Product Showcase (6.75s - 7.0s)
+      tl.to(["#r-logo-halo", "#r-name", "#r-tagline", "#r-capsules"], {
+        scale: 1.28,
+        z: 280,
+        opacity: 0,
+        duration: 0.28,
+        ease: "power2.in"
+      }, 6.75);
+      tl.to("#scene3", { opacity: 0, duration: 0.15 }, 6.92);
+
+
+      // ================= SCENE D — 3D PRODUCT SHOWCASE (7.0s - 14.0s) =================
+      tl.set("#scene4", { opacity: 1 }, 7.0);
+      tl.fromTo("#sh-badge", { opacity: 0, y: -15 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 7.0);
+      tl.fromTo("#sh-title", { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 7.08);
+
+      // 3D Chassis Arrival: dramatic isometric swoop with 3D yaw and pitch
+      tl.fromTo("#sh-chassis", 
+        { opacity: 0, y: 120, z: -350, rotationY: 26, rotationX: 16, scale: 0.78 }, 
+        { opacity: 1, y: 0, z: 30, rotationY: -6, rotationX: 4, scale: 1.0, duration: 0.65, ease: "power3.out" }, 
+        7.15
+      );
+      tl.fromTo("#sh-benefit-box", 
+        { opacity: 0, y: 30, z: -40 }, 
+        { opacity: 1, y: 0, z: 20, duration: 0.45, ease: "power2.out" }, 
+        7.4
+      );
+
+      // ---- Beat D1: Tutor Profile & Verified Diploma (7.0s - 9.2s) ----
+      tl.set("#view-profile", { opacity: 1 }, 7.0);
+      // Settle chassis to confident viewing angle
+      tl.to("#sh-chassis", { rotationY: 0, rotationX: 0, z: 40, duration: 0.7, ease: "power2.inOut" }, 7.8);
+
+      // Success Widget 1 (Trust / Diploma) pops out in 3D parallax
+      tl.fromTo("#sh-widget-trust", 
+        { opacity: 0, x: 40, z: -30, scale: 0.8 }, 
+        { opacity: 1, x: 0, z: 80, scale: 1.0, duration: 0.45, ease: "back.out(1.8)" }, 
+        7.6
+      );
+      tl.to("#sh-widget-trust", { opacity: 0, x: 30, z: 120, duration: 0.25 }, 9.05);
+
+      // ---- Beat D2: Lesson Packages & 0% Commission (9.2s - 11.4s) ----
+      tl.to("#view-profile", { opacity: 0, duration: 0.25 }, 9.15);
+      tl.set("#sh-badge-text", { textContent: "Тарифы и услуги" }, 9.2);
+      tl.set("#sh-title-line1", { textContent: "Пакеты занятий" }, 9.2);
+      tl.set("#sh-title-line2", { textContent: "и 0 BYN комиссии" }, 9.2);
+      tl.set("#sh-benefit-title", { textContent: "Прозрачные цены и прямая оплата" }, 9.2);
+      tl.set("#sh-benefit-sub", { textContent: "Ученики выбирают формат • 100% оплаты напрямую репетитору" }, 9.2);
+
+      // 3D Chassis rotates to right-angled showcase
+      tl.to("#sh-chassis", { rotationY: 8, rotationX: 3, z: 50, duration: 0.6, ease: "power2.inOut" }, 9.2);
+
+      tl.fromTo("#view-packages", 
+        { opacity: 0, scale: 1.06 }, 
+        { opacity: 1, scale: 1.0, duration: 0.35, ease: "power2.out" }, 
+        9.2
+      );
+
+      // Success Widget 2 (Direct Payout) pops out in 3D parallax
+      tl.fromTo("#sh-widget-income", 
+        { opacity: 0, x: -40, z: -30, scale: 0.8 }, 
+        { opacity: 1, x: 0, z: 85, scale: 1.0, duration: 0.45, ease: "back.out(1.8)" }, 
+        9.4
+      );
+      tl.to("#sh-widget-income", { opacity: 0, x: -30, z: 120, duration: 0.25 }, 11.25);
+
+      // ---- Beat D3: Online Booking & Available Slots (11.4s - 14.0s) ----
+      tl.to("#view-packages", { opacity: 0, duration: 0.25 }, 11.35);
+      tl.set("#sh-badge-text", { textContent: "Онлайн-запись" }, 11.4);
+      tl.set("#sh-title-line1", { textContent: "Свободные слоты" }, 11.4);
+      tl.set("#sh-title-line2", { textContent: "без переписок" }, 11.4);
+      tl.set("#sh-benefit-title", { textContent: "Запись в 1 клик прямо в профиле" }, 11.4);
+      tl.set("#sh-benefit-sub", { textContent: "Ученики выбирают свободное время • Накладки и путаница исключены" }, 11.4);
+
+      // 3D Chassis pushes forward into the slot selector
+      tl.to("#sh-chassis", { rotationY: -4, rotationX: 2, z: 80, scale: 1.03, duration: 0.65, ease: "power2.inOut" }, 11.4);
+
+      tl.fromTo("#view-calendar", 
+        { opacity: 0, scale: 1.04 }, 
+        { opacity: 1, scale: 1.0, duration: 0.35, ease: "power2.out" }, 
+        11.4
+      );
+
+      // Success Widget 3 (Instant Booking Push)
+      tl.fromTo("#sh-widget-booking", 
+        { opacity: 0, x: 40, z: -30, scale: 0.8 }, 
+        { opacity: 1, x: 0, z: 85, scale: 1.0, duration: 0.45, ease: "back.out(1.8)" }, 
+        11.6
+      );
+
+      // 3D Slot confirmation toast pops out towards viewer
+      tl.fromTo("#sh-slot-toast", 
+        { opacity: 0, y: 40, z: -60, scale: 0.85 }, 
+        { opacity: 1, y: 0, z: 60, scale: 1.0, duration: 0.45, ease: "back.out(1.8)" }, 
+        12.2
+      );
+      tl.to("#sh-widget-booking", { opacity: 0, z: 120, duration: 0.25 }, 13.5);
+
+      // Scene D 3D Forward Flythrough into Emotional Payoff (13.68s - 14.0s)
+      tl.to(["#sh-chassis", "#sh-benefit-box"], {
+        scale: 1.35,
+        z: 420,
+        opacity: 0,
+        duration: 0.35,
+        ease: "power2.in"
+      }, 13.68);
+      tl.to("#scene4", { opacity: 0, duration: 0.15 }, 13.92);
+
+
+      // ================= SCENE E — 3D EMOTIONAL PAYOFF (14.0s - 17.0s) =================
+      tl.set("#scene5", { opacity: 1 }, 14.0);
+      tl.fromTo("#payoff-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 14.0);
+
+      // "МЕНЬШЕ РУТИНЫ." with 3D Depth Push
+      tl.fromTo("#po-slogan-1", 
+        { opacity: 0, scale: 0.85, z: -80, y: -25 }, 
+        { opacity: 1, scale: 1.0, z: 20, y: 0, duration: 0.5, ease: "power3.out" }, 
+        14.1
+      );
+
+      // "БОЛЬШЕ ВРЕМЕНИ"
+      tl.fromTo("#po-slogan-2", 
+        { opacity: 0, scale: 1.3, z: 120 }, 
+        { opacity: 1, scale: 1.0, z: 40, duration: 0.55, ease: "back.out(1.8)" }, 
+        14.75
+      );
+
+      // "УЧЕНИКАМ."
+      tl.fromTo("#po-slogan-3", 
+        { opacity: 0, scale: 0.9, z: -60, y: 30 }, 
+        { opacity: 1, scale: 1.0, z: 20, y: 0, duration: 0.45, ease: "power3.out" }, 
+        15.1
+      );
+
+      // Divider & caption
+      tl.fromTo("#po-divider", 
+        { width: 0, opacity: 0 }, 
+        { width: 140, opacity: 1, duration: 0.45, ease: "power2.out" }, 
+        15.4
+      );
+      tl.fromTo("#po-caption", 
+        { opacity: 0, y: 20, z: -30 }, 
+        { opacity: 1, y: 0, z: 0, duration: 0.5, ease: "power2.out" }, 
+        15.65
+      );
+
+      // Scene E Upward Elevation 3D Exit (16.68s - 17.0s)
+      tl.to("#scene5", { y: -160, z: 200, opacity: 0, duration: 0.32, ease: "power2.in" }, 16.68);
+
+
+      // ================= SCENE F — 3D BRAND FINALE (17.0s - 20.0s) =================
+      tl.set("#scene6", { opacity: 1 }, 17.0);
+
+      // 3D Brand Logo Emblem locks in with 3D tumble
+      tl.fromTo("#fin-mark", 
+        { opacity: 0, scale: 0.3, rotationY: -180, rotationX: 45, z: -250, y: 90 }, 
+        { opacity: 1, scale: 1.0, rotationY: 0, rotationX: 0, z: 40, y: 0, duration: 0.8, ease: "back.out(2)" }, 
+        17.05
+      );
+
+      // Wordmark, tagline, capsules
+      tl.fromTo("#fin-name", { opacity: 0, y: 25, z: -40, scale: 0.92 }, { opacity: 1, y: 0, z: 0, scale: 1.0, duration: 0.5, ease: "power3.out" }, 17.3);
+      tl.fromTo("#fin-tagline", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 17.55);
+
+      tl.fromTo(".feature-capsule", 
+        { opacity: 0, y: 20, z: -30, scale: 0.85 }, 
+        { opacity: 1, y: 0, z: 15, scale: 1.0, stagger: 0.08, duration: 0.35, ease: "back.out(1.6)" }, 
+        17.75
+      );
+
+      // 3D Confident CTA button
+      tl.fromTo("#fin-btn", 
+        { opacity: 0, scale: 0.8, z: -80, y: 25 }, 
+        { opacity: 1, scale: 1.0, z: 30, y: 0, duration: 0.5, ease: "back.out(1.8)" }, 
+        18.05
+      );
+      tl.fromTo("#fin-domain", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 18.35);
+
+      // Subtle CTA arrow pulse
+      tl.to(".cta-arrow", { x: 8, repeat: 3, yoyo: true, duration: 0.28, ease: "power1.inOut" }, 18.55);
+
+      // Initial render & register
+      render3D(0);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

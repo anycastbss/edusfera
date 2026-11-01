@@ -10,16 +10,17 @@ import {
 /* ─── Apple Premium Minimalist Footer ─── */
 export default function Footer() {
   const platformLinks = [
+    { label: 'Новости и статьи', href: '/news', badge: 'Свежее', isHighlight: true },
     { label: 'О компании', href: '/about' },
     { label: 'Каталог репетиторов', href: '/tutors' },
     { label: 'Преподавателям', href: '/for-tutors' },
-    { label: 'ИИ-Диагностика РИКЗ', href: '/diagnostic', badge: 'ИИ 2026' },
-    { label: 'Новости и статьи', href: '/news' },
+    { label: 'ИИ-Диагностика знаний', href: '/diagnostic', badge: 'ИИ 2026' },
   ];
 
   const legalLinks = [
     { label: 'Публичная оферта и тарифы', href: '/offer' },
     { label: 'Конфиденциальность (Закон 99-З)', href: '/privacy-policy' },
+    { label: 'Политика файлов cookie', href: '/cookie-policy' },
     { label: 'Безопасность платежей', href: '/payment-security' },
     { label: 'Правила возврата и отмены', href: '/refund-policy' },
   ];
@@ -65,6 +66,38 @@ export default function Footer() {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-12">
         
+        {/* ─── Prominent News & Knowledge Hub Banner (Сразу на глазах) ─── */}
+        <div className="mb-12 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-violet-950/50 via-white/[0.04] to-[#C6FF33]/10 border border-violet-500/30 hover:border-violet-400/50 transition-all shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 group">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#7D39EB] to-violet-900 border border-violet-400/30 flex items-center justify-center text-2xl shadow-lg shadow-violet-500/25 shrink-0 group-hover:scale-105 transition-transform">
+              📰
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-white font-bold text-base sm:text-lg tracking-tight">
+                  Новости и база знаний Edusfera
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-[#C6FF33] text-black text-[10px] font-extrabold uppercase tracking-wide">
+                  Свежее
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-[#a1a1a6] mt-1 leading-relaxed max-w-xl">
+                Памятки для преподавателей, инструкция по онлайн-классу, Общественный методический совет Беларуси и подготовка к ЦТ/ЦЭ.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+            <a
+              href="/news"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-slate-100 text-black font-extrabold text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center justify-center gap-2 shadow-lg"
+            >
+              <span>Читать новости</span>
+              <ArrowUpRight className="w-4 h-4 text-black" />
+            </a>
+          </div>
+        </div>
+
         {/* ─── Top 4-Column Directory Grid ─── */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-8 lg:gap-10 pb-12 border-b border-white/[0.08]">
           
@@ -83,7 +116,7 @@ export default function Footer() {
             </a>
 
             <p className="text-xs text-[#86868b] leading-relaxed max-w-sm">
-              Белорусская образовательная платформа для репетиторов и подготовки к ЦТ/ЦЭ. Интерактивный класс, автоматические чеки для самозанятых и безопасная оплата с 0% комиссии на уроки.
+              Белорусская цифровая платформа (SaaS) для репетиторов и подготовки к ЦТ/ЦЭ. Интерактивный класс, автоматические чеки для самозанятых и безопасная оплата с 0% комиссии на уроки.
             </p>
 
             {/* Social Icons */}
@@ -113,11 +146,11 @@ export default function Footer() {
                 <li key={item.label}>
                   <a
                     href={item.href}
-                    className="text-[#86868b] hover:text-white transition-colors inline-flex items-center gap-1.5"
+                    className={`transition-colors inline-flex items-center gap-1.5 ${item.isHighlight ? 'text-white font-bold hover:text-[#C6FF33]' : 'text-[#86868b] hover:text-white'}`}
                   >
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-[#C6FF33] border border-white/10">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${item.isHighlight ? 'bg-[#C6FF33] text-black shadow-sm' : 'bg-white/10 text-[#C6FF33] border border-white/10'}`}>
                         {item.badge}
                       </span>
                     )}
@@ -230,7 +263,7 @@ export default function Footer() {
             <strong>ООО «Эдусфера»</strong> · УНП 192854899 · Зарегистрировано Минским горисполкомом 04.05.2026 г. Юридический адрес: 220100, Республика Беларусь, г. Минск, ул. Веры Хоружей, д. 6А, пом. 29. Телефон: <a href="tel:+375295190821" className="text-[#86868b] hover:text-white transition-colors">+375 (29) 519-08-21</a> · Email: <a href="mailto:edusferaby@gmail.com" className="text-[#86868b] hover:text-white transition-colors">edusferaby@gmail.com</a>. Режим работы: Пн–Пт 09:00 – 18:00.
           </p>
           <p>
-            Безопасность передачи данных обеспечивается 256-битным шифрованием TLS/SSL и технологиями 3D-Secure 2.0 по международному стандарту PCI DSS v4.0 через эквайринг ЗАО «Альфа-Банк». Деятельность не подлежит лицензированию в соответствии с законодательством Республики Беларусь.
+            ООО «Эдусфера» предоставляет программную платформу (SaaS) для репетиторов и не является учреждением образования. Образовательные и консультационные услуги оказываются непосредственно преподавателями. Деятельность не подлежит лицензированию в соответствии с законодательством Республики Беларусь. Передача данных защищена 256-битным шифрованием TLS/SSL и технологиями 3D-Secure 2.0 по международному стандарту PCI DSS через эквайринг ЗАО «Альфа-Банк».
           </p>
         </div>
 
@@ -239,9 +272,16 @@ export default function Footer() {
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1.5 text-center sm:text-left">
             <span>Copyright © 2026 ООО «Эдусфера». Все права защищены.</span>
             <span className="hidden sm:inline text-white/10">|</span>
+            <a href="/news" className="text-white font-semibold hover:text-[#C6FF33] transition-colors inline-flex items-center gap-1">
+              <span>Новости и статьи</span>
+              <span className="text-[9px] px-1 rounded bg-[#C6FF33] text-black font-bold">NEW</span>
+            </a>
+            <span className="hidden sm:inline text-white/10">|</span>
             <a href="/offer" className="hover:text-[#f5f5f7] transition-colors">Пользовательское соглашение</a>
             <span className="hidden sm:inline text-white/10">|</span>
             <a href="/privacy-policy" className="hover:text-[#f5f5f7] transition-colors">Конфиденциальность</a>
+            <span className="hidden sm:inline text-white/10">|</span>
+            <a href="/cookie-policy" className="hover:text-[#f5f5f7] transition-colors">Политика cookie</a>
             <span className="hidden sm:inline text-white/10">|</span>
             <a href="/payment-security" className="hover:text-[#f5f5f7] transition-colors">Безопасность платежей</a>
             <span className="hidden sm:inline text-white/10">|</span>

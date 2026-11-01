@@ -14,63 +14,58 @@ export function renderMathAndMarkdown(rawText) {
 
     let text = rawText;
 
-    // 1. Render display/block math $$...$$
+    // 0. Protect fenced code blocks & inline code
+    const codeBlocks = [];
+    text = text.replace(/```[\s\S]*?```/g, (match) => {
+        const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push({ id, content: match });
+        return id;
+    });
+
+    const inlineCodes = [];
+    text = text.replace(/`[^`\n]+?`/g, (match) => {
+        const id = `__INLINE_CODE_${inlineCodes.length}__`;
+        inlineCodes.push({ id, content: match });
+        return id;
+    });
+
+    // 1. Extract block math $$...$$ and \[...\]
+    const mathBlocks = [];
     text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-        try {
-            const rendered = katex.renderToString(formula.trim(), {
-                displayMode: true,
-                throwOnError: false,
-                output: 'html',
-            });
-            return `\n\n<div class="katex-display-wrapper my-4 py-3 px-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 overflow-x-auto text-center shadow-xs transition-colors">${rendered}</div>\n\n`;
-        } catch (e) {
-            return match;
-        }
+        const id = `__MATH_BLOCK_${mathBlocks.length}__`;
+        mathBlocks.push({ id, formula: formula.trim() });
+        return `\n\n${id}\n\n`;
     });
 
-    // 2. Render LaTeX \[ ... \] blocks
     text = text.replace(/\\\[([\s\S]+?)\\\]/g, (match, formula) => {
-        try {
-            const rendered = katex.renderToString(formula.trim(), {
-                displayMode: true,
-                throwOnError: false,
-                output: 'html',
-            });
-            return `\n\n<div class="katex-display-wrapper my-4 py-3 px-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 overflow-x-auto text-center shadow-xs transition-colors">${rendered}</div>\n\n`;
-        } catch (e) {
-            return match;
-        }
+        const id = `__MATH_BLOCK_${mathBlocks.length}__`;
+        mathBlocks.push({ id, formula: formula.trim() });
+        return `\n\n${id}\n\n`;
     });
 
-    // 3. Render inline math $...$
-    // Ensure we don't accidentally match isolated dollar amounts like $50 or \$
+    // 2. Extract inline math $...$ and \(...\)
+    const mathInlines = [];
     text = text.replace(/(?<!\\|\$)\$([^\$\n]+?)\$(?!\$)/g, (match, formula) => {
-        // Skip pure currency like $10 or $ 10
         if (/^\s*\d+([.,]\d+)?\s*$/.test(formula)) {
             return match;
         }
-        try {
-            return katex.renderToString(formula.trim(), {
-                displayMode: false,
-                throwOnError: false,
-                output: 'html',
-            });
-        } catch (e) {
-            return match;
-        }
+        const id = `__MATH_INLINE_${mathInlines.length}__`;
+        mathInlines.push({ id, formula: formula.trim() });
+        return id;
     });
 
-    // 4. Render LaTeX \( ... \) inline formulas
     text = text.replace(/\\\(([\s\S]+?)\\\)/g, (match, formula) => {
-        try {
-            return katex.renderToString(formula.trim(), {
-                displayMode: false,
-                throwOnError: false,
-                output: 'html',
-            });
-        } catch (e) {
-            return match;
-        }
+        const id = `__MATH_INLINE_${mathInlines.length}__`;
+        mathInlines.push({ id, formula: formula.trim() });
+        return id;
+    });
+
+    // Restore protected code blocks
+    codeBlocks.forEach((item) => {
+        text = text.replace(item.id, item.content);
+    });
+    inlineCodes.forEach((item) => {
+        text = text.replace(item.id, item.content);
     });
 
     // Configure marked options
@@ -79,7 +74,46 @@ export function renderMathAndMarkdown(rawText) {
         breaks: true,
     });
 
-    return marked.parse(text);
+    let html = marked.parse(text);
+
+    // 3. Render block math
+    mathBlocks.forEach((item) => {
+        let rendered = '';
+        try {
+            rendered = katex.renderToString(item.formula, {
+                displayMode: true,
+                throwOnError: false,
+                output: 'html',
+            });
+        } catch (e) {
+            rendered = `<div class="p-2 text-rose-500 font-mono text-xs">${item.formula}</div>`;
+        }
+        const blockHtml = `<div class="katex-display-wrapper my-4 py-3 px-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 overflow-x-auto text-center shadow-xs transition-colors">${rendered}</div>`;
+        const pRegex = new RegExp(`<p>\\s*${item.id}\\s*<\\/p>`, 'g');
+        if (pRegex.test(html)) {
+            html = html.replace(pRegex, blockHtml);
+        } else {
+            html = html.split(item.id).join(blockHtml);
+        }
+    });
+
+    // 4. Render inline math
+    mathInlines.forEach((item) => {
+        let rendered = '';
+        try {
+            rendered = katex.renderToString(item.formula, {
+                displayMode: false,
+                throwOnError: false,
+                output: 'html',
+            });
+        } catch (e) {
+            rendered = `<span class="text-rose-500 font-mono text-xs">${item.formula}</span>`;
+        }
+        const inlineHtml = `<span class="katex-inline-wrapper">${rendered}</span>`;
+        html = html.split(item.id).join(inlineHtml);
+    });
+
+    return html;
 }
 
 export default function AiFormattedContent({ content, fontSize = 'normal', className = '' }) {

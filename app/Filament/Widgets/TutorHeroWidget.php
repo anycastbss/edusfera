@@ -47,7 +47,7 @@ class TutorHeroWidget extends Widget
         // Ближайший урок: подтверждённый и ещё не закончившийся
         // (включая идущий прямо сейчас).
         $upcomingLesson = Lesson::query()
-            ->with(['student', 'parent'])
+            ->with(['student', 'parent', 'conversation'])
             ->where('tutor_id', $user->id)
             ->where('status', Lesson::STATUS_CONFIRMED)
             ->where('end_time', '>', $now)
@@ -58,10 +58,34 @@ class TutorHeroWidget extends Widget
             && $now->greaterThanOrEqualTo($upcomingLesson->start_time->copy()->subMinutes(self::JOIN_LEAD_MINUTES));
 
         $classroomUrl = null;
+        $studentChatUrl = '/admin/messages';
+        $studentName = 'Ученик';
+        $studentInitial = 'У';
+        $studentAvatarUrl = null;
+        $lessonSubject = 'Индивидуальное занятие';
+        $isLessonPaid = false;
+
         if ($upcomingLesson) {
             $classroomUrl = ! empty($upcomingLesson->meeting_link) && str_starts_with($upcomingLesson->meeting_link, 'http')
                 ? $upcomingLesson->meeting_link
                 : route('classroom.show', $upcomingLesson);
+
+            if ($upcomingLesson->conversation_id) {
+                $studentChatUrl = '/admin/messages?conversation='.$upcomingLesson->conversation_id;
+            }
+
+            $studentUser = $upcomingLesson->student ?? $upcomingLesson->parent;
+            if ($studentUser) {
+                $studentName = $studentUser->name ?? 'Ученик';
+                $nameParts = preg_split('/\s+/', trim((string) $studentName));
+                $studentInitial = count($nameParts) >= 2
+                    ? mb_strtoupper(mb_substr($nameParts[0], 0, 1).mb_substr($nameParts[1], 0, 1))
+                    : mb_strtoupper(mb_substr((string) $studentName, 0, 1));
+                $studentAvatarUrl = $studentUser->avatar_url ?? null;
+            }
+
+            $lessonSubject = $upcomingLesson->subject ?? $upcomingLesson->package_label ?? 'Индивидуальное занятие';
+            $isLessonPaid = ($upcomingLesson->payment_status === Lesson::PAYMENT_PAID);
         }
 
         $newRequestsCount = Lesson::query()
@@ -103,8 +127,15 @@ class TutorHeroWidget extends Widget
         return [
             'greeting' => $greeting,
             'firstName' => explode(' ', trim((string) $user->name))[0] ?? $user->name,
+            'tutorFullName' => (string) $user->name,
             'dateLine' => now($timezone)->translatedFormat('l, j F'),
             'upcomingLesson' => $upcomingLesson,
+            'studentName' => $studentName,
+            'studentInitial' => $studentInitial,
+            'studentAvatarUrl' => $studentAvatarUrl,
+            'studentChatUrl' => $studentChatUrl,
+            'lessonSubject' => $lessonSubject,
+            'isLessonPaid' => $isLessonPaid,
             'lessonStartsAt' => $upcomingLesson?->start_time->getTimestamp(),
             'lessonEndsAt' => $upcomingLesson?->end_time->getTimestamp(),
             'lessonJoinFrom' => $upcomingLesson?->start_time->copy()->subMinutes(self::JOIN_LEAD_MINUTES)->getTimestamp(),
@@ -121,6 +152,104 @@ class TutorHeroWidget extends Widget
             'daysRemaining' => $daysRemaining,
             'graceDaysRemaining' => $graceDaysRemaining,
             'bookingUrl' => $bookingUrl,
+            'isPublic' => (bool) ($tutorProfile?->is_public ?? false),
+            'isCouncilExpert' => (bool) ($tutorProfile?->is_council_expert ?? false),
+            'councilNumber' => $tutorProfile?->council_number,
+            'councilCertNumber' => $tutorProfile?->council_certificate_number ?? ('МС-2026/'.str_pad((string) ($tutorProfile?->council_number ?: 1), 2, '0', STR_PAD_LEFT)),
+            'councilJoinedAt' => $tutorProfile?->council_joined_at,
+            'quotaTotal' => \App\Models\TutorProfile::councilQuotaTotal(),
+            'quotaLeft' => \App\Models\TutorProfile::councilQuotaLeft(),
         ];
+    }
+
+    public function joinCouncil(): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->isTutor()) {
+            return;
+        }
+
+        $profile = $user->tutorProfile ?: \App\Models\TutorProfile::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_public' => false]
+        );
+
+        if ($profile->isCouncilExpert()) {
+            return;
+        }
+
+        $profile->joinCouncil();
+
+        // Предоставляем 30 дней тарифа PRO бесплатно
+        $now = \Carbon\CarbonImmutable::now();
+        $sub = $user->subscription;
+        if ($sub) {
+            $sub->update([
+                'plan' => SubscriptionPlan::PRO,
+                'status' => SubscriptionStatus::ACTIVE,
+                'trial_ends_at' => $now->addDays(30),
+                'current_period_starts_at' => $now,
+                'current_period_ends_at' => $now->addDays(30),
+                'grace_period_ends_at' => null,
+            ]);
+        } else {
+            \App\Domain\Subscription\Models\Subscription::create([
+                'tutor_id' => $user->id,
+                'plan' => SubscriptionPlan::PRO,
+                'status' => SubscriptionStatus::ACTIVE,
+                'is_founder' => true,
+                'trial_ends_at' => $now->addDays(30),
+                'current_period_starts_at' => $now,
+                'current_period_ends_at' => $now->addDays(30),
+                'grace_period_ends_at' => null,
+                'responses_used_this_month' => 0,
+            ]);
+        }
+
+        \Filament\Notifications\Notification::make()
+            ->title('Добро пожаловать в Общественный методический совет!')
+            ->body("Вам присвоен бессрочный статус Эксперта и выдано Свидетельство {$profile->council_certificate_number}. Тариф PRO активирован на 30 дней бесплатно.")
+            ->success()
+            ->duration(10000)
+            ->send();
+    }
+
+    public function toggleProfileVisibility(): void
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->isTutor()) {
+            return;
+        }
+
+        $profile = $user->tutorProfile ?: TutorProfile::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_public' => false]
+        );
+
+        $targetPublic = ! (bool) $profile->is_public;
+
+        if (! $targetPublic && ! app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canHideProfile($user)) {
+            \Filament\Notifications\Notification::make()
+                ->title('Приватный режим требует тариф PRO или Онлайн-школа')
+                ->body('Скрытие анкеты из каталога доступно на тарифах от 40 BYN/мес или в течение 14-дневного бесплатного пробного периода.')
+                ->warning()
+                ->actions([
+                    \Filament\Notifications\Actions\Action::make('upgrade')
+                        ->label('Выбрать тариф')
+                        ->url('/admin/tutor-subscription-page'),
+                ])
+                ->send();
+
+            return;
+        }
+
+        $profile->is_public = $targetPublic;
+        $profile->save();
+
+        \Filament\Notifications\Notification::make()
+            ->title($profile->is_public ? 'Анкета опубликована в каталоге' : 'Кабинет переведён в приватный режим')
+            ->body($profile->is_public ? 'Ученики и поисковики теперь видят вашу анкету в каталоге Edusfera.' : 'Ваша анкета и цены скрыты от посторонних. Доступ только по вашей личной ссылке.')
+            ->success()
+            ->send();
     }
 }

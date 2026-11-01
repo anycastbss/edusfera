@@ -17,12 +17,46 @@ class NewsArticle extends Model
     protected $fillable = [
         'title',
         'slug',
+        'category',
         'content',
         'featured_image',
         'video_url',
         'status',
         'published_at',
     ];
+
+    public const CATEGORY_TRAINING = 'platform-training';
+    public const CATEGORY_NEWS = 'news';
+    public const CATEGORY_EXAM = 'exam-prep';
+
+    public static function categories(): array
+    {
+        return [
+            self::CATEGORY_TRAINING => 'Обучение работе на платформе',
+            self::CATEGORY_NEWS => 'Новости и обновления',
+            self::CATEGORY_EXAM => 'Подготовка к ЦТ / ЦЭ',
+        ];
+    }
+
+    public function getCategoryLabelAttribute(): string
+    {
+        return match ($this->category) {
+            self::CATEGORY_TRAINING => 'Обучение платформе',
+            self::CATEGORY_NEWS => 'Новости',
+            self::CATEGORY_EXAM => 'Методика ЦТ/ЦЭ',
+            default => 'Инструкция',
+        };
+    }
+
+    public function getCategoryBadgeClassAttribute(): string
+    {
+        return match ($this->category) {
+            self::CATEGORY_TRAINING => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            self::CATEGORY_NEWS => 'bg-violet-50 text-violet-700 border-violet-200',
+            self::CATEGORY_EXAM => 'bg-amber-50 text-amber-700 border-amber-200',
+            default => 'bg-slate-100 text-slate-700 border-slate-200',
+        };
+    }
 
     protected $casts = [
         'published_at' => 'datetime',
@@ -47,6 +81,18 @@ class NewsArticle extends Model
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
             });
+    }
+
+    /**
+     * Scope a query to filter by category.
+     */
+    public function scopeCategory($query, ?string $category)
+    {
+        if (empty($category) || $category === 'all') {
+            return $query;
+        }
+
+        return $query->where('category', $category);
     }
 
     /**

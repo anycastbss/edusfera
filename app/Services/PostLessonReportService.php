@@ -47,6 +47,7 @@ class PostLessonReportService
                 ->latest('id')
                 ->first();
 
+            $snapshot = null;
             if ($goal) {
                 $snapshot = ProgressSnapshot::query()->updateOrCreate(
                     [
@@ -74,31 +75,31 @@ class PostLessonReportService
                         'current_score' => $scoreEstimate,
                     ]);
                 }
+            }
 
-                if ($homework !== null && trim($homework) !== '') {
-                    HomeworkAssignment::query()->updateOrCreate(
-                        [
+            if ($homework !== null && trim($homework) !== '') {
+                HomeworkAssignment::query()->updateOrCreate(
+                    [
+                        'lesson_id' => $lesson->id,
+                        'student_id' => $lesson->student_id,
+                    ],
+                    [
+                        'student_goal_id' => $goal?->id,
+                        'tutor_id' => $lesson->tutor_id,
+                        'title' => 'Домашняя работа после урока',
+                        'instructions' => trim($homework),
+                        'source' => 'tutor',
+                        'status' => 'assigned',
+                        'assigned_at' => now('UTC'),
+                        'due_at' => $lesson->start_time->copy()->addDays(3),
+                        'payload' => [
                             'lesson_id' => $lesson->id,
-                            'student_id' => $lesson->student_id,
+                            'focus' => trim($focus),
+                            'next_step' => trim($nextStep),
+                            'snapshot_id' => $snapshot?->id,
                         ],
-                        [
-                            'student_goal_id' => $goal->id,
-                            'tutor_id' => $lesson->tutor_id,
-                            'title' => 'Домашняя работа после урока',
-                            'instructions' => trim($homework),
-                            'source' => 'tutor',
-                            'status' => 'assigned',
-                            'assigned_at' => now('UTC'),
-                            'due_at' => $lesson->start_time->copy()->addDays(3),
-                            'payload' => [
-                                'lesson_id' => $lesson->id,
-                                'focus' => trim($focus),
-                                'next_step' => trim($nextStep),
-                                'snapshot_id' => $snapshot->id,
-                            ],
-                        ],
-                    );
-                }
+                    ],
+                );
             }
 
             return $lesson->fresh(['homeworkAssignments']);

@@ -16,9 +16,9 @@ class TutorAiAssistantPage extends Page
 
     protected static string $view = 'filament.pages.tutor-ai-assistant-page';
 
-    protected static ?string $navigationLabel = 'ИИ-Помощник';
+    protected static ?string $navigationLabel = 'Задания ЦТ / ЦЭ';
 
-    protected static ?string $title = 'ИИ-Помощник репетитора Edusfera AI';
+    protected static ?string $title = 'Задания ЦТ / ЦЭ';
 
     protected static ?int $navigationSort = 5;
 
@@ -44,7 +44,7 @@ class TutorAiAssistantPage extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Преподавание';
+        return 'Учебные материалы';
     }
 
     public function canUseAi(): bool

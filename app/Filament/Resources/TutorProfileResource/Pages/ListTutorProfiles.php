@@ -10,6 +10,18 @@ class ListTutorProfiles extends ListRecords
 {
     protected static string $resource = TutorProfileResource::class;
 
+    public function mount(): void
+    {
+        $user = auth()->user();
+        if ($user?->isTutor() && $user->tutorProfile) {
+            $this->redirect(TutorProfileResource::getUrl('edit', ['record' => $user->tutorProfile->id]));
+
+            return;
+        }
+
+        parent::mount();
+    }
+
     protected function getHeaderActions(): array
     {
         return [

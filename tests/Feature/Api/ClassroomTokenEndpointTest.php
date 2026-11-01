@@ -193,4 +193,47 @@ class ClassroomTokenEndpointTest extends TestCase
             $response->json('errors.subscription.0')
         );
     }
+
+    public function test_returns_200_for_confirmed_unpaid_lesson_in_saas_direct_booking_model(): void
+    {
+        $lesson = Lesson::forceCreate([
+            'tutor_id' => $this->tutor->id,
+            'student_id' => $this->student->id,
+            'status' => Lesson::STATUS_CONFIRMED,
+            'payment_status' => Lesson::PAYMENT_UNPAID,
+            'start_time' => now()->subMinutes(10),
+            'end_time' => now()->addMinutes(50),
+            'duration_minutes' => 60,
+            'price' => 1000,
+            'platform_commission' => 0,
+            'net_amount' => 1000,
+        ]);
+
+        $response = $this->withToken($this->tokenFor($this->tutor))
+            ->getJson("/api/v1/lessons/{$lesson->id}/classroom-token");
+
+        $response->assertOk();
+    }
+
+    public function test_returns_403_for_pending_unconfirmed_lesson(): void
+    {
+        $lesson = Lesson::forceCreate([
+            'tutor_id' => $this->tutor->id,
+            'student_id' => $this->student->id,
+            'status' => Lesson::STATUS_PENDING,
+            'payment_status' => Lesson::PAYMENT_UNPAID,
+            'start_time' => now()->subMinutes(10),
+            'end_time' => now()->addMinutes(50),
+            'duration_minutes' => 60,
+            'price' => 1000,
+            'platform_commission' => 0,
+            'net_amount' => 1000,
+        ]);
+
+        $response = $this->withToken($this->tokenFor($this->tutor))
+            ->getJson("/api/v1/lessons/{$lesson->id}/classroom-token");
+
+        $response->assertStatus(403);
+        $response->assertJsonPath('error.code', 'forbidden');
+    }
 }

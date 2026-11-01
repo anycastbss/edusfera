@@ -8,7 +8,9 @@
         <span class="ed-nav__dot"></span>
     </a>
     <div class="ed-nav__links">
-        <a href="{{ route('tutors.index') }}" class="ed-nav__link">Каталог</a>
+        @if(! app(\App\Services\WhiteLabelService::class)->isWhiteLabelActive())
+            <a href="{{ route('tutors.index') }}" class="ed-nav__link">Каталог</a>
+        @endif
         <a href="{{ route('for-tutors') }}" class="ed-nav__link">Преподавателям</a>
         <a href="{{ route('news.index') }}" class="ed-nav__link">Новости</a>
         @auth
@@ -18,8 +20,12 @@
                 $isAdmin = $user->isAdmin();
                 $isStudentOrParent = $user->isStudent() || $user->isParent();
                 $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
+                $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
             @endphp
-            <a href="/admin/messages" class="ed-nav__link">
+            <a href="{{ $messagesUrl }}" class="ed-nav__link">
                 Сообщения
                 @if($unreadMessagesCount > 0)
                     <span class="ed-nav__badge">{{ $unreadMessagesCount > 9 ? '9+' : $unreadMessagesCount }}</span>
@@ -44,24 +50,23 @@
                 </summary>
                 <div class="ed-nav__menu" style="min-width:15rem;">
                     <div class="ed-nav__menu-meta">{{ $roleLabel }} · {{ $user->email }}</div>
-                    <a href="/admin" style="font-weight:700; color:#7D39EB;">🚀 Личный кабинет</a>
+                    <a href="{{ $cabinetUrl }}" style="font-weight:700; color:#7D39EB;">🚀 Личный кабинет</a>
 
                     @if($isTutor)
-                        <a href="/admin/tutor-subscription-page">Управление тарифом</a>
-                        <a href="/admin/tutor-availability-page">Расписание</a>
-                        <a href="/admin/lessons">Мои занятия</a>
-                        <a href="/admin/transactions">Мои финансы</a>
+                        <a href="{{ $isAdmin ? '/admin/tutor-subscription-page' : ($isMobileDevice ? '/m?tab=finance' : '/cabinet?tab=finance') }}">Управление тарифом</a>
+                        <a href="{{ $isAdmin ? '/admin/tutor-availability-page' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons') }}">Расписание</a>
+                        <a href="{{ $lessonsUrl }}">Мои занятия</a>
                     @elseif($isStudentOrParent)
-                        <a href="/admin/lessons">Мои занятия</a>
-                        <a href="/admin/diagnostic">ИИ-Диагностика</a>
-                        <a href="/admin/homework">Домашние задания</a>
-                        <a href="/admin/wallet">Учёт денег</a>
+                        <a href="{{ $lessonsUrl }}">Мои занятия</a>
+                        <a href="{{ $isAdmin ? '/admin/diagnostic' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons') }}">ИИ-Диагностика</a>
+                        <a href="{{ $isAdmin ? '/admin/homework' : ($isMobileDevice ? '/m?tab=homework' : '/cabinet?tab=homework') }}">Домашние задания</a>
+                        <a href="{{ $isAdmin ? '/admin/wallet' : ($isMobileDevice ? '/m?tab=wallet' : '/cabinet?tab=wallet') }}">Учёт денег</a>
                     @elseif($isAdmin)
                         <a href="/admin/users">Пользователи</a>
                         <a href="/admin/saa-s-management">Управление SaaS</a>
                     @endif
 
-                    <a href="/admin/messages">Сообщения</a>
+                    <a href="{{ $messagesUrl }}">Сообщения</a>
 
                     @php $linked = app(\App\Services\MultiAccountService::class)->getLinkedAccounts(); @endphp
                     @if(count($linked) > 0)

@@ -44,11 +44,24 @@ class TutorProfileResource extends Resource
             : 'Анкета преподавателя';
     }
 
+    public static function getNavigationUrl(): string
+    {
+        $user = auth()->user();
+        if ($user?->isTutor() && ! self::isAdminContext()) {
+            $profile = $user->tutorProfile;
+            if ($profile) {
+                return static::getUrl('edit', ['record' => $profile->id]);
+            }
+        }
+
+        return static::getUrl('index');
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return (Filament::getCurrentPanel()?->getId() === 'site-admin' || self::isAdminContext())
-            ? 'Модерация'
-            : 'Профиль';
+            ? 'Пользователи и модерация'
+            : 'Профиль и документы';
     }
 
     public static function getModelLabel(): string
@@ -71,15 +84,26 @@ class TutorProfileResource extends Resource
     private static function subjectsOptions(): array
     {
         return [
+            'Белорусский язык' => 'Белорусский язык',
+            'Белорусская литература' => 'Белорусская литература',
+            'Русский язык' => 'Русский язык',
+            'Русская литература' => 'Русская литература',
             'Математика' => 'Математика',
             'Физика' => 'Физика',
             'Химия' => 'Химия',
             'Биология' => 'Биология',
             'Английский язык' => 'Английский язык',
-            'Русский язык' => 'Русский язык',
-            'Белорусский язык' => 'Белорусский язык',
-            'История' => 'История',
+            'Немецкий язык' => 'Немецкий язык',
+            'Французский язык' => 'Французский язык',
+            'Испанский язык' => 'Испанский язык',
+            'Китайский язык' => 'Китайский язык',
+            'История Беларуси' => 'История Беларуси',
+            'Всемирная история' => 'Всемирная история',
+            'Обществоведение' => 'Обществоведение',
+            'География' => 'География',
             'Информатика' => 'Информатика',
+            'Начальная школа (1–4 классы)' => 'Начальная школа (1–4 классы)',
+            'Подготовка к школе' => 'Подготовка к школе',
         ];
     }
 
@@ -296,9 +320,9 @@ class TutorProfileResource extends Resource
                             ->required(),
                         Forms\Components\FileUpload::make('diploma_path')
                             ->label('Диплом / сертификат')
-                            ->disk('public')
+                            ->disk('local')
                             ->directory('diplomas')
-                            ->visibility('public')
+                            ->visibility('private')
                             ->required()
                             ->helperText("Документы не публикуются. Нужны модератору для бейджа '✓ Проверенный специалист'."),
                         Forms\Components\Checkbox::make('verification_consent')
@@ -396,8 +420,8 @@ class TutorProfileResource extends Resource
                                 ->dehydrated(false),
                             Forms\Components\FileUpload::make('diploma_path')
                                 ->label('Диплом / сертификат')
-                                ->disk('public')
-                                ->visibility('public')
+                                ->disk('local')
+                                ->visibility('private')
                                 ->openable()
                                 ->downloadable()
                                 ->disabled()
@@ -548,8 +572,34 @@ class TutorProfileResource extends Resource
                             ->send();
                     }),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (): bool => self::isAdminContext())
+                    ->modalHeading('Удалить анкету репетитора?')
+                    ->modalDescription('Анкета и расписание репетитора будут безвозвратно удалены.')
+                    ->using(function (TutorProfile $record): bool {
+                        $user = $record->user;
+                        if ($user) {
+                            $user->availability()->delete();
+                        }
+
+                        return (bool) $record->delete();
+                    }),
             ])
+            ->actionsColumnLabel('Действия')
             ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn (): bool => self::isAdminContext())
+                        ->using(function ($records): void {
+                            foreach ($records as $record) {
+                                $user = $record->user;
+                                if ($user) {
+                                    $user->availability()->delete();
+                                }
+                                $record->delete();
+                            }
+                        }),
+                ]),
                 Tables\Actions\BulkAction::make('approve_selected')
                     ->label('Одобрить выбранные')
                     ->icon('heroicon-o-check-badge')

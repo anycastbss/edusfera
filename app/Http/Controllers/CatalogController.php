@@ -18,7 +18,9 @@ class CatalogController extends Controller
 
     public function index(Request $request)
     {
-        $query = TutorProfile::with(['user', 'user.subscription'])->where('is_verified', true);
+        $query = TutorProfile::with(['user', 'user.subscription'])
+            ->where('is_verified', true)
+            ->where('is_public', true);
 
         $query->orderByRaw(
             'CASE WHEN search_penalized_until IS NOT NULL AND search_penalized_until > ? THEN 1 ELSE 0 END ASC',
@@ -99,12 +101,31 @@ class CatalogController extends Controller
             ->withQueryString();
 
         $allSubjects = [
-            'Математика', 'Физика', 'Химия', 'Биология',
-            'Английский язык', 'Русский язык', 'Белорусский язык',
-            'История', 'Информатика',
+            'Белорусский язык',
+            'Белорусская литература',
+            'Русский язык',
+            'Русская литература',
+            'Математика',
+            'Физика',
+            'Химия',
+            'Биология',
+            'Английский язык',
+            'Немецкий язык',
+            'Французский язык',
+            'Испанский язык',
+            'Китайский язык',
+            'История Беларуси',
+            'Всемирная история',
+            'Обществоведение',
+            'География',
+            'Информатика',
+            'Начальная школа (1–4 классы)',
+            'Подготовка к школе',
         ];
 
-        $baseQuery = TutorProfile::query()->where('is_verified', true);
+        $baseQuery = TutorProfile::query()
+            ->where('is_verified', true)
+            ->where('is_public', true);
         $ratedBaseQuery = (clone $baseQuery)->where('rating_avg', '>', 0);
         $hasRealRating = $ratedBaseQuery->exists();
         $availabilityHints = $this->buildAvailabilityHints($tutors->getCollection()->pluck('user_id')->all());
@@ -132,6 +153,10 @@ class CatalogController extends Controller
     public function show(TutorProfile $tutor)
     {
         $tutor->load(['user', 'user.subscription']);
+
+        if ($tutor->is_white_label && $tutor->user && app(\App\Domain\Subscription\Services\SubscriptionFeatureGate::class)->canUseWhiteLabel($tutor->user)) {
+            app(\App\Services\WhiteLabelService::class)->setSessionWhiteLabelTutor($tutor->user_id);
+        }
         try {
             $selectedDate = request('date')
                 ? CarbonImmutable::createFromFormat('Y-m-d', (string) request('date'), $this->bookingService->displayTimezone())

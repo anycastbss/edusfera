@@ -170,7 +170,7 @@ export default function TutorAiAssistant() {
                     className="ed-catalog-btn"
                 >
                     <Sparkles className="w-4 h-4 text-[#7D39EB] shrink-0" />
-                    <span>Каталог промптов ЦТ/ЦЭ</span>
+                    <span>Каталог промптов</span>
                 </button>
             </div>
 

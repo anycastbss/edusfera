@@ -45,10 +45,10 @@ class TutorSubscriptionPaywallTest extends TestCase
         ]);
 
         $response = $this->actingAs($tutor)->get('/admin');
-        $response->assertRedirect(route('filament.admin.pages.tutor-subscription-page'));
+        $response->assertRedirect(route('tutor.onboarding'));
 
         $responseLessons = $this->actingAs($tutor)->get('/admin/lessons');
-        $responseLessons->assertRedirect(route('filament.admin.pages.tutor-subscription-page'));
+        $responseLessons->assertRedirect(route('tutor.onboarding'));
     }
 
     public function test_tutor_with_active_onboarded_subscription_can_access_admin(): void

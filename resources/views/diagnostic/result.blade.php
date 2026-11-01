@@ -55,7 +55,7 @@
                 </a>
 
                 @auth
-                    <a href="/admin" class="text-xs font-bold text-[#1d1d1f] px-3.5 py-1.5 rounded-full bg-[#f0f0f4] hover:bg-[#e5e5ea] transition-all">
+                    <a href="{{ auth()->user()?->isAdmin() ? '/admin' : '/cabinet' }}" class="text-xs font-bold text-[#1d1d1f] px-3.5 py-1.5 rounded-full bg-[#f0f0f4] hover:bg-[#e5e5ea] transition-all">
                         Личный кабинет
                     </a>
                 @else

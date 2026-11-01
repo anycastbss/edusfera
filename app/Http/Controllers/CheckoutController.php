@@ -34,6 +34,14 @@ class CheckoutController extends Controller
             return redirect('/admin/lessons')->with('checkout_success', 'Оплата уже проведена.');
         }
 
+        if ($lesson->payment_status === Lesson::PAYMENT_UNPAID && $lesson->status !== Lesson::STATUS_CANCELLED) {
+            if ($lesson->payment_lock_expires_at === null || $lesson->payment_lock_expires_at->isPast()) {
+                $lesson->update([
+                    'payment_lock_expires_at' => now('UTC')->addMinutes(30),
+                ]);
+            }
+        }
+
         if (! $lesson->hasActivePaymentLock()) {
             $this->expireLessonIfNeeded($lesson);
             $lesson->refresh();
@@ -73,6 +81,14 @@ class CheckoutController extends Controller
     public function initAlfaSdk(Request $request, Lesson $lesson, PaymentService $paymentService): JsonResponse
     {
         abort_unless($this->canAccessLesson($lesson), 403);
+
+        if ($lesson->payment_status === Lesson::PAYMENT_UNPAID && $lesson->status !== Lesson::STATUS_CANCELLED) {
+            if ($lesson->payment_lock_expires_at === null || $lesson->payment_lock_expires_at->isPast()) {
+                $lesson->update([
+                    'payment_lock_expires_at' => now('UTC')->addMinutes(30),
+                ]);
+            }
+        }
 
         if (! $lesson->hasActivePaymentLock()) {
             $this->expireLessonIfNeeded($lesson);
@@ -123,7 +139,12 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function applyPromo(Request $request, Lesson $lesson, PromoCodeService $promoService): JsonResponse
+    public function applyPromo(
+        Request $request,
+        Lesson $lesson,
+        PromoCodeService $promoService,
+        PackageService $packageService,
+    ): JsonResponse
     {
         abort_unless($this->canAccessLesson($lesson), 403);
 
@@ -140,18 +161,8 @@ class CheckoutController extends Controller
             $packageCode = 'single';
         }
 
-        $singlePrice = (float) $lesson->price;
-        $lessonsCount = match ($packageCode) {
-            'pack_4' => 4,
-            'pack_8' => 8,
-            default => 1,
-        };
-        $packageDiscountRate = match ($packageCode) {
-            'pack_4' => 0.05,
-            'pack_8' => 0.10,
-            default => 0.0,
-        };
-        $originalAmount = round($singlePrice * $lessonsCount * (1 - $packageDiscountRate), 2);
+        $package = $packageService->resolve($packageCode, (float) $lesson->price);
+        $originalAmount = $package['total'];
 
         $subject = $lesson->tutor?->tutorProfile?->subjects[0] ?? null;
 
@@ -188,6 +199,14 @@ class CheckoutController extends Controller
 
         if ($lesson->payment_status === Lesson::PAYMENT_PAID) {
             return redirect()->route('checkout.success', $lesson);
+        }
+
+        if ($lesson->payment_status === Lesson::PAYMENT_UNPAID && $lesson->status !== Lesson::STATUS_CANCELLED) {
+            if ($lesson->payment_lock_expires_at === null || $lesson->payment_lock_expires_at->isPast()) {
+                $lesson->update([
+                    'payment_lock_expires_at' => now('UTC')->addMinutes(30),
+                ]);
+            }
         }
 
         if (! $lesson->hasActivePaymentLock()) {

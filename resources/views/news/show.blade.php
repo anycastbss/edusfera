@@ -9,7 +9,7 @@
     @php
         $plainDesc = Str::limit(preg_replace('/\s+/', ' ', strip_tags(str_replace(['</p>', '</div>', '<br>', '<br />', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>'], ' ', $article->content))), 155);
         $articleUrl = route('news.show', $article->slug);
-        $articleImage = $article->featured_image ? asset('storage/' . $article->featured_image) : asset('og-image.png');
+        $articleImage = $article->featured_image ? (str_starts_with($article->featured_image, 'images/') ? asset($article->featured_image) : asset('storage/' . $article->featured_image)) : asset('og-image.png');
         $datePublished = $article->published_at ? $article->published_at->toIso8601String() : $article->created_at->toIso8601String();
         $dateModified = ($article->updated_at ?? $article->created_at)->toIso8601String();
     @endphp
@@ -79,7 +79,7 @@
             "url": "https://edusfera.by/"
           },
           "publisher": {
-            "@type": "EducationalOrganization",
+            "@type": "Organization",
             "name": "Edusfera",
             "url": "https://edusfera.by/",
             "logo": {
@@ -193,9 +193,26 @@
             margin: 2rem auto;
             max-width: 100%;
             height: auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+        }
+        .prose-news figure {
+            margin: 2.5rem auto;
+            max-width: 100%;
+        }
+        .prose-news figure img {
+            margin: 0 auto;
+        }
+        .prose-news figcaption {
+            text-align: center;
+            font-size: 0.875rem;
+            color: #64748B;
+            margin-top: 0.75rem;
+            font-weight: 500;
+            line-height: 1.5;
         }
     </style>
+    @include('partials.analytics')
 </head>
 <body x-data="{ scrolled: false, mobileOpen: false }" @scroll.window="scrolled = (window.pageYOffset > 20)">
 
@@ -227,6 +244,11 @@
                         $user = auth()->user();
                         $unreadMessagesCount = app(\App\Services\ChatUnreadCounter::class)->countForUser($user);
                         $roleLabel = \App\Services\MultiAccountService::roleLabel($user->role);
+                        $isMobileDevice = (new class { use \App\Traits\DetectsMobileDevice; })->isMobileDevice();
+                        $isAdmin = $user->isAdmin();
+                        $cabinetUrl = $isAdmin ? '/admin' : ($isMobileDevice ? '/m' : '/cabinet');
+                        $lessonsUrl = $isAdmin ? '/admin/lessons' : ($isMobileDevice ? '/m?tab=lessons' : '/cabinet?tab=lessons');
+                        $messagesUrl = $isAdmin ? '/admin/messages' : ($isMobileDevice ? '/m?tab=chat' : '/cabinet?tab=chat');
                     @endphp
 
                     <div x-data="{ open: false }" class="relative">
@@ -248,11 +270,11 @@
                         </button>
 
                         <div x-show="open" x-transition.opacity.scale.95 style="display: none;" class="absolute right-0 mt-3 w-64 bg-white rounded-2xl border border-gray-200 shadow-xl p-2 z-50">
-                            <a href="/admin" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
-                            <a href="{{ $user->role === 'tutor' ? '/admin/transactions' : '/admin/lessons' }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                                {{ $user->role === 'tutor' ? 'Мои финансы' : 'Мои занятия' }}
+                            <a href="{{ $cabinetUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">Личный кабинет</a>
+                            <a href="{{ $lessonsUrl }}" class="block px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                                Мои занятия
                             </a>
-                            <a href="/admin/messages" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                            <a href="{{ $messagesUrl }}" class="flex items-center justify-between px-4 py-2 text-sm font-bold text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
                                 Сообщения
                                 @if($unreadMessagesCount > 0)
                                     <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">{{ $unreadMessagesCount }}</span>
@@ -305,16 +327,28 @@
         <div class="max-w-4xl mx-auto px-6">
             <!-- Back navigation -->
             <div class="mb-8">
-                <a href="{{ route('news.index') }}" class="inline-flex items-center gap-2 text-sm font-bold text-violet-600 hover:text-violet-800 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Назад к новостям
-                </a>
+                @if($article->category === 'platform-training')
+                    <a href="{{ route('news.index', ['category' => 'platform-training']) }}" class="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-800 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        ← Назад к обучению и памяткам
+                    </a>
+                @else
+                    <a href="{{ route('news.index') }}" class="inline-flex items-center gap-2 text-sm font-bold text-violet-600 hover:text-violet-800 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        ← Назад ко всем материалам
+                    </a>
+                @endif
             </div>
 
             <!-- Article Header -->
             <div class="mb-10">
-                <div class="text-xs font-bold uppercase tracking-wider text-violet-600 mb-3">
-                    {{ $article->published_at ? $article->published_at->format('d.m.Y') : $article->created_at->format('d.m.Y') }}
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border {{ $article->category_badge_class }}">
+                        {{ $article->category_label }}
+                    </span>
+                    <span class="text-xs font-semibold text-gray-500">
+                        {{ $article->published_at ? $article->published_at->format('d.m.Y') : $article->created_at->format('d.m.Y') }}
+                    </span>
                 </div>
                 <h1 class="text-3xl sm:text-4xl md:text-5xl font-rimma font-black tracking-tight text-gray-900 leading-tight">
                     {{ $article->title }}
@@ -336,7 +370,7 @@
             @elseif($article->featured_image)
                 <!-- Featured Image cover -->
                 <div class="relative w-full aspect-[4/3] md:aspect-auto md:h-[400px] rounded-[2rem] overflow-hidden mb-10 shadow-md border border-gray-200/50 bg-gray-50 flex items-center justify-center">
-                    <img src="{{ asset('storage/' . $article->featured_image) }}" class="w-full h-full object-cover object-center" alt="{{ $article->title }}">
+                    <img src="{{ str_starts_with($article->featured_image, 'images/') ? asset($article->featured_image) : asset('storage/' . $article->featured_image) }}" class="w-full h-full object-cover object-center" alt="{{ $article->title }}">
                 </div>
             @endif
 
@@ -356,7 +390,7 @@
                             <a href="{{ route('news.show', $recent->slug) }}" class="glass-panel bg-white border border-gray-200 p-4 rounded-2xl hover:shadow-lg hover:border-violet-300 transition-all duration-300 block group">
                                 <div class="relative w-full h-32 rounded-xl bg-gray-100 mb-4 overflow-hidden">
                                     @if($recent->featured_image)
-                                        <img src="{{ asset('storage/' . $recent->featured_image) }}" class="w-full h-full object-cover" alt="{{ $recent->title }}">
+                                        <img src="{{ str_starts_with($recent->featured_image, 'images/') ? asset($recent->featured_image) : asset('storage/' . $recent->featured_image) }}" class="w-full h-full object-cover" alt="{{ $recent->title }}">
                                     @else
                                         <div class="w-full h-full bg-gradient-to-tr from-violet-100 to-lime-50 flex items-center justify-center">
                                             <svg class="w-8 h-8 text-violet-300 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>

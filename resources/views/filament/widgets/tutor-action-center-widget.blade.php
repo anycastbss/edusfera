@@ -16,18 +16,32 @@
         </div>
 
         @if ($latestRequest)
+            @php
+                $reqStudentName = $latestRequest->student?->name ?? $latestRequest->parent?->name ?? 'Ученик';
+                $reqStudentInitial = mb_strtoupper(mb_substr($reqStudentName, 0, 1));
+            @endphp
             <div class="tutor-request">
-                <div class="tutor-request-row">
-                    <p class="tutor-request-name">
-                        {{ $latestRequest->student?->name ?? $latestRequest->parent?->name ?? 'Ученик' }}
-                    </p>
-                    <p class="tutor-request-time">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <div class="student-tutor-avatar-wrap">
+                            <div class="student-tutor-avatar-lg" style="width: 44px; height: 44px; font-size: 16px; background: linear-gradient(135deg, #7D39EB, #A855F7);">
+                                {{ $reqStudentInitial }}
+                            </div>
+                            <span class="student-tutor-online-badge"></span>
+                        </div>
+                        <div style="min-width: 0;">
+                            <p class="tutor-request-name" style="margin: 0;">
+                                {{ $reqStudentName }}
+                            </p>
+                            <p class="tutor-request-note" style="margin: 3px 0 0;">
+                                {{ $latestRequest->package_label }} · ждёт подтверждения
+                            </p>
+                        </div>
+                    </div>
+                    <div class="tutor-request-time">
                         {{ $latestRequest->start_time->timezone($tz)->translatedFormat('j M, H:i') }}
-                    </p>
+                    </div>
                 </div>
-                <p class="tutor-request-note">
-                    {{ $latestRequest->package_label }} · ждёт вашего подтверждения
-                </p>
 
                 <div class="tutor-cta-row">
                     <a href="/admin/lesson-requests" class="tutor-cta tutor-cta--primary">
@@ -44,7 +58,7 @@
             <div class="tutor-empty">
                 <p class="tutor-empty-title">Всё чисто ✨</p>
                 <p class="tutor-empty-text">
-                    Новых заявок нет. Заполненные слоты в календаре помогают ученикам находить вас.
+                    Новых заявок нет. Заполненный график помогает ученикам находить вас.
                 </p>
             </div>
         @endif
@@ -56,7 +70,7 @@
         <div class="tutor-tiles">
             <a href="/admin/lessons" class="tutor-tile">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
-                <span>Расписание</span>
+                <span>Мои уроки</span>
             </a>
             <a href="/admin/lesson-requests" class="tutor-tile">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.75a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V13.5Zm0-3.75V7.5A2.25 2.25 0 0 1 4.5 5.25h15a2.25 2.25 0 0 1 2.25 2.25v11.25A2.25 2.25 0 0 1 19.5 21h-15a2.25 2.25 0 0 1-2.25-2.25V9.75Z"/></svg>
@@ -74,7 +88,7 @@
             </a>
             <a href="/admin/tutor-availability" class="tutor-tile">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-                <span>Мои слоты</span>
+                <span>Свободные часы</span>
             </a>
         </div>
     </div>

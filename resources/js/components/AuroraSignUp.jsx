@@ -30,7 +30,7 @@ const GoogleIcon = () => (
 
 export default function AuroraSignUp() {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const initialRole = urlParams?.get('role') || 'student';
+  const initialRole = urlParams?.get('role') || null;
   const initialPlan = urlParams?.get('plan') || 'pro';
   const queryMode = urlParams?.get('mode') || urlParams?.get('tab');
   const queryRedirect = urlParams?.get('redirect') || urlParams?.get('redirect_to');
@@ -53,12 +53,13 @@ export default function AuroraSignUp() {
     email: '',
     phone: '',
     password: '',
-    role: initialRole === 'tutor' ? 'tutor' : 'student',
+    role: initialRole === 'tutor' ? 'tutor' : (initialRole === 'student' ? 'student' : null),
     plan: ['start', 'premium'].includes(initialPlan) ? initialPlan : 'pro',
   });
 
   const [isYearly, setIsYearly] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -199,12 +200,35 @@ export default function AuroraSignUp() {
   // Helper redirect
   const handleSuccessfulAuth = (redirectUrl) => {
     setIsSuccess(true);
+    const isChMobile = typeof navigator !== 'undefined' && navigator.userAgentData && navigator.userAgentData.mobile === true;
+    const isMobileUA = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Silk|HarmonyOS/i.test(navigator.userAgent);
+    const isIpadTouch = typeof navigator !== 'undefined' && /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1 && typeof screen !== 'undefined' && (screen.width <= 1024 || screen.height <= 1024);
+    const isMobileClient = Boolean(isChMobile || isMobileUA || isIpadTouch);
+
+    if (isMobileClient) {
+      document.cookie = "edusfera_device=mobile; path=/; max-age=31536000; SameSite=Lax";
+    } else {
+      document.cookie = "edusfera_device=desktop; path=/; max-age=31536000; SameSite=Lax";
+    }
+
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    const fallbackTarget = currentPath.includes('site-admin') ? '/site-admin' : '/admin';
-    const target = queryRedirect || redirectUrl || fallbackTarget;
+    const isSiteAdmin = currentPath.includes('site-admin') || (typeof redirectUrl === 'string' && redirectUrl.includes('site-admin'));
+    const fallbackTarget = isSiteAdmin ? '/site-admin' : (isMobileClient ? '/m' : '/admin');
+    let target = redirectUrl || queryRedirect || fallbackTarget;
+
+    if (isMobileClient && !isSiteAdmin) {
+      if (!target || target === '/admin' || target.startsWith('/admin')) {
+        target = '/m';
+      }
+    } else if (!isMobileClient && !isSiteAdmin) {
+      if (target === '/m' || target.startsWith('/m')) {
+        target = '/admin';
+      }
+    }
+
     setTimeout(() => {
       window.location.href = target;
-    }, 500);
+    }, 400);
   };
 
   // ─── LOGIN SUBMIT ───
@@ -239,7 +263,7 @@ export default function AuroraSignUp() {
     }
   };
 
-  // ─── STEP 2 (PROFILE) SUBMIT OR ADVANCE TO PLAN ───
+  // ─── STEP 2 (PROFILE) SUBMIT ───
   const handleProfileStepSubmit = (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -256,14 +280,13 @@ export default function AuroraSignUp() {
       setErrorMessage('Пароль должен содержать не менее 8 символов (буквы и цифры).');
       return;
     }
-
-    // If Tutor, go to Plan Selection (Step 3)
-    if (formData.role === 'tutor') {
-      setRegisterStep(3);
-    } else {
-      // If Student/Parent, directly create account
-      submitRegistration();
+    if (!agreeTerms) {
+      setErrorMessage('Для продолжения необходимо подтвердить согласие с Публичной офертой и Политикой конфиденциальности.');
+      return;
     }
+
+    // Directly register and redirect to personal cabinet
+    submitRegistration();
   };
 
   // ─── FINAL REGISTRATION DISPATCH ───
@@ -312,16 +335,10 @@ export default function AuroraSignUp() {
       
       {/* ─── LEFT COLUMN: HERO & BRANDING ─── */}
       <div className="relative hidden lg:flex w-[46%] xl:w-[44%] flex-col items-center justify-between p-10 xl:p-12 rounded-3xl overflow-hidden shadow-2xl h-full border border-white/10 bg-[#09090B]">
-        {/* Background video with fallback gradient */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-screen"
-        >
-          <source src="/videos/aurora-bg.mp4" type="video/mp4" />
-        </video>
+        {/* Ambient background decoration with pure GPU gradients (0% CPU, lightning fast) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#7D39EB]/15 via-black/80 to-[#C6FF33]/10 pointer-events-none" />
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#7D39EB]/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#C6FF33]/15 rounded-full blur-[100px] pointer-events-none" />
 
         {/* Ambient gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
@@ -514,7 +531,6 @@ export default function AuroraSignUp() {
                     <button
                       type="button"
                       onClick={() => {
-                        setAuthMode('login');
                         setActiveTab('login');
                         setErrorMessage('');
                       }}
@@ -696,7 +712,7 @@ export default function AuroraSignUp() {
                 className="space-y-5"
               >
                 {/* Steps Indicator */}
-                <div className="flex items-center justify-between px-1">
+                <div className="flex items-center justify-center gap-3 px-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                       registerStep === 1 ? 'bg-[#C6FF33] text-black' : 'bg-white/10 text-white/70'
@@ -708,7 +724,7 @@ export default function AuroraSignUp() {
                     </span>
                   </div>
 
-                  <div className="w-6 h-[1px] bg-white/10" />
+                  <div className="w-10 h-[1px] bg-white/10" />
 
                   <div className="flex items-center gap-2">
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
@@ -720,22 +736,6 @@ export default function AuroraSignUp() {
                       Данные
                     </span>
                   </div>
-
-                  {formData.role === 'tutor' && (
-                    <>
-                      <div className="w-6 h-[1px] bg-white/10" />
-                      <div className="flex items-center gap-2">
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                          registerStep === 3 ? 'bg-[#C6FF33] text-black' : 'bg-white/10 text-white/70'
-                        }`}>
-                          3
-                        </span>
-                        <span className={`text-xs font-semibold ${registerStep === 3 ? 'text-white' : 'text-white/40'}`}>
-                          Тариф
-                        </span>
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 {/* ─── REGISTER STEP 1: ROLE SELECTION ─── */}
@@ -832,35 +832,58 @@ export default function AuroraSignUp() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setRegisterStep(2)}
-                      className="w-full h-12 bg-[#C6FF33] text-black hover:bg-[#d4ff59] font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(198,255,51,0.2)] mt-3"
-                    >
-                      <span>Продолжить</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-
-                    {/* Social OAuth quick-entry */}
-                    <div className="pt-2">
-                      <div className="relative flex items-center justify-center mb-3">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-white/10" />
-                        </div>
-                        <span className="relative bg-black px-3 text-[10px] font-medium text-white/40 uppercase tracking-widest">
-                          или быстрая регистрация
-                        </span>
-                      </div>
-                      <div>
+                    {/* Action buttons (only activated after choosing a role) */}
+                    {formData.role ? (
+                      <div className="space-y-3 pt-2">
+                        {/* 1-Click Fast Google Registration with Explicit Role */}
                         <a
                           href={`/auth/google/redirect?role=${formData.role}&plan=${formData.plan}`}
-                          className="flex items-center justify-center gap-2 h-10 w-full bg-[#141416] hover:bg-[#1a1a1c] border border-white/10 rounded-xl text-xs font-semibold text-white/80"
+                          className={`flex items-center justify-center gap-2.5 h-12 w-full rounded-xl transition-all text-xs sm:text-sm font-extrabold shadow-lg cursor-pointer active:scale-98 ${
+                            formData.role === 'tutor'
+                              ? 'bg-[#C6FF33] text-black hover:bg-[#d4ff59] shadow-[0_0_25px_rgba(198,255,51,0.25)]'
+                              : 'bg-white text-black hover:bg-neutral-200 shadow-md'
+                          }`}
                         >
                           <GoogleIcon />
-                          <span>Продолжить с Google</span>
+                          <span>
+                            {formData.role === 'tutor'
+                              ? 'Зарегистрироваться с Google как Репетитор'
+                              : 'Зарегистрироваться с Google как Ученик'}
+                          </span>
                         </a>
+
+                        {/* Divider */}
+                        <div className="relative flex items-center justify-center my-1">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-white/10" />
+                          </div>
+                          <span className="relative bg-black px-3 text-[10px] font-medium text-white/40 uppercase tracking-widest">
+                            или обычная регистрация
+                          </span>
+                        </div>
+
+                        {/* Manual form continuation */}
+                        <button
+                          type="button"
+                          onClick={() => setRegisterStep(2)}
+                          className="w-full h-11 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 rounded-xl transition-all text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span>Заполнить анкету по e-mail</span>
+                          <ArrowRight className="w-3.5 h-3.5 text-white/50" />
+                        </button>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="pt-3">
+                        <div className="p-4 rounded-xl border border-dashed border-white/15 bg-white/[0.02] text-center space-y-1">
+                          <p className="text-xs font-semibold text-white/70">
+                            👆 Сначала выберите вашу роль выше
+                          </p>
+                          <p className="text-[11px] text-white/40">
+                            Кнопка быстрой регистрации через Google станет доступна сразу после выбора роли
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
@@ -972,6 +995,21 @@ export default function AuroraSignUp() {
                         </p>
                       </div>
 
+                      <div className="pt-1">
+                        <label className="flex items-start gap-2.5 text-xs text-white/70 select-none cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={agreeTerms}
+                            onChange={(e) => setAgreeTerms(e.target.checked)}
+                            required
+                            className="mt-0.5 rounded border-white/20 bg-[#141416] text-[#C6FF33] focus:ring-[#C6FF33] cursor-pointer"
+                          />
+                          <span className="leading-relaxed text-[11px] text-white/60">
+                            Я принимаю условия <a href="/offer" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-[#C6FF33]">Публичной оферты</a> и даю согласие на обработку персональных данных в соответствии с <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-[#C6FF33]">Политикой конфиденциальности (Закон № 99-З)</a> и <a href="/cookie-policy" target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-[#C6FF33]">Политикой cookie</a>.
+                          </span>
+                        </label>
+                      </div>
+
                       <div className="flex items-center gap-2 pt-2">
                         <button
                           type="button"
@@ -1003,235 +1041,15 @@ export default function AuroraSignUp() {
                               <Loader2 className="w-4 h-4 animate-spin text-black" />
                               <span>Создание аккаунта...</span>
                             </>
-                          ) : formData.role === 'tutor' ? (
+                          ) : (
                             <>
-                              <span>Выбрать тариф подписки</span>
+                              <span>Создать аккаунт</span>
                               <ArrowRight className="w-4 h-4" />
                             </>
-                          ) : (
-                            <span>Создать аккаунт</span>
                           )}
                         </button>
                       </div>
                     </form>
-                  </motion.div>
-                )}
-
-                {/* ─── REGISTER STEP 3: TARIFF SELECTION (FOR TUTORS) ─── */}
-                {registerStep === 3 && (
-                  <motion.div
-                    key="step-tariff"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-4"
-                  >
-                    <div className="space-y-1">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C6FF33]/15 border border-[#C6FF33]/30 text-[#C6FF33] font-bold text-[11px]">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>14 дней бесплатно, карта не требуется</span>
-                      </div>
-                      <h2 className="text-2xl font-bold tracking-tight text-white">Выбор тарифа подписки</h2>
-                      <p className="text-xs sm:text-sm text-white/50">
-                        Попробуйте все возможности платформы бесплатно. Сменить тариф можно в любой момент.
-                      </p>
-                    </div>
-
-                    {/* Period Switcher */}
-                    <div className="flex items-center justify-between p-1.5 bg-[#121214] rounded-xl border border-white/10">
-                      <span className="text-xs font-semibold text-white/70 px-2">Период:</span>
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setIsYearly(false)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                            !isYearly ? 'bg-white text-black shadow-sm' : 'text-white/60 hover:text-white'
-                          }`}
-                        >
-                          Ежемесячно
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsYearly(true)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                            isYearly ? 'bg-[#C6FF33] text-black shadow-sm' : 'text-white/60 hover:text-white'
-                          }`}
-                        >
-                          <span>1 год</span>
-                          <span className="text-[9px] bg-black text-[#C6FF33] px-1 py-0.2 rounded font-black">
-                            -20%
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Tariff Cards: Стандарт, Про, Премиум */}
-                    <div className="grid grid-cols-1 gap-2.5">
-                      
-                      {/* Plan 1: Стандарт (20 BYN) */}
-                      <div
-                        onClick={() => setFormData({ ...formData, plan: 'start' })}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 relative ${
-                          formData.plan === 'start'
-                            ? 'bg-[#18181B] border-white ring-1 ring-white'
-                            : 'bg-[#121214] border-white/10 hover:border-white/20'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-extrabold text-sm sm:text-base text-white">«Стандарт»</span>
-                            <p className="text-xs text-white/50">Класс до 60 мин, CRM, расписание, свои ученики</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm sm:text-base font-black text-white font-mono">
-                              {isYearly ? '16 BYN' : '20 BYN'}
-                            </span>
-                            <span className="text-[10px] text-white/40 block">/месяц</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-1 text-[11px] text-white/70">
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> HD класс (до 60 мин)
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Интерактивная доска
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> CRM и расписание
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Безлимит учеников
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Plan 2: Про (40 BYN) - Featured */}
-                      <div
-                        onClick={() => setFormData({ ...formData, plan: 'pro' })}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 relative ${
-                          formData.plan === 'pro'
-                            ? 'bg-gradient-to-br from-[#18181B] via-[#18181B] to-[#7D39EB]/20 border-[#C6FF33] ring-1 ring-[#C6FF33]'
-                            : 'bg-[#121214] border-white/10 hover:border-[#C6FF33]/40'
-                        }`}
-                      >
-                        <div className="absolute -top-2.5 right-4 bg-[#C6FF33] text-black font-black text-[9px] uppercase px-2 py-0.5 rounded-full shadow-sm">
-                          Хит продаж
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-extrabold text-sm sm:text-base text-white">«Про»</span>
-                            <p className="text-xs text-white/60">Поток учеников + ИИ-диагностика + авто-НПД</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm sm:text-base font-black text-[#C6FF33] font-mono">
-                              {isYearly ? '32 BYN' : '40 BYN'}
-                            </span>
-                            <span className="text-[10px] text-white/40 block">/месяц</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-1 text-[11px] text-white/80">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" /> Всё из «Стандарта»
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" /> ИИ-диагностика (РИКЗ)
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" /> Авто-чеки НПД (МНС)
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" /> Приоритет в каталоге
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Plan 3: Премиум (60 BYN) - Top Expert */}
-                      <div
-                        onClick={() => setFormData({ ...formData, plan: 'premium' })}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 relative ${
-                          formData.plan === 'premium'
-                            ? 'bg-gradient-to-br from-[#18181B] via-[#18181B] to-[#F59E0B]/20 border-amber-400 ring-1 ring-amber-400'
-                            : 'bg-[#121214] border-white/10 hover:border-amber-400/40'
-                        }`}
-                      >
-                        <div className="absolute -top-2.5 right-4 bg-gradient-to-r from-amber-400 to-amber-500 text-black font-black text-[9px] uppercase px-2 py-0.5 rounded-full shadow-sm">
-                          👑 Топ-эксперт
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-extrabold text-sm sm:text-base text-white">«Премиум»</span>
-                            <p className="text-xs text-white/60">ТОП-1 в поиске, видео-визитка и свой бренд</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm sm:text-base font-black text-amber-400 font-mono">
-                              {isYearly ? '48 BYN' : '60 BYN'}
-                            </span>
-                            <span className="text-[10px] text-white/40 block">/месяц</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-white/5 grid grid-cols-2 gap-1 text-[11px] text-white/80">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Всё из тарифа «Про»
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" /> 👑 ТОП-1 в каталоге
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Видео-визитка в анкете
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Свой брендинг комнат
-                          </span>
-                        </div>
-                      </div>
-
-                    </div>
-
-                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white/70 flex items-center gap-2.5">
-                      <ShieldCheck className="w-4 h-4 text-[#C6FF33] shrink-0" />
-                      <span><strong>14 дней бесплатно</strong> на любом тарифе. Карта не требуется, никаких автоматических списаний.</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setRegisterStep(2)}
-                        className="h-12 px-4 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Назад</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={submitRegistration}
-                        disabled={isSubmitting || isSuccess}
-                        className={`flex-1 h-12 font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_25px_rgba(198,255,51,0.25)] ${
-                          isSuccess
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-[#C6FF33] text-black hover:bg-[#d4ff59]'
-                        }`}
-                      >
-                        {isSuccess ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Аккаунт создан! Входим в кабинет...</span>
-                          </>
-                        ) : isSubmitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-black" />
-                            <span>Создание аккаунта...</span>
-                          </>
-                        ) : (
-                          <span>Создать аккаунт и начать 14 дней триала</span>
-                        )}
-                      </button>
-                    </div>
                   </motion.div>
                 )}
 

@@ -16,7 +16,18 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->modalHeading('Удалить пользователя навсегда?')
+                ->modalDescription('Аккаунт, анкета репетитора, подписки и расписания будут полностью удалены из базы данных.')
+                ->using(function ($record): bool {
+                    $record->tutorProfile()?->delete();
+                    $record->subscription()?->delete();
+                    $record->availability()->delete();
+                    $record->tutorBalance()?->delete();
+                    $record->studentBalance()?->delete();
+
+                    return (bool) $record->forceDelete();
+                }),
         ];
     }
 

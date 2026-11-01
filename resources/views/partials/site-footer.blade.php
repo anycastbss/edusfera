@@ -4,6 +4,28 @@
 
 <footer class="site-footer {{ $isDark ? 'site-footer--dark' : 'site-footer--light' }}">
     <div class="site-footer__container">
+        {{-- Prominent News & Knowledge Hub Banner (Сразу на глазах) --}}
+        <div style="margin-bottom: 2.5rem; padding: 1.25rem 1.5rem; border-radius: 1rem; background: linear-gradient(135deg, rgba(125, 57, 235, 0.18) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(198, 255, 51, 0.08) 100%); border: 1px solid rgba(125, 57, 235, 0.35); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: #7D39EB; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 4px 14px rgba(125, 57, 235, 0.4);">
+                    📰
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 1.05rem; font-weight: 700; color: #ffffff;">Новости и база знаний Edusfera</span>
+                        <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 9999px; background: #C6FF33; color: #000000;">Свежее</span>
+                    </div>
+                    <p style="margin: 4px 0 0; font-size: 0.8rem; color: #86868b; line-height: 1.4;">
+                        Памятки преподавателям, инструкции по виртуальному классу, Общественный методический совет и ЦТ/ЦЭ.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('news.index') }}" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; background: #ffffff; color: #000000; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: transform 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <span>Читать новости</span>
+                <span>→</span>
+            </a>
+        </div>
+
         {{-- Main Navigation Grid --}}
         <div class="site-footer__grid">
             
@@ -20,7 +42,7 @@
                 </a>
                 
                 <p class="site-footer__brand-desc">
-                    Белорусская образовательная платформа для репетиторов и подготовки к ЦТ/ЦЭ. Интерактивный класс, автоматические чеки для самозанятых и безопасная оплата с 0% комиссии на уроки.
+                    Белорусская цифровая платформа (SaaS) для репетиторов и подготовки к ЦТ/ЦЭ. Интерактивный класс, автоматические чеки для самозанятых и безопасная оплата с 0% комиссии на уроки.
                 </p>
             </div>
 
@@ -28,6 +50,12 @@
             <div class="site-footer__col">
                 <h4 class="site-footer__col-title">Платформа</h4>
                 <ul class="site-footer__links">
+                    <li>
+                        <a href="{{ route('news.index') }}" style="color: #ffffff; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                            <span>Новости и статьи</span>
+                            <span class="site-footer__tag" style="background: #C6FF33; color: #000;">СВЕЖЕЕ</span>
+                        </a>
+                    </li>
                     <li><a href="{{ route('about') }}" class="site-footer__about-link font-semibold">О компании</a></li>
                     <li><a href="{{ route('tutors.index') }}">Каталог репетиторов</a></li>
                     <li><a href="{{ route('for-tutors') }}">Преподавателям</a></li>
@@ -37,7 +65,6 @@
                             <span class="site-footer__tag">ЦЭ/ЦТ</span>
                         </a>
                     </li>
-                    <li><a href="{{ route('news.index') }}">Новости и статьи</a></li>
                 </ul>
             </div>
 
@@ -47,6 +74,7 @@
                 <ul class="site-footer__links">
                     <li><a href="{{ route('legal.offer') }}">Публичная оферта и тарифы</a></li>
                     <li><a href="{{ route('legal.privacy') }}">Конфиденциальность (99-З)</a></li>
+                    <li><a href="{{ route('legal.cookie') }}">Политика файлов cookie</a></li>
                     <li><a href="{{ route('legal.payment-security') }}">Безопасность платежей</a></li>
                     <li><a href="{{ route('legal.refund') }}">Правила возврата и отмены</a></li>
                 </ul>
@@ -121,7 +149,7 @@
                 <strong>ООО «Эдусфера»</strong> · УНП 192854899 · Зарегистрировано Минским горисполкомом 04.05.2026 г. Юридический адрес: 220100, Республика Беларусь, г. Минск, ул. Веры Хоружей, д. 6А, пом. 29.
             </p>
             <p>
-                Деятельность не подлежит лицензированию в соответствии с законодательством Республики Беларусь. Передача данных защищена 256-битным шифрованием TLS/SSL и технологиями 3D-Secure 2.0.
+                ООО «Эдусфера» предоставляет программную платформу (SaaS) для репетиторов и не является учреждением образования. Образовательные и консультационные услуги оказываются непосредственно преподавателями. Деятельность не подлежит лицензированию в соответствии с законодательством Республики Беларусь. Передача данных защищена 256-битным шифрованием TLS/SSL и технологиями 3D-Secure 2.0.
             </p>
         </div>
 
@@ -133,15 +161,21 @@
             <div class="site-footer__bottom-links">
                 <span>Минск, Беларусь</span>
                 <span class="site-footer__dot-sep">·</span>
+                <a href="{{ route('news.index') }}" style="color: #ffffff; font-weight: 700;">Новости и статьи</a>
+                <span class="site-footer__dot-sep">·</span>
                 <a href="{{ route('legal.offer') }}">Пользовательское соглашение</a>
                 <span class="site-footer__dot-sep">·</span>
                 <a href="{{ route('legal.privacy') }}">Конфиденциальность</a>
+                <span class="site-footer__dot-sep">·</span>
+                <a href="{{ route('legal.cookie') }}">Политика cookie</a>
                 <span class="site-footer__dot-sep">·</span>
                 <a href="{{ route('legal.payment-security') }}">Безопасность платежей</a>
             </div>
         </div>
     </div>
 </footer>
+
+@include('partials.cookie-banner')
 
 <style>
 /* ========================================================

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>ИИ-диагностика готовности к ЦТ и ЦЭ 2026 — Edusfera</title>
     <meta name="description" content="Индивидуальная экспресс-диагностика готовности к ЦЭ и ЦТ. Задания по спецификации РИКЗ, расчет прогнозного балла и карта пробелов за 4 минуты.">
     <meta name="keywords" content="тест цт онлайн, диагностика знаний цэ, проверить уровень цт, рикз тесты, подготовка к цт бесплатно">
@@ -53,7 +53,7 @@
           "description": "Индивидуальный экспресс-тест для определения текущего уровня подготовки к ЦТ/ЦЭ по спецификациям РИКЗ.",
           "educationalLevel": "Среднее образование, Абитуриенты",
           "provider": {
-            "@type": "EducationalOrganization",
+            "@type": "Organization",
             "name": "Edusfera",
             "url": "https://edusfera.by/"
           },

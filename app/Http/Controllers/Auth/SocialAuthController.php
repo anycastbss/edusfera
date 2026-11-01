@@ -98,6 +98,27 @@ class SocialAuthController extends Controller
                 $user->update($updates);
             }
 
+            // If an existing user (e.g. previously created as student) logs in with explicit tutor intent (role=tutor),
+            // upgrade them to Tutor so they never get trapped in the student role.
+            $intendedRole = session('oauth_role');
+            if ($intendedRole === 'tutor' && ! $user->isTutor()) {
+                $user->role = UserRole::Tutor;
+                $user->save();
+                TutorProfile::firstOrCreate(['user_id' => $user->id]);
+                try {
+                    $planStr = (string) session('oauth_plan', 'pro');
+                    $plan = match ($planStr) {
+                        'start', 'basic' => SubscriptionPlan::START,
+                        'premium' => SubscriptionPlan::PREMIUM,
+                        default => SubscriptionPlan::PRO,
+                    };
+                    $sub = app(SubscriptionService::class)->ensureTrialStarted($user, $plan);
+                    $sub->update(['is_onboarded' => false]);
+                } catch (Throwable $e) {
+                    Log::error('Failed to create subscription on role upgrade: '.$e->getMessage());
+                }
+            }
+
             Auth::login($user, true);
             Filament::auth()->login($user, true);
             $request->session()->regenerate();

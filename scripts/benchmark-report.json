@@ -1,0 +1,643 @@
+[
+  {
+    "name": "ПК Кабинет (/cabinet) - 10 подключений",
+    "concurrency": 10,
+    "totalRequests": 50,
+    "endpoint": "/cabinet",
+    "rps": 13.5,
+    "durationSec": 3.71,
+    "successful": 50,
+    "failed": 0,
+    "successRate": "100.0%",
+    "latencies": {
+      "min": 466,
+      "avg": 678,
+      "p50": 664,
+      "p90": 925,
+      "p95": 964,
+      "p99": 1158,
+      "max": 1158
+    },
+    "statusCounts": {
+      "200": 50
+    },
+    "errorCounts": {},
+    "healthBefore": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:56:43 UTC",
+      "load_avg": {
+        "1m": 21.06,
+        "5m": 21.2,
+        "15m": 22.62
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406831737",
+        "Threads_connected": "76",
+        "Threads_running": "1",
+        "Uptime": "521995"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 66.6,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    },
+    "healthAfter": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:56:47 UTC",
+      "load_avg": {
+        "1m": 21.46,
+        "5m": 21.28,
+        "15m": 22.64
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406846942",
+        "Threads_connected": "80",
+        "Threads_running": "1",
+        "Uptime": "521999"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 92.1,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    }
+  },
+  {
+    "name": "Мобильный Кабинет (/m) - 10 подключений",
+    "concurrency": 10,
+    "totalRequests": 50,
+    "endpoint": "/m",
+    "rps": 16,
+    "durationSec": 3.12,
+    "successful": 50,
+    "failed": 0,
+    "successRate": "100.0%",
+    "latencies": {
+      "min": 441,
+      "avg": 591,
+      "p50": 550,
+      "p90": 898,
+      "p95": 908,
+      "p99": 918,
+      "max": 918
+    },
+    "statusCounts": {
+      "200": 50
+    },
+    "errorCounts": {},
+    "healthBefore": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:56:48 UTC",
+      "load_avg": {
+        "1m": 21.46,
+        "5m": 21.28,
+        "15m": 22.64
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406848101",
+        "Threads_connected": "71",
+        "Threads_running": "1",
+        "Uptime": "522000"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 92.2,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    },
+    "healthAfter": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:56:51 UTC",
+      "load_avg": {
+        "1m": 21.46,
+        "5m": 21.28,
+        "15m": 22.64
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406855866",
+        "Threads_connected": "78",
+        "Threads_running": "2",
+        "Uptime": "522003"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 95.5,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    }
+  },
+  {
+    "name": "ПК Кабинет (/cabinet) - 50 подключений",
+    "concurrency": 50,
+    "totalRequests": 250,
+    "endpoint": "/cabinet",
+    "rps": 23.2,
+    "durationSec": 10.78,
+    "successful": 174,
+    "failed": 76,
+    "successRate": "69.6%",
+    "latencies": {
+      "min": 452,
+      "avg": 1896,
+      "p50": 2066,
+      "p90": 2328,
+      "p95": 2426,
+      "p99": 2676,
+      "max": 3021
+    },
+    "statusCounts": {
+      "200": 174,
+      "503": 76
+    },
+    "errorCounts": {},
+    "healthBefore": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:56:52 UTC",
+      "load_avg": {
+        "1m": 21.46,
+        "5m": 21.28,
+        "15m": 22.64
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406856350",
+        "Threads_connected": "75",
+        "Threads_running": "2",
+        "Uptime": "522004"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 95.5,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    },
+    "healthAfter": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:57:03 UTC",
+      "load_avg": {
+        "1m": 25.3,
+        "5m": 22.13,
+        "15m": 22.89
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406886048",
+        "Threads_connected": "98",
+        "Threads_running": "2",
+        "Uptime": "522015"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 98.1,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    }
+  },
+  {
+    "name": "Мобильный Кабинет (/m) - 50 подключений",
+    "concurrency": 50,
+    "totalRequests": 250,
+    "endpoint": "/m",
+    "rps": 23.8,
+    "durationSec": 10.52,
+    "successful": 134,
+    "failed": 116,
+    "successRate": "53.6%",
+    "latencies": {
+      "min": 538,
+      "avg": 1888,
+      "p50": 1762,
+      "p90": 2452,
+      "p95": 2587,
+      "p99": 2806,
+      "max": 2903
+    },
+    "statusCounts": {
+      "200": 134,
+      "503": 116
+    },
+    "errorCounts": {},
+    "healthBefore": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:57:04 UTC",
+      "load_avg": {
+        "1m": 25.3,
+        "5m": 22.13,
+        "15m": 22.89
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406890437",
+        "Threads_connected": "100",
+        "Threads_running": "4",
+        "Uptime": "522016"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 98.1,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    },
+    "healthAfter": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:57:16 UTC",
+      "load_avg": {
+        "1m": 28.4,
+        "5m": 22.9,
+        "15m": 23.14
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406939298",
+        "Threads_connected": "81",
+        "Threads_running": "1",
+        "Uptime": "522028"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 98.7,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    }
+  },
+  {
+    "name": "ПК Кабинет (/cabinet) - 100 подключений",
+    "concurrency": 100,
+    "totalRequests": 500,
+    "endpoint": "/cabinet",
+    "rps": 6.6,
+    "durationSec": 76.22,
+    "successful": 32,
+    "failed": 468,
+    "successRate": "6.4%",
+    "latencies": {
+      "min": 16,
+      "avg": 13580,
+      "p50": 7811,
+      "p90": 25026,
+      "p95": 28947,
+      "p99": 29542,
+      "max": 29791
+    },
+    "statusCounts": {
+      "0": 225,
+      "200": 32,
+      "408": 170,
+      "503": 73
+    },
+    "errorCounts": {
+      "ECONNRESET": 58,
+      "ETIMEDOUT": 167,
+      "TIMEOUT_25S": 170
+    },
+    "healthBefore": {
+      "status": "ok",
+      "timestamp": "2026-10-29 09:57:17 UTC",
+      "load_avg": {
+        "1m": 29.17,
+        "5m": 23.15,
+        "15m": 23.22
+      },
+      "cpu_cores": 1,
+      "php": {
+        "version": "8.3.6",
+        "memory_usage_mb": 4,
+        "memory_peak_mb": 97.77,
+        "memory_limit": "1024M"
+      },
+      "os_memory": {
+        "total_mb": null,
+        "free_mb": null,
+        "available_mb": null,
+        "swap_used_mb": null
+      },
+      "disk": {
+        "total_gb": 747.84,
+        "free_gb": 65.48
+      },
+      "mysql": {
+        "Aborted_connects": "25944",
+        "Max_used_connections": "127",
+        "Queries": "406939841",
+        "Threads_connected": "91",
+        "Threads_running": "2",
+        "Uptime": "522029"
+      },
+      "opcache": {
+        "used_memory_mb": 128,
+        "free_memory_mb": 0,
+        "hit_rate": 98.7,
+        "cached_scripts": 3781
+      },
+      "laravel_log": {
+        "recent_50kb_errors": 8,
+        "tail": "#47 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#48 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\HandleCors->handle()\n#49 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#50 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\TrustProxies->handle()\n#51 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#52 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Foundation\\\\Http\\\\Middleware\\\\InvokeDeferredCallbacks->handle()\n#53 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(26): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#54 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\\\Http\\\\Middleware\\\\ValidatePathEncoding->handle()\n#55 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\\\Pipeline\\\\Pipeline->Illuminate\\\\Pipeline\\\\{closure}()\n#56 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\\\Pipeline\\\\Pipeline->then()\n#57 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\\\Foundation\\\\Http\\\\Kernel->sendRequestThroughRouter()\n#58 /var/www/u41698-5508/data/www/edusfera.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\\\Foundation\\\\Http\\\\Kernel->handle()\n#59 /var/www/u41698-5508/data/www/edusfera.by/public/index.php(32): Illuminate\\\\Foundation\\\\Application->handleRequest()\n#60 {main}\n\"}"
+      }
+    },
+    "healthAfter": null
+  },
+  {
+    "name": "Мобильный Кабинет (/m) - 100 подключений",
+    "concurrency": 100,
+    "totalRequests": 500,
+    "endpoint": "/m",
+    "rps": 3.8,
+    "durationSec": 130.63,
+    "successful": 0,
+    "failed": 500,
+    "successRate": "0.0%",
+    "latencies": {
+      "min": 5407,
+      "avg": 24060,
+      "p50": 25015,
+      "p90": 27405,
+      "p95": 30421,
+      "p99": 30459,
+      "max": 30468
+    },
+    "statusCounts": {
+      "0": 74,
+      "403": 50,
+      "408": 376
+    },
+    "errorCounts": {
+      "ETIMEDOUT": 74,
+      "TIMEOUT_25S": 376
+    },
+    "healthBefore": null,
+    "healthAfter": null
+  },
+  {
+    "name": "ПК Кабинет (/cabinet) - 1 000 подключений",
+    "concurrency": 1000,
+    "totalRequests": 2000,
+    "endpoint": "/cabinet",
+    "rps": 38.8,
+    "durationSec": 51.61,
+    "successful": 0,
+    "failed": 2000,
+    "successRate": "0.0%",
+    "latencies": {
+      "min": 25005,
+      "avg": 25518,
+      "p50": 25566,
+      "p90": 25752,
+      "p95": 25921,
+      "p99": 25950,
+      "max": 25952
+    },
+    "statusCounts": {
+      "408": 2000
+    },
+    "errorCounts": {
+      "TIMEOUT_25S": 2000
+    },
+    "healthBefore": null,
+    "healthAfter": null
+  },
+  {
+    "name": "Мобильный Кабинет (/m) - 1 000 подключений",
+    "concurrency": 1000,
+    "totalRequests": 2000,
+    "endpoint": "/m",
+    "rps": 39.1,
+    "durationSec": 51.18,
+    "successful": 0,
+    "failed": 2000,
+    "successRate": "0.0%",
+    "latencies": {
+      "min": 25023,
+      "avg": 25359,
+      "p50": 25433,
+      "p90": 25596,
+      "p95": 25615,
+      "p99": 25721,
+      "max": 25726
+    },
+    "statusCounts": {
+      "408": 2000
+    },
+    "errorCounts": {
+      "TIMEOUT_25S": 2000
+    },
+    "healthBefore": null,
+    "healthAfter": null
+  },
+  {
+    "name": "СТРЕСС-ВОЛНА 20 000 подключений (Смешанный трафик ПК + Мобильный + Статика)",
+    "concurrency": 1000,
+    "totalRequests": 20000,
+    "endpoint": "/cabinet",
+    "rps": 39.8,
+    "durationSec": 502.68,
+    "successful": 0,
+    "failed": 20000,
+    "successRate": "0.0%",
+    "latencies": {
+      "min": 25001,
+      "avg": 25080,
+      "p50": 25010,
+      "p90": 25383,
+      "p95": 25474,
+      "p99": 25487,
+      "max": 25675
+    },
+    "statusCounts": {
+      "408": 20000
+    },
+    "errorCounts": {
+      "TIMEOUT_25S": 20000
+    },
+    "healthBefore": null,
+    "healthAfter": null
+  }
+]

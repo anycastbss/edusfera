@@ -39,14 +39,18 @@ class TutorNpdPage extends Page
 
     public static function canAccess(): bool
     {
+        if (\Filament\Facades\Filament::getCurrentPanel()?->getId() === 'site-admin') {
+            return false;
+        }
+
         $user = auth()->user();
 
-        return $user !== null && ($user->isTutor() || $user->isAdmin());
+        return $user !== null && $user->isTutor();
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Преподавание';
+        return 'Профиль и документы';
     }
 
     public function mount(): void
@@ -67,6 +71,76 @@ class TutorNpdPage extends Page
         }
 
         return app(SubscriptionFeatureGate::class)->canUseNpd($user);
+    }
+
+    public function canUseOneClickNpd(): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return app(SubscriptionFeatureGate::class)->canUseOneClickNpd($user);
+    }
+
+    public function generateOneClickReceipts(): void
+    {
+        if (! $this->canUseOneClickNpd()) {
+            $this->notifyOneClickNpdUpgradeRequired();
+
+            return;
+        }
+
+        $user = auth()->user();
+        $pendingLessons = Lesson::query()
+            ->where('tutor_id', $user->id)
+            ->where(function ($query) {
+                $query->where('status', Lesson::STATUS_COMPLETED)
+                    ->orWhere('payment_status', Lesson::PAYMENT_PAID);
+            })
+            ->whereNull('npd_receipt_issued_at')
+            ->get();
+
+        if ($pendingLessons->isEmpty()) {
+            Notification::make()
+                ->title('Все чеки уже сформированы')
+                ->info()
+                ->send();
+
+            return;
+        }
+
+        foreach ($pendingLessons as $lesson) {
+            $lesson->update([
+                'npd_receipt_issued_at' => now(),
+                'npd_receipt_number' => 'МНС-'.now()->format('Ymd').'-'.$lesson->id,
+            ]);
+        }
+
+        Notification::make()
+            ->title('Сформированы данные для чеков НПД')
+            ->body("Успешно сформированы данные для {$pendingLessons->count()} чеков в 1 клик.")
+            ->success()
+            ->send();
+    }
+
+    public function notifyOneClickNpdUpgradeRequired(): void
+    {
+        Notification::make()
+            ->title('Доступно на тарифе Частная практика (40 BYN)')
+            ->body('Формирование данных для чеков НПД в 1 клик доступно на тарифе «Частная практика» (40 BYN) или «Премиум» (60 BYN). На тарифе «Стандарт» доступен только ручной просмотр таблицы уроков.')
+            ->warning()
+            ->actions([
+                Action::make('upgrade')
+                    ->button()
+                    ->label('Перейти на тариф (40 BYN)')
+                    ->url(route('filament.admin.pages.tutor-subscription-page')),
+            ])
+            ->send();
     }
 
     private function notifyUpgradeRequired(): void
@@ -251,6 +325,7 @@ class TutorNpdPage extends Page
             'receiptsPendingCount' => $receiptsPendingCount,
             'selectedLesson' => $selectedLesson,
             'canUseNpd' => $this->canUseNpd(),
+            'canUseOneClickNpd' => $this->canUseOneClickNpd(),
         ];
     }
 }

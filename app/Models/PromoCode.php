@@ -210,7 +210,7 @@ class PromoCode extends Model
             ];
         }
 
-        if ($this->min_order_amount !== null && $amount < $this->min_order_amount) {
+        if (! $this->isFreeSubscription() && $this->min_order_amount !== null && $amount < $this->min_order_amount) {
             return [
                 'valid' => false,
                 'error' => sprintf('Минимальная сумма для этого промокода — %.2f BYN.', $this->min_order_amount),
@@ -234,7 +234,9 @@ class PromoCode extends Model
         if (! empty($this->subscription_plan) && $this->subscription_plan !== 'any' && isset($context['plan'])) {
             $chosenPlan = strtolower((string) $context['plan']);
             $allowedPlan = strtolower((string) $this->subscription_plan);
-            if ($chosenPlan !== $allowedPlan) {
+            $normChosen = in_array($chosenPlan, ['start', 'basic'], true) ? 'start' : $chosenPlan;
+            $normAllowed = in_array($allowedPlan, ['start', 'basic'], true) ? 'start' : $allowedPlan;
+            if ($normChosen !== $normAllowed) {
                 return [
                     'valid' => false,
                     'error' => "Этот промокод действует только для тарифа «{$this->subscription_plan}».",

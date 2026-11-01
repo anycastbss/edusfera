@@ -154,7 +154,7 @@ class SaaSManagement extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Хранилище и SaaS-тарифы';
+        return 'Финансы и SaaS';
     }
 
     public static function canAccess(): bool

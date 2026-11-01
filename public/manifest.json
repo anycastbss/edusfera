@@ -69,6 +69,18 @@
   ],
   "shortcuts": [
     {
+      "name": "Сообщения",
+      "short_name": "Чат",
+      "description": "Быстрый мессенджер с учениками и преподавателями",
+      "url": "/admin/messages?source=pwa_shortcut",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Каталог репетиторов",
       "short_name": "Каталог",
       "description": "Поиск и выбор проверенных преподавателей",

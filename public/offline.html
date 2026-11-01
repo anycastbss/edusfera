@@ -169,11 +169,15 @@
                     badge.style.color = '#6EE7B7';
                     dot.style.background = '#10B981';
                     dot.style.boxShadow = '0 0 10px #10B981';
-                    text.textContent = 'Связь восстановлена! Загрузка...';
+                    text.textContent = 'Связь есть! Переход...';
                 }
                 setTimeout(() => {
-                    window.location.reload();
-                }, 800);
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = '/m';
+                    }
+                }, 500);
             }
         }
 
@@ -185,7 +189,11 @@
             }
             fetch('/favicon.svg?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
                 .then(() => {
-                    window.location.reload();
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = '/m';
+                    }
                 })
                 .catch(() => {
                     if (btn) {
@@ -196,11 +204,11 @@
         }
 
         window.addEventListener('online', updateStatus);
-        setInterval(() => {
-            if (navigator.onLine) {
-                updateStatus();
-            }
-        }, 3000);
+
+        // Мгновенная проверка при загрузке: если страница открылась ошибочно, сразу возвращаем
+        if (navigator.onLine) {
+            updateStatus();
+        }
     </script>
 </body>
 </html>

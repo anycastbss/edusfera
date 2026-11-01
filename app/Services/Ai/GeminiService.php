@@ -197,6 +197,124 @@ class GeminiService
     }
 
     /**
+     * Multi-turn chat conversation with real-time SSE streaming callback.
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @param  callable(string): void  $onChunk
+     */
+    public function streamChat(
+        array $messages,
+        ?string $systemInstruction = null,
+        ?callable $onChunk = null,
+        ?string $model = null,
+        float $temperature = 0.7,
+        int $timeoutSeconds = 45
+    ): string {
+        if (! $this->isConfigured()) {
+            return '';
+        }
+
+        $model = $model ?? $this->defaultModel;
+        $contents = [];
+        foreach ($messages as $msg) {
+            $role = ($msg['role'] ?? 'user') === 'assistant' ? 'model' : 'user';
+            $contents[] = [
+                'role' => $role,
+                'parts' => [
+                    ['text' => (string) ($msg['content'] ?? '')],
+                ],
+            ];
+        }
+
+        $body = [
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature' => $temperature,
+            ],
+        ];
+
+        if (! empty($systemInstruction)) {
+            $body['systemInstruction'] = [
+                'parts' => [
+                    ['text' => $systemInstruction],
+                ],
+            ];
+        }
+
+        $url = "{$this->baseUrl}/models/{$model}:streamGenerateContent?alt=sse";
+        $headers = [
+            'Content-Type: application/json',
+            'X-goog-api-key: '.$this->apiKey,
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 6);
+
+        if ($this->proxy) {
+            curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
+        }
+
+        if ($this->useXboxDns && str_contains($this->baseUrl, 'generativelanguage.googleapis.com')) {
+            $ips = $this->getXboxDnsIps();
+            $resolveList = [];
+            foreach ($ips as $ip) {
+                $resolveList[] = "generativelanguage.googleapis.com:443:{$ip}";
+            }
+            curl_setopt($ch, CURLOPT_RESOLVE, $resolveList);
+        }
+
+        $fullText = '';
+        $buffer = '';
+
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) use (&$fullText, &$buffer, $onChunk) {
+            $buffer .= $data;
+            while (($pos = strpos($buffer, "\n")) !== false) {
+                $line = trim(substr($buffer, 0, $pos));
+                $buffer = substr($buffer, $pos + 1);
+
+                if (str_starts_with($line, 'data:')) {
+                    $jsonStr = trim(substr($line, 5));
+                    if (! empty($jsonStr)) {
+                        $parsed = json_decode($jsonStr, true);
+                        if (isset($parsed['candidates'][0]['content']['parts'][0]['text'])) {
+                            $chunk = $parsed['candidates'][0]['content']['parts'][0]['text'];
+                            $fullText .= $chunk;
+                            if ($onChunk !== null) {
+                                $onChunk($chunk);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return strlen($data);
+        });
+
+        $success = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if (! $success || $httpCode >= 400 || empty($fullText)) {
+            Log::warning("Gemini streamChat failed (HTTP {$httpCode}, err: {$err}), falling back to sync chat");
+            $fallbackText = $this->chat($messages, $systemInstruction, $model, $temperature, $timeoutSeconds);
+            if ($onChunk !== null && ! empty($fallbackText)) {
+                $onChunk($fallbackText);
+            }
+
+            return $fallbackText;
+        }
+
+        return $fullText;
+    }
+
+    /**
      * Multi-turn chat returning structured JSON data.
      *
      * @param  array<int, array{role: string, content: string}>  $messages
@@ -435,38 +553,24 @@ class GeminiService
     }
 
     /**
-     * Get IP addresses for generativelanguage.googleapis.com via xbox-dns.ru.
+     * Get IP addresses for generativelanguage.googleapis.com routing.
+     * Defaults to Inscript / Comss DNS servers: 181.215.40.49, 31.58.216.201.
      *
      * @return array<string>
      */
     public function getXboxDnsIps(): array
     {
-        $fallback = ['188.68.214.130', '188.68.214.143'];
+        $fallback = ['181.215.40.49', '31.58.216.201'];
 
-        try {
-            return cache()->remember('gemini_xbox_dns_ips', 1800, function () use ($fallback): array {
-                try {
-                    $packet = $this->buildDnsQueryPacket('generativelanguage.googleapis.com');
-                    $response = Http::timeout(2)
-                        ->withHeaders(['Content-Type' => 'application/dns-message'])
-                        ->withBody($packet, 'application/dns-message')
-                        ->post('https://xbox-dns.ru/dns-query');
-
-                    if ($response->successful()) {
-                        $ips = $this->parseDnsResponseIps($response->body());
-                        if (! empty($ips)) {
-                            return $ips;
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // Fallback to static IPs
-                }
-
-                return $fallback;
-            });
-        } catch (\Throwable $e) {
-            return $fallback;
+        $configured = config('services.gemini.dns_servers');
+        if (! empty($configured)) {
+            $parsed = array_values(array_filter(array_map('trim', explode(',', (string) $configured))));
+            if (! empty($parsed)) {
+                return $parsed;
+            }
         }
+
+        return $fallback;
     }
 
     private function buildDnsQueryPacket(string $domain): string

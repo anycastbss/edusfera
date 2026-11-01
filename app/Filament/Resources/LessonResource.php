@@ -289,6 +289,54 @@ class LessonResource extends Resource
                     ->label('Подробнее')
                     ->button()
                     ->color('gray'),
+                Tables\Actions\Action::make('quick_prep')
+                    ->label('⚡ Шпаргалка')
+                    ->icon('heroicon-o-bolt')
+                    ->color('warning')
+                    ->visible(fn (Lesson $record): bool => auth()->user() && (auth()->user()->isAdmin() || auth()->id() === $record->tutor_id) && in_array($record->status, [Lesson::STATUS_CONFIRMED, Lesson::STATUS_PENDING], true))
+                    ->modalHeading(fn (Lesson $record): string => '⚡ Экспресс-план: ' . ($record->student?->name ?? 'Ученик') . ' (' . ($record->subject ?? 'Занятие') . ')')
+                    ->modalDescription('Конспект-шпаргалка для преподавателя за 3 минуты до урока: разминка, ловушки РИКЗ ЦТ/ЦЭ 2026, 3 задачи и контрольный вопрос.')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Закрыть')
+                    ->extraModalFooterActions(fn (Lesson $record): array => [
+                        Tables\Actions\Action::make('enter_class_from_prep')
+                            ->label('Войти в класс')
+                            ->icon('heroicon-o-video-camera')
+                            ->color('success')
+                            ->url(fn (): string => (! config('classroom.enabled', false) && ! empty($record->meeting_link) && str_starts_with($record->meeting_link, 'http')) ? $record->meeting_link : route('classroom.show', $record))
+                            ->openUrlInNewTab(),
+                    ])
+                    ->modalContent(function (Lesson $record) {
+                        $topic = $record->subject ?: 'Пройденная тема';
+                        $studentName = $record->student?->name ?? 'Ученик';
+                        $tutorName = $record->tutor?->name ?? 'Преподаватель';
+
+                        $prompt = "Ты ведущий эксперт-методист Edusfera.by. Преподаватель {$tutorName} через 10 минут начинает урок с учеником {$studentName}.\n".
+                            "Тема занятия: «{$topic}» (Предмет: {$record->subject}).\n\n".
+                            "Составь экспресс-шпаргалку к уроку на 1 экран (шпаргалка для преподавателя перед занятием):\n".
+                            "1. **⚡ Разминка (3 мин):** 3 быстрых устных вопроса на проверку базовых формул/терминов.\n".
+                            "2. **⚠️ Ловушки РИКЗ (ЦТ/ЦЭ 2026):** 2 типичные ошибки абитуриентов в этой теме.\n".
+                            "3. **📝 Практика (3 задачи):** краткие условия 3 ключевых задач для совместного решения на доске.\n".
+                            "4. **🎯 Контрольный вопрос в конце урока (1 мин)**.\n\n".
+                            "Пиши емко, структурировано, формулы оформляй понятно.";
+
+                        $system = 'Ты опытный методист-наставник Edusfera.by. Твой план должен читаться за 30 секунд.';
+
+                        try {
+                            $plan = app(\App\Services\Ai\GeminiService::class)->generateText($prompt, $system);
+                        } catch (\Throwable $e) {
+                            $plan = null;
+                        }
+
+                        if (empty(trim((string) $plan))) {
+                            $plan = "### ⚡ 1. Разминка (3 мин)\n1. Определение и ключевые формулы темы «{$topic}».\n2. Область допустимых значений и ограничения.\n3. Геометрический / практический смысл.\n\n### ⚠️ 2. Ловушки РИКЗ (ЦТ/ЦЭ 2026)\n- Потеря корней или знаков при алгебраических преобразованиях.\n- Невнимательность в ограничениях диапазона ответов.\n\n### 📝 3. Практика (3 ключевые задачи)\n1. Базовая задача на первичное применение изученного.\n2. Комбинированный прототип части А ЦТ.\n3. Задача с подвохом уровня части Б.\n\n### 🎯 4. Контрольный вопрос в финале\n- Сформулировать главный вывод и алгоритм самопроверки.";
+                        }
+
+                        return view('filament.resources.lesson-resource.components.quick-prep-modal', [
+                            'plan' => $plan,
+                            'lesson' => $record,
+                        ]);
+                    }),
                 Tables\Actions\Action::make('open_classroom')
                     ->label(fn (Lesson $record): string => (! config('classroom.enabled', false) && ! empty($record->meeting_link)) ? 'Подключиться к уроку' : 'Войти в класс')
                     ->icon('heroicon-o-video-camera')
@@ -543,6 +591,22 @@ class LessonResource extends Resource
                     ->requiresConfirmation()
                     ->modalDescription('Функция переноса появится в следующей итерации MVP.')
                     ->action(fn (): null => null),
+                Tables\Actions\Action::make('send_viber')
+                    ->label('Вайбер')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('primary')
+                    ->tooltip('Отправить ссылку на урок в Viber в 1 клик')
+                    ->url(fn (Lesson $record): string => 'viber://forward?text='.rawurlencode('Здравствуйте, '.($record->student?->name ?? 'ученик').'! Ссылка на наш онлайн-урок в Edusfera: '.route('classroom.show', $record).'. Вход без регистрации.'))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Lesson $record): bool => (auth()->user()?->isTutor() || auth()->user()?->isAdmin()) && in_array($record->status, [Lesson::STATUS_CONFIRMED, Lesson::STATUS_PENDING], true)),
+                Tables\Actions\Action::make('send_telegram')
+                    ->label('Телеграм')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->tooltip('Отправить ссылку на урок в Telegram в 1 клик')
+                    ->url(fn (Lesson $record): string => 'https://t.me/share/url?url='.rawurlencode(route('classroom.show', $record)).'&text='.rawurlencode('Здравствуйте, '.($record->student?->name ?? 'ученик').'! Ссылка на наш онлайн-урок в Edusfera:'))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Lesson $record): bool => (auth()->user()?->isTutor() || auth()->user()?->isAdmin()) && in_array($record->status, [Lesson::STATUS_CONFIRMED, Lesson::STATUS_PENDING], true)),
                 Tables\Actions\Action::make('chat')
                     ->label('Написать')
                     ->icon('heroicon-o-chat-bubble-left-right')
@@ -657,11 +721,11 @@ class LessonResource extends Resource
         $user = auth()->user();
 
         if ($panelId === 'site-admin' || $user?->isAdmin()) {
-            return 'Операции';
+            return 'Пользователи и модерация';
         }
 
         return $user?->isTutor()
-            ? 'Занятия'
+            ? 'Уроки и ученики'
             : 'Обучение';
     }
 
