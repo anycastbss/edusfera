@@ -59,6 +59,14 @@ export default function ClassroomApp({ config = {} }) {
 
     // Initial check for classroom onboarding tour
     useEffect(() => {
+        if (config.isDemo) {
+            setIsTourOpen(false);
+            const timer = setTimeout(() => {
+                if (!isMobile) setActiveTab('ai');
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+
         try {
             const tourSeen = localStorage.getItem('edusfera_classroom_tour_completed_v1');
             const urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +75,7 @@ export default function ClassroomApp({ config = {} }) {
                 setIsTourOpen(true);
             }
         } catch (_) {}
-    }, []);
+    }, [config.isDemo, isMobile]);
 
     // 5. Data Collections
     const [chatMessages, setChatMessages] = useState([]);
@@ -146,6 +154,58 @@ export default function ClassroomApp({ config = {} }) {
             window.excalidrawAPI = excalidrawAPI;
         }
     }, [excalidrawAPI]);
+
+    // Demo Mode: Preload Excalidraw Elements & Center
+    useEffect(() => {
+        if (!excalidrawAPI) return;
+        if (config.isDemo && config.initialElements && Array.isArray(config.initialElements)) {
+            try {
+                excalidrawAPI.updateScene({
+                    elements: config.initialElements,
+                    commitToHistory: false,
+                });
+                setTimeout(() => {
+                    try {
+                        excalidrawAPI.scrollToContent(config.initialElements, {
+                            fitToViewport: true,
+                            viewportZoomFactor: isMobile ? 0.72 : 0.88,
+                            animate: true,
+                        });
+                    } catch (_) {}
+                }, 150);
+            } catch (err) {
+                console.warn('[ClassroomApp] Demo initialElements load error:', err);
+            }
+        }
+    }, [excalidrawAPI, config.isDemo, isMobile]);
+
+    // Demo Mode: Local Camera & Mic Preview
+    useEffect(() => {
+        if (!config.isDemo) return;
+        let localStream = null;
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    localStream = stream;
+                    if (localVideoRef.current) {
+                        localVideoRef.current.srcObject = stream;
+                        localVideoRef.current.play?.().catch(() => {});
+                    }
+                    if (localFsVideoRef.current) {
+                        localFsVideoRef.current.srcObject = stream;
+                        localFsVideoRef.current.play?.().catch(() => {});
+                    }
+                })
+                .catch(err => {
+                    console.log('[ClassroomApp] Demo local media preview unavailable/denied:', err);
+                });
+        }
+        return () => {
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+            }
+        };
+    }, [config.isDemo]);
 
     // Track attachment on view state change
     useEffect(() => {
@@ -713,16 +773,18 @@ export default function ClassroomApp({ config = {} }) {
     };
 
     // Send AI Message
-    const sendAiMessage = async (e) => {
+    const sendAiMessage = async (e, overrideText = null) => {
         e?.preventDefault();
-        if (!aiInput.trim() || isAiLoading) return;
-        const text = aiInput.trim();
-        setAiInput('');
+        const text = (overrideText || aiInput).trim();
+        if (!text || isAiLoading) return;
+        if (!overrideText) setAiInput('');
         setAiMessages(prev => [...prev, { role: 'user', text }]);
         setIsAiLoading(true);
 
+        const aiEndpoint = config.isDemo ? '/demo-room/ai-chat' : `/classroom/${config.lessonId}/ai-chat`;
+
         try {
-            const res = await fetch(`/classroom/${config.lessonId}/ai-chat`, {
+            const res = await fetch(aiEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -791,6 +853,76 @@ export default function ClassroomApp({ config = {} }) {
             </div>
 
             {/* ═══════════════════════════════════════════════════ */}
+            {/* 1.5. DEMO ROOM PRO TOP BANNER (CTA)                 */}
+            {/* ═══════════════════════════════════════════════════ */}
+            {config.isDemo && !isVideoFullscreen && (
+                <div style={{
+                    position: 'absolute',
+                    top: isMobile ? 'calc(max(8px, env(safe-area-inset-top)) + 104px)' : '72px',
+                    left: isMobile ? '8px' : '16px',
+                    right: isMobile ? '8px' : 'auto',
+                    padding: isMobile ? '8px 12px' : '8px 16px',
+                    borderRadius: '16px',
+                    backgroundColor: isLight ? 'rgba(15, 23, 42, 0.94)' : 'rgba(24, 24, 27, 0.94)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(198, 255, 51, 0.35)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    zIndex: 42,
+                    maxWidth: isMobile ? 'none' : '460px',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '15px', flexShrink: 0 }}>⚡</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <span style={{
+                                fontSize: isMobile ? '11px' : '12px',
+                                fontWeight: 700,
+                                color: '#FFFFFF',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                Вы находитесь в демо-классе (PRO-режим).
+                            </span>
+                            <span style={{
+                                fontSize: isMobile ? '10px' : '11px',
+                                color: '#94A3B8',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                Чтобы вести уроки с учениками и сохранять доски:
+                            </span>
+                        </div>
+                    </div>
+                    <a
+                        href="/register?role=tutor"
+                        style={{
+                            padding: '6px 12px',
+                            borderRadius: '10px',
+                            backgroundColor: '#C6FF33',
+                            color: '#000000',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 8px rgba(198, 255, 51, 0.3)',
+                            flexShrink: 0,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}>
+                        <span>Создать постоянный кабинет</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════ */}
             {/* 2. TOP HEADER ISLAND                               */}
             {/* ═══════════════════════════════════════════════════ */}
             {!isVideoFullscreen && (
@@ -814,7 +946,7 @@ export default function ClassroomApp({ config = {} }) {
                     zIndex: 40,
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <a href="/admin" title="В панель управления" style={{
+                        <a href={config.isDemo ? '/' : '/admin'} title={config.isDemo ? 'На главную Edusfera' : 'В панель управления'} style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1285,7 +1417,21 @@ export default function ClassroomApp({ config = {} }) {
                             }}>
                                 <span>{config.partnerName ? config.partnerName.split(' ')[0] : 'Собеседник'}</span>
                             </div>
-                            {!isMobile && !partnerConnected && (
+                            {config.isDemo ? (
+                                <span style={{
+                                    position: 'absolute',
+                                    bottom: '4px',
+                                    right: '4px',
+                                    padding: '2px 5px',
+                                    borderRadius: '6px',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.9)',
+                                    color: '#FFFFFF',
+                                    fontSize: '9px',
+                                    fontWeight: 700
+                                }}>
+                                    В сети
+                                </span>
+                            ) : (!isMobile && !partnerConnected && (
                                 <button
                                     type="button"
                                     onClick={copyInviteLink}
@@ -1308,7 +1454,7 @@ export default function ClassroomApp({ config = {} }) {
                                     {linkCopied ? <Check size={10} /> : <Copy size={10} />}
                                     <span>{linkCopied ? 'Скопировано' : 'Ссылка'}</span>
                                 </button>
-                            )}
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -1677,9 +1823,11 @@ export default function ClassroomApp({ config = {} }) {
                                                     : (isLight ? '#F1F5F9' : '#1E293B'),
                                                 color: m.role === 'user' ? '#FFFFFF' : (isLight ? '#0F172A' : '#FFFFFF'),
                                                 alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                                                maxWidth: '90%',
+                                                maxWidth: '92%',
                                                 fontSize: '13px',
-                                                lineHeight: 1.5
+                                                lineHeight: 1.5,
+                                                whiteSpace: 'pre-wrap',
+                                                wordBreak: 'break-word'
                                             }}>
                                                 {m.text}
                                             </div>
@@ -1687,11 +1835,80 @@ export default function ClassroomApp({ config = {} }) {
                                         {isAiLoading && (
                                             <div style={{ fontSize: '12px', color: '#7D39EB', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <RefreshCw size={14} className="animate-spin" />
-                                                <span>ИИ думает...</span>
+                                                <span>ИИ составляет материал...</span>
                                             </div>
                                         )}
                                     </div>
-                                    <form onSubmit={sendAiMessage} style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+
+                                    {/* ─── Quick Prompt Suggestion Chips ─── */}
+                                    <div style={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '6px',
+                                        marginTop: '10px',
+                                        paddingTop: '8px',
+                                        borderTop: isLight ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid rgba(255, 255, 255, 0.08)'
+                                    }}>
+                                        <button
+                                            type="button"
+                                            disabled={isAiLoading}
+                                            onClick={() => sendAiMessage(null, 'Сгенерировать 5 задач по геометрии')}
+                                            style={{
+                                                padding: '5px 9px',
+                                                borderRadius: '8px',
+                                                border: isLight ? '1px solid rgba(125, 57, 235, 0.25)' : '1px solid rgba(198, 255, 51, 0.3)',
+                                                backgroundColor: isLight ? 'rgba(125, 57, 235, 0.08)' : 'rgba(198, 255, 51, 0.08)',
+                                                color: isLight ? '#7D39EB' : '#C6FF33',
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                cursor: isAiLoading ? 'not-allowed' : 'pointer',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}>
+                                            <span>📐 5 задач по геометрии</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={isAiLoading}
+                                            onClick={() => sendAiMessage(null, 'Составить вариант теста под ЦТ')}
+                                            style={{
+                                                padding: '5px 9px',
+                                                borderRadius: '8px',
+                                                border: isLight ? '1px solid rgba(125, 57, 235, 0.25)' : '1px solid rgba(198, 255, 51, 0.3)',
+                                                backgroundColor: isLight ? 'rgba(125, 57, 235, 0.08)' : 'rgba(198, 255, 51, 0.08)',
+                                                color: isLight ? '#7D39EB' : '#C6FF33',
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                cursor: isAiLoading ? 'not-allowed' : 'pointer',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}>
+                                            <span>📝 Вариант теста под ЦТ</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={isAiLoading}
+                                            onClick={() => sendAiMessage(null, 'План урока на 45 минут')}
+                                            style={{
+                                                padding: '5px 9px',
+                                                borderRadius: '8px',
+                                                border: isLight ? '1px solid rgba(125, 57, 235, 0.25)' : '1px solid rgba(198, 255, 51, 0.3)',
+                                                backgroundColor: isLight ? 'rgba(125, 57, 235, 0.08)' : 'rgba(198, 255, 51, 0.08)',
+                                                color: isLight ? '#7D39EB' : '#C6FF33',
+                                                fontSize: '11px',
+                                                fontWeight: 700,
+                                                cursor: isAiLoading ? 'not-allowed' : 'pointer',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}>
+                                            <span>💡 План урока на 45 мин</span>
+                                        </button>
+                                    </div>
+
+                                    <form onSubmit={sendAiMessage} style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                                         <input
                                             type="text"
                                             value={aiInput}

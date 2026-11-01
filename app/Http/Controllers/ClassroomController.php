@@ -37,6 +37,587 @@ class ClassroomController extends Controller
 {
     public function __construct(private readonly ClassroomService $classroomService) {}
 
+    public function demoRoom(Request $request): View
+    {
+        $guestId = (string) $request->session()->get('demo_guest_id');
+        if ($guestId === '') {
+            $guestId = 'guest_demo_' . Str::random(8);
+            $request->session()->put('demo_guest_id', $guestId);
+        }
+
+        $demoAiHistory = [
+            [
+                'role' => 'assistant',
+                'text' => "Здравствуйте! Я ваш ИИ-помощник Edusfera PRO.\n\nВот пример экспресс-подготовки материалов к уроку:\n\n**Тест по теме «Квадратные уравнения» (формат ЦТ / ЦЭ):**\n\n1. **Задание 1:** Найдите сумму корней уравнения \$x^2 - 7x + 12 = 0\$.\n   - А) -7   Б) 7   В) 12   Г) -12\n   *Ответ:* Б) 7 (по теореме Виета \$x_1 + x_2 = 7\$).\n\n2. **Задание 2:** При каком значении \$c\$ уравнение \$2x^2 + 4x + c = 0\$ имеет ровно один корень?\n   *Решение:* \$D = 16 - 8c = 0 \\Rightarrow c = 2\$.\n   *Ответ:* \$c = 2\$.\n\n3. **Задание 3:** Решите уравнение \$x^2 - 5|x| + 6 = 0\$.\n   *Ответ:* \$x \\in \\{-3, -2, 2, 3\\}\$.\n\nНажмите кнопку ниже, чтобы сгенерировать новые задачи по геометрии или составить вариант теста 👇",
+            ],
+        ];
+
+        $classroomConfig = [
+            'isDemo' => true,
+            'isPro' => true,
+            'guestSessionId' => $guestId,
+            'lessonId' => 'demo',
+            'subject' => 'Песочница PRO',
+            'topic' => 'Тест-драйв виртуального класса Edusfera',
+            'userName' => 'Вы (Преподаватель)',
+            'partnerName' => 'Ученик (Тестовый режим)',
+            'userRole' => 'tutor',
+            'userId' => $guestId,
+            'isBoardLocked' => false,
+            'studentInviteUrl' => route('register', ['role' => 'tutor']),
+            'csrfToken' => csrf_token(),
+            'liveKitConfigured' => false,
+            'liveKitToken' => null,
+            'liveKitWsUrl' => null,
+            'jitsiDomain' => 'meet.jit.si',
+            'jitsiRoomName' => 'edusfera_demo_' . substr(md5($guestId), 0, 8),
+            'mediaServerUrl' => null,
+            'iceServers' => [],
+            'maxLessonDurationMinutes' => 60,
+            'aiChatHistory' => $demoAiHistory,
+            'initialElements' => $this->getDemoWhiteboardElements(),
+            'exitUrl' => route('register', ['role' => 'tutor']),
+        ];
+
+        return view('classroom.show', [
+            'lesson' => (object) [
+                'id' => 'demo',
+                'subject' => 'Песочница PRO',
+                'topic' => 'Тест-драйв виртуального класса Edusfera',
+                'tutor' => (object) ['name' => 'Вы (Преподаватель)'],
+                'student' => (object) ['name' => 'Ученик (Тестовый режим)'],
+            ],
+            'isDemo' => true,
+            'classroomConfig' => $classroomConfig,
+        ]);
+    }
+
+    public function demoAiChat(Request $request, AiService $aiService): JsonResponse
+    {
+        $validated = $request->validate([
+            'message' => ['nullable', 'string', 'max:2000', 'required_without:prompt'],
+            'prompt' => ['nullable', 'string', 'max:2000'],
+            'history' => ['nullable', 'array', 'max:30'],
+        ]);
+
+        $messageText = trim((string) ($validated['message'] ?? $validated['prompt'] ?? ''));
+        if ($messageText === '') {
+            return response()->json(['error' => 'Message is required'], 422);
+        }
+
+        $lower = mb_strtolower($messageText);
+
+        if (str_contains($lower, 'геометр') || str_contains($lower, '5 задач')) {
+            $reply = "📐 **5 задач по геометрии (Планиметрия, формат ЦТ / ЦЭ):**\n\n" .
+                "1. **Задача 1 (Прямоугольный треугольник):**\n" .
+                "   В прямоугольном треугольнике катеты равны 6 см и 8 см. Найдите высоту, проведенную к гипотенузе.\n" .
+                "   *Решение:* Гипотенуза \$c = \\sqrt{6^2 + 8^2} = 10\$ см. Площадь \$S = \\frac{1}{2} \\cdot 6 \\cdot 8 = 24\$. Высота \$h = \\frac{2S}{c} = \\frac{48}{10} = 4{,}8\$ см.\n" .
+                "   *Ответ:* **4,8 см**.\n\n" .
+                "2. **Задача 2 (Теорема синусов):**\n" .
+                "   В треугольнике \$ABC\$ угол \$A = 30^\\circ\$, сторона \$BC = 7\$ см. Найдите радиус описанной около треугольника окружности.\n" .
+                "   *Решение:* По теореме синусов \$2R = \\frac{a}{\\sin A} = \\frac{7}{\\sin 30^\\circ} = 14 \\Rightarrow R = 7\$ см.\n" .
+                "   *Ответ:* **7 см**.\n\n" .
+                "3. **Задача 3 (Площадь параллелограмма):**\n" .
+                "   Стороны параллелограмма равны 5 см и 12 см, а угол между ними равен \$150^\\circ\$. Найдите площадь параллелограмма.\n" .
+                "   *Решение:* \$S = a \\cdot b \\cdot \\sin 150^\\circ = 5 \\cdot 12 \\cdot \\frac{1}{2} = 30\$ см².\n" .
+                "   *Ответ:* **30 см²**.\n\n" .
+                "4. **Задача 4 (Подобие треугольников):**\n" .
+                "   Площади двух подобных треугольников относятся как \$16 : 25\$. Периметр меньшего треугольника равен 24 см. Найдите периметр большего.\n" .
+                "   *Решение:* Коэффициент подобия \$k = \\sqrt{\\frac{16}{25}} = \\frac{4}{5}\$. \$P_2 = \\frac{24 \\cdot 5}{4} = 30\$ см.\n" .
+                "   *Ответ:* **30 см**.\n\n" .
+                "5. **Задача 5 (Окружность и касательная):**\n" .
+                "   Из точки \$M\$ к окружности проведены касательная \$MA = 6\$ см и секущая, внешняя часть которой \$MB = 4\$ см. Найдите длину всей секущей \$MC\$.\n" .
+                "   *Решение:* По теореме о касательной и секущей \$MA^2 = MB \\cdot MC \\Rightarrow 36 = 4 \\cdot MC \\Rightarrow MC = 9\$ см.\n" .
+                "   *Ответ:* **9 см**.";
+
+            return response()->json(['reply' => $reply]);
+        }
+
+        if (str_contains($lower, 'тест') && (str_contains($lower, 'цт') || str_contains($lower, 'вариант'))) {
+            $reply = "📝 **Экспресс-вариант теста по математике (стандарт ЦТ / ЦЭ):**\n\n" .
+                "**Часть А (с выбором ответа):**\n\n" .
+                "**А1.** Укажите значение выражения: \$\\sqrt{48} - 2\\sqrt{3} + \\sqrt{12}\$.\n" .
+                "   1) \$2\\sqrt{3}\$   2) \$4\\sqrt{3}\$   3) \$5\\sqrt{3}\$   4) 6   5) 0\n" .
+                "   *Пояснение:* \$\\sqrt{48} = 4\\sqrt{3}\$, \$\\sqrt{12} = 2\\sqrt{3}\$. Итого: \$4\\sqrt{3} - 2\\sqrt{3} + 2\\sqrt{3} = 4\\sqrt{3}\$.\n" .
+                "   *Ответ:* **2**.\n\n" .
+                "**А2.** Решите неравенство: \$\\frac{x - 3}{x + 5} \\le 0\$.\n" .
+                "   1) \$(-5; 3]\$   2) \$[-5; 3]\$   3) \$(-\\infty; -5) \\cup [3; +\\infty)\$   4) \$(-5; 3)\$\n" .
+                "   *Пояснение:* Метод интервалов, точка \$x = -5\$ выколота (знаменатель), \$x = 3\$ закрашена.\n" .
+                "   *Ответ:* **1**.\n\n" .
+                "**А3.** Найдите область определения функции \$y = \\log_3(12 - 4x)\$:\n" .
+                "   1) \$x > 3\$   2) \$x < 3\$   3) \$x \\ge 3\$   4) \$x \\le 3\$\n" .
+                "   *Пояснение:* \$12 - 4x > 0 \\Rightarrow 4x < 12 \\Rightarrow x < 3\$.\n" .
+                "   *Ответ:* **2**.\n\n" .
+                "**Часть Б (краткий ответ целым числом):**\n\n" .
+                "**Б1.** Найдите произведение корней уравнения \$x^3 - 4x^2 - 5x = 0\$.\n" .
+                "   *Решение:* \$x(x^2 - 4x - 5) = 0 \\Rightarrow x_1 = 0, x_2 = 5, x_3 = -1\$. Произведение равно \$0 \\cdot 5 \\cdot (-1) = 0\$.\n" .
+                "   *Ответ:* **0**.\n\n" .
+                "**Б2.** В арифметической прогрессии \$a_1 = 3\$, разность \$d = 4\$. Найдите номер члена прогрессии, равного 47.\n" .
+                "   *Решение:* \$a_n = a_1 + (n - 1)d \\Rightarrow 47 = 3 + 4(n - 1) \\Rightarrow 44 = 4(n - 1) \\Rightarrow n = 12\$.\n" .
+                "   *Ответ:* **12**.";
+
+            return response()->json(['reply' => $reply]);
+        }
+
+        if (str_contains($lower, 'план') || str_contains($lower, '45 минут')) {
+            $reply = "💡 **Поурочный план занятия (45 минут) для онлайн-класса:**\n\n" .
+                "**Тема:** Квадратные уравнения и теорема Виета\n**Оборудование:** Интерактивная доска Excalidraw, ИИ-ассистент Edusfera\n\n" .
+                "⏱️ **1. Организационный момент и разминка (0–5 мин):**\n" .
+                "- Подключение ученика, проверка связи и звука.\n" .
+                "- Устный счет: нахождение корней через теорему Виета в простых случаях.\n\n" .
+                "⏱️ **2. Актуализация теории на доске (5–17 мин):**\n" .
+                "- Запись общего вида \$ax^2 + bx + c = 0\$ и формулы дискриминанта.\n" .
+                "- Вывод теоремы Виета: \$x_1 + x_2 = -\\frac{b}{a}\$, \$x_1 \\cdot x_2 = \\frac{c}{a}\$.\n" .
+                "- Совместное решение 2 примеров на интерактивной доске.\n\n" .
+                "⏱️ **3. Практикум и самостоятельное решение (17–37 мин):**\n" .
+                "- Ученик решает задачу маркером прямо на доске.\n" .
+                "- Разбор ловушек ЦТ (случай \$a = 0\$, случай \$D < 0\$, знаки корней).\n\n" .
+                "⏱️ **4. Экспресс-тест и итоги (37–45 мин):**\n" .
+                "- Блиц-тест из 3 заданий через ИИ-помощника.\n" .
+                "- Домашнее задание и фиксация прогресса в кабинете.";
+
+            return response()->json(['reply' => $reply]);
+        }
+
+        try {
+            $roomId = 'demo_' . ($request->session()->get('demo_guest_id') ?? 'sandbox');
+            $history = (array) ($validated['history'] ?? []);
+            $result = $aiService->chat($messageText, $roomId, null, null, $history);
+            if (! empty($result['reply'])) {
+                return response()->json(['reply' => $result['reply']]);
+            }
+        } catch (\Throwable $e) {
+            Log::info('Demo AI fallback used: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'reply' => "Готово! По вашему запросу «{$messageText}»:\n\nМатериал скомпонован для интерактивной работы на доске. В полной версии преподаватель может мгновенно переносить формулы и задачи из чата прямо на полотно доски в один клик!"
+        ]);
+    }
+
+    private function getDemoWhiteboardElements(): array
+    {
+        return [
+            [
+                'id' => 'el_title',
+                'type' => 'text',
+                'x' => 60,
+                'y' => 60,
+                'width' => 450,
+                'height' => 35,
+                'angle' => 0,
+                'strokeColor' => '#7D39EB',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1001,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => '🎯 Тема: Квадратные уравнения и планиметрия',
+                'fontSize' => 22,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 18,
+                'containerId' => null,
+                'originalText' => '🎯 Тема: Квадратные уравнения и планиметрия',
+                'lineHeight' => 1.25,
+            ],
+            [
+                'id' => 'el_formulas_bg',
+                'type' => 'rectangle',
+                'x' => 50,
+                'y' => 110,
+                'width' => 380,
+                'height' => 220,
+                'angle' => 0,
+                'strokeColor' => '#7D39EB',
+                'backgroundColor' => '#F5F3FF',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => ['type' => 3],
+                'seed' => 1002,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+            ],
+            [
+                'id' => 'el_formulas_text',
+                'type' => 'text',
+                'x' => 70,
+                'y' => 130,
+                'width' => 340,
+                'height' => 170,
+                'angle' => 0,
+                'strokeColor' => '#1E1B4B',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1003,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => "1. Общий вид уравнения:\n   a·x² + b·x + c = 0 (a ≠ 0)\n\n2. Дискриминант:\n   D = b² - 4·a·c\n\n3. Формула корней:\n   x₁,₂ = (-b ± √D) / (2·a)",
+                'fontSize' => 16,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 14,
+                'containerId' => null,
+                'originalText' => "1. Общий вид уравнения:\n   a·x² + b·x + c = 0 (a ≠ 0)\n\n2. Дискриминант:\n   D = b² - 4·a·c\n\n3. Формула корней:\n   x₁,₂ = (-b ± √D) / (2·a)",
+                'lineHeight' => 1.35,
+            ],
+            [
+                'id' => 'el_geom_bg',
+                'type' => 'rectangle',
+                'x' => 450,
+                'y' => 110,
+                'width' => 360,
+                'height' => 220,
+                'angle' => 0,
+                'strokeColor' => '#0284C7',
+                'backgroundColor' => '#F0F9FF',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => ['type' => 3],
+                'seed' => 1004,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+            ],
+            [
+                'id' => 'el_geom_text_title',
+                'type' => 'text',
+                'x' => 470,
+                'y' => 125,
+                'width' => 300,
+                'height' => 30,
+                'angle' => 0,
+                'strokeColor' => '#0369A1',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1005,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => "Теорема Пифагора: a² + b² = c²",
+                'fontSize' => 16,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 14,
+                'containerId' => null,
+                'originalText' => "Теорема Пифагора: a² + b² = c²",
+                'lineHeight' => 1.25,
+            ],
+            [
+                'id' => 'el_triangle_base',
+                'type' => 'line',
+                'x' => 490,
+                'y' => 290,
+                'width' => 150,
+                'height' => 0,
+                'angle' => 0,
+                'strokeColor' => '#0284C7',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1006,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'points' => [[0, 0], [150, 0]],
+                'lastCommittedPoint' => null,
+                'startBinding' => null,
+                'endBinding' => null,
+                'startArrowhead' => null,
+                'endArrowhead' => null,
+            ],
+            [
+                'id' => 'el_triangle_height',
+                'type' => 'line',
+                'x' => 640,
+                'y' => 180,
+                'width' => 0,
+                'height' => 110,
+                'angle' => 0,
+                'strokeColor' => '#0284C7',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1007,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'points' => [[0, 0], [0, 110]],
+                'lastCommittedPoint' => null,
+                'startBinding' => null,
+                'endBinding' => null,
+                'startArrowhead' => null,
+                'endArrowhead' => null,
+            ],
+            [
+                'id' => 'el_triangle_hypo',
+                'type' => 'line',
+                'x' => 490,
+                'y' => 290,
+                'width' => 150,
+                'height' => 110,
+                'angle' => 0,
+                'strokeColor' => '#0284C7',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1008,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'points' => [[0, 0], [150, -110]],
+                'lastCommittedPoint' => null,
+                'startBinding' => null,
+                'endBinding' => null,
+                'startArrowhead' => null,
+                'endArrowhead' => null,
+            ],
+            [
+                'id' => 'el_right_angle',
+                'type' => 'rectangle',
+                'x' => 625,
+                'y' => 275,
+                'width' => 15,
+                'height' => 15,
+                'angle' => 0,
+                'strokeColor' => '#0284C7',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1.5,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1009,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+            ],
+            [
+                'id' => 'el_label_a',
+                'type' => 'text',
+                'x' => 550,
+                'y' => 295,
+                'width' => 45,
+                'height' => 20,
+                'angle' => 0,
+                'strokeColor' => '#0369A1',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1010,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => 'a = 4',
+                'fontSize' => 15,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 12,
+                'containerId' => null,
+                'originalText' => 'a = 4',
+                'lineHeight' => 1.25,
+            ],
+            [
+                'id' => 'el_label_b',
+                'type' => 'text',
+                'x' => 650,
+                'y' => 225,
+                'width' => 45,
+                'height' => 20,
+                'angle' => 0,
+                'strokeColor' => '#0369A1',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1011,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => 'b = 3',
+                'fontSize' => 15,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 12,
+                'containerId' => null,
+                'originalText' => 'b = 3',
+                'lineHeight' => 1.25,
+            ],
+            [
+                'id' => 'el_label_c',
+                'type' => 'text',
+                'x' => 545,
+                'y' => 210,
+                'width' => 60,
+                'height' => 20,
+                'angle' => 0,
+                'strokeColor' => '#0369A1',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1012,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => 'c = 5 ?',
+                'fontSize' => 16,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 12,
+                'containerId' => null,
+                'originalText' => 'c = 5 ?',
+                'lineHeight' => 1.25,
+            ],
+            [
+                'id' => 'el_hint_bg',
+                'type' => 'rectangle',
+                'x' => 830,
+                'y' => 110,
+                'width' => 340,
+                'height' => 220,
+                'angle' => 0,
+                'strokeColor' => '#CA8A04',
+                'backgroundColor' => '#FEF08A',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 2,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => ['type' => 3],
+                'seed' => 1013,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+            ],
+            [
+                'id' => 'el_hint_text',
+                'type' => 'text',
+                'x' => 850,
+                'y' => 130,
+                'width' => 300,
+                'height' => 170,
+                'angle' => 0,
+                'strokeColor' => '#713F12',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 1,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1014,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'text' => "✏️ ПОПРОБУЙТЕ СЕЙЧАС:\n\n1. Выберите «Карандаш»\n   (кнопка 7 или клавиша P) вверху.\n2. Напишите формулу или решите\n   пример рядом на свободном поле.\n3. Справа откройте ИИ-помощник\n   и сгенерируйте тест в 1 клик!",
+                'fontSize' => 15,
+                'fontFamily' => 1,
+                'textAlign' => 'left',
+                'verticalAlign' => 'top',
+                'baseline' => 13,
+                'containerId' => null,
+                'originalText' => "✏️ ПОПРОБУЙТЕ СЕЙЧАС:\n\n1. Выберите «Карандаш»\n   (кнопка 7 или клавиша P) вверху.\n2. Напишите формулу или решите\n   пример рядом на свободном поле.\n3. Справа откройте ИИ-помощник\n   и сгенерируйте тест в 1 клик!",
+                'lineHeight' => 1.35,
+            ],
+            [
+                'id' => 'el_hint_arrow',
+                'type' => 'arrow',
+                'x' => 970,
+                'y' => 105,
+                'width' => 80,
+                'height' => 50,
+                'angle' => 0,
+                'strokeColor' => '#EAB308',
+                'backgroundColor' => 'transparent',
+                'fillStyle' => 'solid',
+                'strokeWidth' => 3,
+                'strokeStyle' => 'solid',
+                'roughness' => 0,
+                'opacity' => 100,
+                'groupIds' => [],
+                'roundness' => null,
+                'seed' => 1015,
+                'version' => 1,
+                'versionNonce' => 1,
+                'isDeleted' => false,
+                'points' => [[0, 0], [-60, -45]],
+                'lastCommittedPoint' => null,
+                'startBinding' => null,
+                'endBinding' => null,
+                'startArrowhead' => null,
+                'endArrowhead' => 'arrow',
+            ],
+        ];
+    }
+
     public function testRoom(Request $request): View
     {
         $user = $request->user();

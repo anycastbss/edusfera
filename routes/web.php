@@ -220,6 +220,12 @@ Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
 
 // ─── Virtual Classroom ───
+Route::get('/demo-room', [ClassroomController::class, 'demoRoom'])
+    ->name('classroom.demo');
+Route::post('/demo-room/ai-chat', [ClassroomController::class, 'demoAiChat'])
+    ->middleware('throttle:30,1')
+    ->name('classroom.demo.ai-chat');
+
 Route::get('/classroom/{lesson}/join', [ClassroomController::class, 'join'])
     ->name('classroom.join');
 

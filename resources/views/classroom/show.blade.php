@@ -1,5 +1,5 @@
 @php
-    $classroomConfig = [
+    $classroomConfig = $classroomConfig ?? [
         'lessonId' => $lesson->id,
         'subject' => $lesson->subject ?? 'Онлайн-урок',
         'topic' => $lesson->topic ?? '',
@@ -30,7 +30,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @include('partials.pwa-meta')
-    <title>Виртуальный класс — {{ $lesson->subject ?? 'Онлайн-урок' }}</title>
+    <title>{{ !empty($isDemo) ? 'Виртуальный класс PRO (Демо-песочница) — Edusfera' : 'Виртуальный класс — ' . ($lesson->subject ?? 'Онлайн-урок') }}</title>
     <meta name="description" content="Виртуальный класс Edusfera в стиле Excalidraw — интерактивная доска, видеосвязь, чат и задания">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
