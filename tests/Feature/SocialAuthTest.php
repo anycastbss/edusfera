@@ -149,4 +149,102 @@ class SocialAuthTest extends TestCase
         $existingUser->refresh();
         $this->assertEquals('google-id-55555', $existingUser->google_id);
     }
+
+    public function test_google_callback_without_role_redirects_to_select_role(): void
+    {
+        $socialiteUser = Mockery::mock(SocialiteUserContract::class);
+        $socialiteUser->shouldReceive('getId')->andReturn('google-id-77777');
+        $socialiteUser->shouldReceive('getEmail')->andReturn('lazy.tutor@gmail.com');
+        $socialiteUser->shouldReceive('getName')->andReturn('Алексей Репетитор');
+        $socialiteUser->shouldReceive('getNickname')->andReturn(null);
+        $socialiteUser->shouldReceive('getAvatar')->andReturn('https://avatar.url/alex');
+
+        $provider = Mockery::mock(Provider::class);
+        $provider->shouldReceive('user')->andReturn($socialiteUser);
+
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+        // No role in session (user clicked "Продолжить с Google" without selecting a role)
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect('/auth/select-role');
+        $this->assertGuest();
+        $this->assertTrue(session()->has('oauth_pending_user'));
+        $this->assertEquals('lazy.tutor@gmail.com', session('oauth_pending_user.email'));
+    }
+
+    public function test_select_role_page_renders_with_pending_oauth_user(): void
+    {
+        $response = $this->withSession([
+            'oauth_pending_user' => [
+                'provider' => 'google',
+                'provider_id' => 'google-id-77777',
+                'name' => 'Алексей Репетитор',
+                'email' => 'lazy.tutor@gmail.com',
+                'avatar' => null,
+                'plan' => 'pro',
+            ],
+        ])->get('/auth/select-role');
+
+        $response->assertOk();
+        $response->assertSee('Выберите вашу роль');
+        $response->assertSee('Я репетитор');
+        $response->assertSee('Я ученик или родитель');
+    }
+
+    public function test_process_select_role_as_tutor_creates_tutor_account_and_trial(): void
+    {
+        $response = $this->withSession([
+            'oauth_pending_user' => [
+                'provider' => 'google',
+                'provider_id' => 'google-id-88888',
+                'name' => 'Ольга Математика',
+                'email' => 'olga.math@gmail.com',
+                'avatar' => 'https://avatar.url/olga',
+                'plan' => 'pro',
+            ],
+        ])->post('/auth/select-role', [
+            'role' => 'tutor',
+            'plan' => 'pro',
+        ]);
+
+        $response->assertRedirect('/admin/tutor-subscription-page?onboarding=1');
+        $this->assertAuthenticated();
+
+        $user = User::where('email', 'olga.math@gmail.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals(UserRole::Tutor, $user->role);
+        $this->assertEquals('google-id-88888', $user->google_id);
+
+        $this->assertDatabaseHas('tutor_profiles', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('subscriptions', [
+            'tutor_id' => $user->id,
+            'plan' => 'pro',
+            'status' => 'trial',
+        ]);
+    }
+
+    public function test_process_select_role_as_student_creates_student_account(): void
+    {
+        $response = $this->withSession([
+            'oauth_pending_user' => [
+                'provider' => 'google',
+                'provider_id' => 'google-id-66666',
+                'name' => 'Иван Студент',
+                'email' => 'ivan.student@gmail.com',
+                'avatar' => null,
+                'plan' => 'pro',
+            ],
+        ])->post('/auth/select-role', [
+            'role' => 'student',
+        ]);
+
+        $response->assertRedirect('/admin');
+        $this->assertAuthenticated();
+
+        $user = User::where('email', 'ivan.student@gmail.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals(UserRole::Student, $user->role);
+        $this->assertEquals('google-id-66666', $user->google_id);
+    }
 }
