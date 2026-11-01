@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ClassroomApp from './components/Classroom/ClassroomApp.jsx';
+import 'katex/dist/katex.min.css';
 
 document.addEventListener('DOMContentLoaded', () => {
     const rootEl = document.getElementById('classroom-app-root');

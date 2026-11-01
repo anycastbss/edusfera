@@ -3,6 +3,8 @@
    Excalidraw-Grade Vector Canvas & Floating Video Island Design System
    ========================================================================== */
 
+@import 'katex/dist/katex.min.css';
+
 /* ── Custom Design Tokens (Edusfera Aurora v3.0) ────────────────────────── */
 :root,
 body.theme-light,
@@ -3112,4 +3114,61 @@ body.theme-light .cr-scale-badge {
 @keyframes cr-bounce {
     0% { transform: translateY(0) scale(1); }
     100% { transform: translateY(-8px) scale(1.08); }
+}
+
+/* ─── AI Assistant Typography & KaTeX Formulas ─── */
+.ai-content-canvas {
+    font-family: inherit;
+    line-height: 1.55;
+    word-break: break-word;
+}
+.ai-content-canvas p {
+    margin: 0 0 0.5rem 0;
+}
+.ai-content-canvas p:last-child {
+    margin-bottom: 0;
+}
+.ai-content-canvas ul, .ai-content-canvas ol {
+    margin: 0.25rem 0 0.5rem 0;
+    padding-left: 1.25rem;
+}
+.ai-content-canvas ul {
+    list-style-type: disc;
+}
+.ai-content-canvas ol {
+    list-style-type: decimal;
+}
+.ai-content-canvas li {
+    margin-bottom: 0.25rem;
+}
+.ai-content-canvas strong {
+    font-weight: 700;
+}
+.ai-content-canvas em {
+    font-style: italic;
+}
+.ai-content-canvas h1,
+.ai-content-canvas h2,
+.ai-content-canvas h3,
+.ai-content-canvas h4 {
+    margin: 0.5rem 0 0.35rem 0;
+    font-weight: 700;
+    line-height: 1.3;
+}
+.ai-content-canvas h1 { font-size: 1.15rem; }
+.ai-content-canvas h2 { font-size: 1.05rem; }
+.ai-content-canvas h3 { font-size: 0.95rem; }
+
+.katex-display-wrapper {
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: rgba(125, 57, 235, 0.06);
+    overflow-x: auto;
+    text-align: center;
+}
+.katex-inline-wrapper {
+    display: inline-block;
+    vertical-align: baseline;
+    padding: 0 2px;
 }

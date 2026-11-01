@@ -17,14 +17,14 @@ export function renderMathAndMarkdown(rawText) {
     // 0. Protect fenced code blocks & inline code
     const codeBlocks = [];
     text = text.replace(/```[\s\S]*?```/g, (match) => {
-        const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+        const id = `@@CODEBLOCK${codeBlocks.length}@@`;
         codeBlocks.push({ id, content: match });
         return id;
     });
 
     const inlineCodes = [];
     text = text.replace(/`[^`\n]+?`/g, (match) => {
-        const id = `__INLINE_CODE_${inlineCodes.length}__`;
+        const id = `@@INLINECODE${inlineCodes.length}@@`;
         inlineCodes.push({ id, content: match });
         return id;
     });
@@ -32,13 +32,13 @@ export function renderMathAndMarkdown(rawText) {
     // 1. Extract block math $$...$$ and \[...\]
     const mathBlocks = [];
     text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-        const id = `__MATH_BLOCK_${mathBlocks.length}__`;
+        const id = `@@MATHBLOCK${mathBlocks.length}@@`;
         mathBlocks.push({ id, formula: formula.trim() });
         return `\n\n${id}\n\n`;
     });
 
     text = text.replace(/\\\[([\s\S]+?)\\\]/g, (match, formula) => {
-        const id = `__MATH_BLOCK_${mathBlocks.length}__`;
+        const id = `@@MATHBLOCK${mathBlocks.length}@@`;
         mathBlocks.push({ id, formula: formula.trim() });
         return `\n\n${id}\n\n`;
     });
@@ -49,13 +49,13 @@ export function renderMathAndMarkdown(rawText) {
         if (/^\s*\d+([.,]\d+)?\s*$/.test(formula)) {
             return match;
         }
-        const id = `__MATH_INLINE_${mathInlines.length}__`;
+        const id = `@@MATHINLINE${mathInlines.length}@@`;
         mathInlines.push({ id, formula: formula.trim() });
         return id;
     });
 
     text = text.replace(/\\\(([\s\S]+?)\\\)/g, (match, formula) => {
-        const id = `__MATH_INLINE_${mathInlines.length}__`;
+        const id = `@@MATHINLINE${mathInlines.length}@@`;
         mathInlines.push({ id, formula: formula.trim() });
         return id;
     });

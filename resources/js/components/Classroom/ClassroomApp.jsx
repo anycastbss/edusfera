@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
     Mic, MicOff, Video, VideoOff, PhoneCall, MessageSquare, 
     FileText, Folder, Sparkles, Moon, Sun, LogOut, 
@@ -11,6 +11,7 @@ import { Excalidraw, reconcileElements, getSceneVersion } from '@excalidraw/exca
 import '@excalidraw/excalidraw/index.css';
 import { LiveKitConnectionManager } from '../../classroom.js';
 import ClassroomOnboardingTour from './ClassroomOnboardingTour.jsx';
+import AiFormattedContent from '../AiFormattedContent.jsx';
 
 export default function ClassroomApp({ config = {} }) {
     // 1. Theme State — DEFAULT TO LIGHT as requested by user
@@ -155,29 +156,57 @@ export default function ClassroomApp({ config = {} }) {
         }
     }, [excalidrawAPI]);
 
-    // Demo Mode: Preload Excalidraw Elements & Center
-    useEffect(() => {
-        if (!excalidrawAPI) return;
-        if (config.isDemo && config.initialElements && Array.isArray(config.initialElements)) {
-            try {
-                excalidrawAPI.updateScene({
-                    elements: config.initialElements,
-                    commitToHistory: false,
-                });
-                setTimeout(() => {
-                    try {
-                        excalidrawAPI.scrollToContent(config.initialElements, {
-                            fitToViewport: true,
-                            viewportZoomFactor: isMobile ? 0.72 : 0.88,
-                            animate: true,
-                        });
-                    } catch (_) {}
-                }, 150);
-            } catch (err) {
-                console.warn('[ClassroomApp] Demo initialElements load error:', err);
-            }
+    // Excalidraw initial data for demo sandbox
+    const initialData = useMemo(() => {
+        if (config.isDemo && Array.isArray(config.initialElements) && config.initialElements.length > 0) {
+            return {
+                elements: config.initialElements,
+                appState: {
+                    viewBackgroundColor: theme === 'light' ? '#FFFFFF' : '#0B0B0E',
+                },
+                scrollToContent: true,
+            };
         }
-    }, [excalidrawAPI, config.isDemo, isMobile]);
+        return undefined;
+    }, [config.isDemo, config.initialElements]);
+
+    // Demo Mode: Preload Excalidraw Elements & Center
+    const demoLoadedRef = useRef(false);
+    useEffect(() => {
+        if (!excalidrawAPI || !config.isDemo || !config.initialElements || !Array.isArray(config.initialElements)) return;
+
+        const populateAndCenter = () => {
+            try {
+                const current = excalidrawAPI.getSceneElements();
+                if (!current || current.length === 0) {
+                    excalidrawAPI.updateScene({
+                        elements: config.initialElements,
+                        commitToHistory: false,
+                    });
+                }
+                const toScroll = (current && current.length > 0) ? current : config.initialElements;
+                excalidrawAPI.scrollToContent(toScroll, {
+                    fitToViewport: true,
+                    viewportZoomFactor: isMobile ? 0.72 : 0.88,
+                    animate: false,
+                });
+                demoLoadedRef.current = true;
+            } catch (err) {
+                console.warn('[ClassroomApp] Demo elements load error:', err);
+            }
+        };
+
+        populateAndCenter();
+        const t1 = setTimeout(populateAndCenter, 100);
+        const t2 = setTimeout(populateAndCenter, 350);
+        const t3 = setTimeout(populateAndCenter, 800);
+
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+        };
+    }, [excalidrawAPI, config.isDemo, config.initialElements, isMobile]);
 
     // Demo Mode: Local Camera & Mic Preview
     useEffect(() => {
@@ -627,7 +656,7 @@ export default function ClassroomApp({ config = {} }) {
 
     // Initial Chat History Loader
     useEffect(() => {
-        if (!config.lessonId) return;
+        if (!config.lessonId || config.isDemo) return;
         fetch(`/classroom/${config.lessonId}/chat`, {
             headers: { 'Accept': 'application/json' }
         })
@@ -648,7 +677,7 @@ export default function ClassroomApp({ config = {} }) {
 
     // Drawer Tabs Dynamic Loader
     const loadNotes = async () => {
-        if (!config.lessonId) return;
+        if (!config.lessonId || config.isDemo) return;
         setNotesLoading(true);
         try {
             const res = await fetch(`/classroom/${config.lessonId}/notes`, {
@@ -689,7 +718,7 @@ export default function ClassroomApp({ config = {} }) {
     };
 
     const loadFiles = async () => {
-        if (!config.lessonId) return;
+        if (!config.lessonId || config.isDemo) return;
         setFilesLoading(true);
         try {
             const res = await fetch(`/classroom/${config.lessonId}/files`, {
@@ -833,6 +862,7 @@ export default function ClassroomApp({ config = {} }) {
                 zIndex: 1,
             }}>
                 <Excalidraw
+                    initialData={initialData}
                     excalidrawAPI={api => setExcalidrawAPI(api)}
                     theme={theme}
                     langCode="ru-RU"
@@ -1820,16 +1850,23 @@ export default function ClassroomApp({ config = {} }) {
                                                 borderRadius: '14px',
                                                 backgroundColor: m.role === 'user' 
                                                     ? '#7D39EB' 
-                                                    : (isLight ? '#F1F5F9' : '#1E293B'),
-                                                color: m.role === 'user' ? '#FFFFFF' : (isLight ? '#0F172A' : '#FFFFFF'),
+                                                    : (isLight ? '#F8FAFC' : '#1E293B'),
+                                                border: m.role === 'user' 
+                                                    ? 'none' 
+                                                    : (isLight ? '1px solid rgba(0, 0, 0, 0.06)' : '1px solid rgba(255, 255, 255, 0.08)'),
+                                                color: m.role === 'user' ? '#FFFFFF' : (isLight ? '#0F172A' : '#F8FAFC'),
                                                 alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                                                 maxWidth: '92%',
                                                 fontSize: '13px',
                                                 lineHeight: 1.5,
-                                                whiteSpace: 'pre-wrap',
-                                                wordBreak: 'break-word'
+                                                wordBreak: 'break-word',
+                                                boxShadow: isLight ? '0 1px 3px rgba(0, 0, 0, 0.04)' : '0 2px 6px rgba(0, 0, 0, 0.3)'
                                             }}>
-                                                {m.text}
+                                                {m.role === 'user' ? (
+                                                    <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                                                ) : (
+                                                    <AiFormattedContent content={m.text} fontSize="compact" />
+                                                )}
                                             </div>
                                         ))}
                                         {isAiLoading && (
