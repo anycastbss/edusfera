@@ -30,6 +30,16 @@ while IFS= read -r file; do
     fi
 done < <(git status --porcelain | awk '{print $2}')
 
+# Добавляем все файлы из последнего коммита
+while IFS= read -r commit_file; do
+    if [[ "$commit_file" =~ ^(tests/|docs/|scratch/|ad-assets/|public/ad-assets/|\.marketing/|\.env|\.git|\.codegraph|\.playwright-cli/|node_modules/|storage/) ]]; then
+        continue
+    fi
+    if [ -f "$commit_file" ]; then
+        FILES+=("$commit_file")
+    fi
+done < <(git diff-tree --no-commit-id --name-only -r HEAD)
+
 # Дополнительно гарантируем ключевые файлы промокодов, миграций, ИИ и кабинетов
 CRITICAL_FILES=(
     "docs/EDUSFERA_DESIGN_SYSTEM.md"
