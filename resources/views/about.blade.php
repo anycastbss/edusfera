@@ -236,7 +236,7 @@
 
                 <!-- Crisp Editorial Subtitle -->
                 <p class="text-base sm:text-xl text-neutral-300 leading-relaxed max-w-3xl mx-auto font-normal">
-                    Мы создаём экосистему цифровых продуктов нового поколения: адаптивные ИИ-движки диагностики знаний по спецификациям РИКЗ, защищённые виртуальные классы реального времени и финансово-технологическую инфраструктуру для репетиторов и образовательных центров в Беларуси.
+                    Мы создаём экосистему цифровых продуктов нового поколения: адаптивные ИИ-движки диагностики знаний по спецификациям ЦТ/ЦЭ, защищённые виртуальные классы реального времени и финансово-технологическую инфраструктуру для репетиторов и образовательных центров в Беларуси.
                 </p>
 
                 <!-- Actions -->
@@ -254,7 +254,7 @@
                 <div class="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-left border-t border-white/[0.08]">
                     <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                         <div class="text-3xl font-black text-[#C6FF33] font-mono">100%</div>
-                        <div class="text-xs text-neutral-400 mt-1.5 leading-snug">Спецификация РИКЗ 2026 в ИИ-диагностике</div>
+                        <div class="text-xs text-neutral-400 mt-1.5 leading-snug">Спецификация ЦТ/ЦЭ 2026 в ИИ-диагностике</div>
                     </div>
                     <div class="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                         <div class="text-3xl font-black text-white font-mono">99.9%</div>
@@ -294,9 +294,9 @@
                 <div class="p-6 font-mono text-xs sm:text-sm text-neutral-300 leading-relaxed overflow-x-auto min-h-[190px]">
                     <!-- Tab 1: AI Diagnostics -->
                     <div x-show="activeTab === 'ai'" x-cloak class="space-y-1.5">
-                        <p><span class="code-syntax-comment">// Запуск калибровочного анализа РИКЗ (ЦТ и ЦЭ 2026)</span></p>
+                        <p><span class="code-syntax-comment">// Запуск калибровочного анализа ЦТ/ЦЭ (ЦТ и ЦЭ 2026)</span></p>
                         <p><span class="code-syntax-keyword">const</span> analysis = <span class="code-syntax-keyword">await</span> EdusferaAI.<span class="code-syntax-func">diagnoseStudentGaps</span>({</p>
-                        <p class="pl-4">subject: <span class="code-syntax-string">'Математика'</span>, exam: <span class="code-syntax-string">'ЦТ/ЦЭ_2026'</span>, codifierVersion: <span class="code-syntax-string">'RIKZ_SPEC_v2'</span></p>
+                        <p class="pl-4">subject: <span class="code-syntax-string">'Математика'</span>, exam: <span class="code-syntax-string">'ЦТ/ЦЭ_2026'</span>, codifierVersion: <span class="code-syntax-string">'CT_CE_SPEC_v2'</span></p>
                         <p>});</p>
                         <p class="text-neutral-400">↳ Выявлено критических пробелов: <span class="text-[#C6FF33] font-bold">4 темы</span> (Тригонометрия B12, Стереометрия B14)</p>
                         <p class="text-neutral-400">↳ Прогноз балла до обучения: <span class="text-amber-400 font-bold">54</span> → Персональная траектория: <span class="text-[#C6FF33] font-bold">88–94 балла</span></p>
@@ -349,7 +349,7 @@
                             🧠
                         </div>
                         <div class="inline-block text-xs font-bold uppercase tracking-wider text-[#c084fc]">
-                            Machine Learning & Тестология РИКЗ
+                            Machine Learning & Тестология ЦТ/ЦЭ
                         </div>
                         <h3 class="text-2xl sm:text-3xl font-extrabold text-white">
                             Edusfera AI Diagnostic Core
@@ -366,7 +366,7 @@
                         </div>
                         <div>
                             <span class="block text-white font-bold text-sm">6 предметов</span>
-                            Полная база тестов РИКЗ 2026
+                            Полная база тестов ЦТ/ЦЭ 2026
                         </div>
                         <div>
                             <span class="block text-white font-bold text-sm">0 минут</span>

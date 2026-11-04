@@ -311,7 +311,7 @@ export default function LessonDetailBottomSheet({
                       ИИ-шпаргалка к занятию
                     </h4>
                     <p className="text-[10px] text-amber-700 dark:text-amber-400">
-                      Разминка • Ловушки РИКЗ • 3 задачи • Финал
+                      Разминка • Экзаменационные ловушки • 3 задачи • Финал
                     </p>
                   </div>
                 </div>

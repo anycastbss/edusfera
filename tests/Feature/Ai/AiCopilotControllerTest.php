@@ -183,7 +183,7 @@ class AiCopilotControllerTest extends TestCase
                 $body = $request->data();
                 $systemInstruction = $body['systemInstruction']['parts'][0]['text'] ?? '';
 
-                $this->assertStringContainsString('РИКЗ', $systemInstruction);
+                $this->assertStringContainsString('ЦТ и ЦЭ', $systemInstruction);
 
                 return Http::response([
                     'candidates' => [

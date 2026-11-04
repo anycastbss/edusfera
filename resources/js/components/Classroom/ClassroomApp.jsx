@@ -793,18 +793,44 @@ export default function ClassroomApp({ config = {} }) {
 
     // Undo / Redo
     const handleUndo = () => {
-        if (excalidrawAPI?.history) {
-            excalidrawAPI.history.undo();
-        } else if (window.undoExcalidraw) {
-            window.undoExcalidraw();
+        try {
+            if (typeof excalidrawAPI?.history?.undo === 'function') {
+                excalidrawAPI.history.undo();
+            } else if (typeof window.undoExcalidraw === 'function') {
+                window.undoExcalidraw();
+            } else {
+                const event = new KeyboardEvent('keydown', {
+                    key: 'z',
+                    code: 'KeyZ',
+                    ctrlKey: !navigator.platform.toUpperCase().includes('MAC'),
+                    metaKey: navigator.platform.toUpperCase().includes('MAC'),
+                    bubbles: true
+                });
+                document.querySelector('.excalidraw')?.dispatchEvent(event) || document.dispatchEvent(event);
+            }
+        } catch (e) {
+            console.warn('[Classroom] Undo error:', e);
         }
     };
 
     const handleRedo = () => {
-        if (excalidrawAPI?.history) {
-            excalidrawAPI.history.redo();
-        } else if (window.redoExcalidraw) {
-            window.redoExcalidraw();
+        try {
+            if (typeof excalidrawAPI?.history?.redo === 'function') {
+                excalidrawAPI.history.redo();
+            } else if (typeof window.redoExcalidraw === 'function') {
+                window.redoExcalidraw();
+            } else {
+                const event = new KeyboardEvent('keydown', {
+                    key: 'y',
+                    code: 'KeyY',
+                    ctrlKey: !navigator.platform.toUpperCase().includes('MAC'),
+                    metaKey: navigator.platform.toUpperCase().includes('MAC'),
+                    bubbles: true
+                });
+                document.querySelector('.excalidraw')?.dispatchEvent(event) || document.dispatchEvent(event);
+            }
+        } catch (e) {
+            console.warn('[Classroom] Redo error:', e);
         }
     };
 
@@ -1076,11 +1102,11 @@ export default function ClassroomApp({ config = {} }) {
             {config.isDemo && !isVideoFullscreen && !bannerDismissed && (
                 <div style={{
                     position: 'absolute',
-                    top: isMobile ? 'calc(max(6px, env(safe-area-inset-top)) + 58px)' : 'auto',
-                    bottom: isMobile ? 'auto' : '20px',
-                    left: isMobile ? '8px' : '20px',
+                    top: isMobile ? 'calc(max(8px, env(safe-area-inset-top)) + 98px)' : '72px',
+                    bottom: 'auto',
+                    left: isMobile ? '8px' : '16px',
                     right: isMobile ? '8px' : 'auto',
-                    padding: isMobile ? '6px 10px' : '8px 16px',
+                    padding: isMobile ? '6px 10px' : '7px 14px',
                     borderRadius: '16px',
                     backgroundColor: isLight ? 'rgba(15, 23, 42, 0.94)' : 'rgba(24, 24, 27, 0.94)',
                     backdropFilter: 'blur(16px)',
@@ -1092,7 +1118,7 @@ export default function ClassroomApp({ config = {} }) {
                     justifyContent: 'space-between',
                     gap: isMobile ? '8px' : '12px',
                     zIndex: 42,
-                    maxWidth: isMobile ? 'none' : '460px',
+                    maxWidth: isMobile ? 'none' : 'min(620px, calc(100vw - 32px))',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                         <span style={{ fontSize: isMobile ? '13px' : '15px', flexShrink: 0 }}>⚡</span>
@@ -1120,7 +1146,30 @@ export default function ClassroomApp({ config = {} }) {
                             )}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+                        <a
+                            href="https://t.me/edusferaby"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Следить за обновлениями платформы в Telegram"
+                            style={{
+                                padding: isMobile ? '5px 8px' : '6px 11px',
+                                borderRadius: '10px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                color: '#E2E8F0',
+                                fontSize: isMobile ? '10px' : '11px',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                border: '1px solid rgba(255, 255, 255, 0.15)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                transition: 'all 0.15s ease'
+                            }}>
+                            <Send size={11} style={{ color: '#38BDF8' }} />
+                            <span>{isMobile ? 'Telegram-канал' : 'Канал в Telegram'}</span>
+                        </a>
                         <a
                             href="/register?role=tutor"
                             style={{

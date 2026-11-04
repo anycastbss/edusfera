@@ -6,8 +6,8 @@
     @include('partials.pwa-meta')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Новости и статьи Edusfera — Подготовка к ЦТ/ЦЭ и советы экспертов</title>
-    <meta name="description" content="Полезные материалы, разборы тестов РИКЗ, новости образования Беларуси и лайфхаки для сдачи ЦТ и ЦЭ на 100 баллов от преподавателей Edusfera.">
-    <meta name="keywords" content="блог edusfera, статьи цт, разборы тестов рикз, новости образования беларусь, как сдать цт, подготовка к цэ">
+    <meta name="description" content="Полезные материалы, разборы тестов ЦТ/ЦЭ, новости образования Беларуси и лайфхаки для сдачи ЦТ и ЦЭ на 100 баллов от преподавателей Edusfera.">
+    <meta name="keywords" content="блог edusfera, статьи цт, разборы тестов цт цэ, новости образования беларусь, как сдать цт, подготовка к цэ">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://edusfera.by/news">
 
@@ -16,14 +16,14 @@
     <meta property="og:locale" content="ru_BY">
     <meta property="og:site_name" content="Edusfera">
     <meta property="og:title" content="Новости и статьи Edusfera — Подготовка к ЦТ/ЦЭ">
-    <meta property="og:description" content="Полезные материалы, разборы тестов РИКЗ и рекомендации ведущих преподавателей Беларуси.">
+    <meta property="og:description" content="Полезные материалы, разборы тестов ЦТ/ЦЭ и рекомендации ведущих преподавателей Беларуси.">
     <meta property="og:url" content="https://edusfera.by/news">
     <meta property="og:image" content="https://edusfera.by/og-image.png">
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Блог и новости Edusfera">
-    <meta name="twitter:description" content="Разборы тестов РИКЗ, подготовка к ЦТ/ЦЭ и советы репетиторов.">
+    <meta name="twitter:description" content="Разборы тестов ЦТ/ЦЭ, подготовка к ЦТ/ЦЭ и советы репетиторов.">
     <meta name="twitter:image" content="https://edusfera.by/og-image.png">
 
     <!-- Schema.org JSON-LD -->

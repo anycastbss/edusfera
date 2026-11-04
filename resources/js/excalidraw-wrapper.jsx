@@ -125,7 +125,7 @@ function ExcalidrawWhiteboard({ options = {} }) {
         // Register global helpers for undo and redo
         window.undoExcalidraw = () => {
             try {
-                if (excalidrawAPI?.history) {
+                if (typeof excalidrawAPI?.history?.undo === 'function') {
                     excalidrawAPI.history.undo();
                 } else {
                     const event = new KeyboardEvent('keydown', {
@@ -135,7 +135,7 @@ function ExcalidrawWhiteboard({ options = {} }) {
                         metaKey: navigator.platform.toUpperCase().includes('MAC'),
                         bubbles: true
                     });
-                    document.dispatchEvent(event);
+                    document.querySelector('.excalidraw')?.dispatchEvent(event) || document.dispatchEvent(event);
                 }
             } catch (e) {
                 console.warn('[Excalidraw] Undo error:', e);
@@ -144,10 +144,21 @@ function ExcalidrawWhiteboard({ options = {} }) {
 
         window.redoExcalidraw = () => {
             try {
-                if (excalidrawAPI?.history) {
+                if (typeof excalidrawAPI?.history?.redo === 'function') {
                     excalidrawAPI.history.redo();
+                } else {
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'y',
+                        code: 'KeyY',
+                        ctrlKey: !navigator.platform.toUpperCase().includes('MAC'),
+                        metaKey: navigator.platform.toUpperCase().includes('MAC'),
+                        bubbles: true
+                    });
+                    document.querySelector('.excalidraw')?.dispatchEvent(event) || document.dispatchEvent(event);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[Excalidraw] Redo error:', e);
+            }
         };
 
         return () => {

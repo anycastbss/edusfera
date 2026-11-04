@@ -410,7 +410,7 @@ export default function AuroraSignUp() {
           <div className="space-y-3 pt-2">
             {[
               { icon: <Video className="w-4 h-4 text-[#C6FF33]" />, text: 'HD-видеокласс и интерактивная доска' },
-              { icon: <Bot className="w-4 h-4 text-[#7D39EB]" />, text: 'ИИ-диагностика знаний по тестам РИКЗ' },
+              { icon: <Bot className="w-4 h-4 text-[#7D39EB]" />, text: 'ИИ-диагностика знаний по тестам ЦТ/ЦЭ' },
               { icon: <FileText className="w-4 h-4 text-emerald-400" />, text: 'Автоматические чеки НПД и расписание' },
             ].map((item, idx) => (
               <div key={idx} className="flex items-center gap-3 text-xs xl:text-sm text-white/80 font-medium">

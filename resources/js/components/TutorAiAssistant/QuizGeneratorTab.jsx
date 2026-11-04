@@ -37,7 +37,7 @@ const DIFFICULTIES = [
         id: 'Базовый (Часть А ЦТ 2026)', 
         label: 'Часть А', 
         tag: 'Базовый', 
-        desc: 'Выбор ответа (4-5 вариантов), дистракторы РИКЗ',
+        desc: 'Выбор ответа (4-5 вариантов), экзаменационные дистракторы',
         icon: '📝' 
     },
     { 
@@ -65,7 +65,7 @@ const DIFFICULTIES = [
 
 const FORMATS = [
     { id: 'Смешанный (Часть А с выбором и Часть Б с кратким числовым ответом)', label: 'Смешанный (А + Б)' },
-    { id: 'Только Часть Б (краткий числовой ответ РИКЗ)', label: 'Только Часть Б' },
+    { id: 'Только Часть Б (краткий краткий числовой ответ)', label: 'Только Часть Б' },
     { id: 'Только Часть А (4-5 вариантов с дистракторами)', label: 'Только Часть А' },
 ];
 
@@ -362,7 +362,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                             </div>
                             <div>
                                 <span className="font-extrabold text-xs text-[#0C0A14] dark:text-white uppercase tracking-wider block">
-                                    3. Спецификация РИКЗ
+                                    3. Спецификация экзаменов
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-medium block">
                                     Количество заданий и формат сложности
@@ -504,7 +504,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                     ) : (
                         <>
                             <Sparkles className="w-5 h-5 text-[#C6FF33]" />
-                            <span>Сгенерировать задания РИКЗ</span>
+                            <span>Сгенерировать задания ЦТ/ЦЭ</span>
                         </>
                     )}
                 </button>
@@ -541,7 +541,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
 
                         <div className="max-w-md space-y-2">
                             <h3 className="text-lg font-black text-[#0C0A14] dark:text-white font-rimma uppercase tracking-tight">
-                                Банк тестовых заданий РИКЗ
+                                Банк тестовых заданий ЦТ/ЦЭ
                             </h3>
                             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                                 Укажите предмет и тему раздела слева. Edusfera AI составит авторские задачи с готовыми числовыми ключами, логикой решения и анализом ловушек.
@@ -551,7 +551,7 @@ export default function QuizGeneratorTab({ csrfToken, endpoints, initialSubject 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg pt-4 text-left">
                             <div className="p-3.5 rounded-2xl bg-[#FAF8FF] dark:bg-slate-800/80 border border-[#ECE5FB] dark:border-slate-700 space-y-1 hover:border-violet-300 transition-colors">
                                 <span className="text-base">⚠️</span>
-                                <div className="text-xs font-bold text-slate-900 dark:text-white">Ловушки РИКЗ</div>
+                                <div className="text-xs font-bold text-slate-900 dark:text-white">Экзаменационные ловушки</div>
                                 <div className="text-[10px] text-slate-500">Где ошибаются 80%</div>
                             </div>
                             <div className="p-3.5 rounded-2xl bg-[#FAF8FF] dark:bg-slate-800/80 border border-[#ECE5FB] dark:border-slate-700 space-y-1 hover:border-violet-300 transition-colors">

@@ -87,7 +87,7 @@ class ClassroomAiAgentTest extends TestCase
                                                 'action' => 'homework.create',
                                                 'payload' => [
                                                     'title' => 'Производная сложной функции',
-                                                    'instructions' => 'Решить задания №10-15 из сборника РИКЗ 2026.',
+                                                    'instructions' => 'Решить задания №10-15 из экзаменационного сборника 2026.',
                                                     'due_days' => 4,
                                                 ],
                                             ],

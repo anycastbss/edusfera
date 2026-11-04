@@ -1178,7 +1178,7 @@
                                 <span class="text-[#C6FF33] font-bold">✓</span> <strong>Приоритет x2</strong> в поисковой выдаче каталога
                             </li>
                             <li class="flex items-start gap-2.5">
-                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>ИИ-диагностика знаний (РИКЗ)</strong> пробелов
+                                <span class="text-[#C6FF33] font-bold">✓</span> <strong>ИИ-диагностика знаний (ЦТ/ЦЭ)</strong> пробелов
                             </li>
                             <li class="flex items-start gap-2.5">
                                 <span class="text-[#C6FF33] font-bold">✓</span> <strong>ИИ-ассистент</strong>: конспекты, тесты и ДЗ
@@ -1354,7 +1354,7 @@
                                 <td colspan="4" class="py-2.5 px-4 font-mono-tech text-[10px] uppercase tracking-wider text-slate-400 font-bold">3. ИИ и автоматизация</td>
                             </tr>
                             <tr>
-                                <td class="py-3 px-4">ИИ-диагностика знаний (тесты РИКЗ)</td>
+                                <td class="py-3 px-4">ИИ-диагностика знаний (тесты ЦТ/ЦЭ)</td>
                                 <td class="py-3 px-4 text-center text-slate-600">✕</td>
                                 <td class="py-3 px-4 text-center text-white">До 30 / мес</td>
                                 <td class="py-3 px-4 text-center text-[#C6FF33] font-bold bg-white/5">БЕЗЛИМИТ</td>

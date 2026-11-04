@@ -213,7 +213,7 @@ async function generate() {
                         </div>
                         <span class="brand-name">EDUSFERA</span>
                     </div>
-                    <div class="badge">СТАНДАРТ РИКЗ 2026</div>
+                    <div class="badge">СТАНДАРТ ЦТ/ЦЭ 2026</div>
                 </div>
 
                 <div class="content">
@@ -577,11 +577,11 @@ async function generate() {
                 <div class="mid-row">
                     <div class="left-col">
                         <h1>Умная подготовка к ЦТ/ЦЭ <span>с ИИ и топ-репетиторами</span></h1>
-                        <p class="desc">Точная диагностика пробелов по стандартам РИКЗ, встроенный виртуальный класс и безопасная оплата уроков.</p>
+                        <p class="desc">Точная диагностика пробелов по стандартам ЦТ/ЦЭ, встроенный виртуальный класс и безопасная оплата уроков.</p>
                         <div class="badges-row">
                             <div class="b-item">⚡ 86+ средний балл</div>
                             <div class="b-item">🛡️ Альфа-Банк эквайринг</div>
-                            <div class="b-item">🎯 РИКЗ 2026</div>
+                            <div class="b-item">🎯 ЦТ/ЦЭ 2026</div>
                         </div>
                     </div>
 

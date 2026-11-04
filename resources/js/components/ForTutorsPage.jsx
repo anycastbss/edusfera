@@ -1127,7 +1127,7 @@ export default function ForTutorsPage() {
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> Все возможности тарифа «Стандарт»</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>До 10 откликов в месяц</strong> на заявки родителей</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>Приоритет x2</strong> в выдаче каталога</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>ИИ-диагностика знаний (РИКЗ)</strong></li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>ИИ-диагностика знаний (ЦТ/ЦЭ)</strong></li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>ИИ-ассистент</strong>: конспекты, тесты и ДЗ</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>Авто-чеки НПД (МНС РБ)</strong> в 1 клик</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#C6FF33] shrink-0" /> <strong>Уроки до 120 минут</strong> + 15 ГБ облака</li>

@@ -63,7 +63,7 @@ export default function TutorAiAssistant() {
                         </h1>
 
                         <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
-                            Методические технологические карты, генерация банка заданий ЦТ/ЦЭ 2026 с ловушками РИКЗ и педагогический копайлот. Экономьте до 5 часов подготовки каждую неделю.
+                            Методические технологические карты, генерация банка заданий ЦТ/ЦЭ 2026 с ловушками ЦТ/ЦЭ и педагогический копайлот. Экономьте до 5 часов подготовки каждую неделю.
                         </p>
                     </div>
 
@@ -145,7 +145,7 @@ export default function TutorAiAssistant() {
                                 ? 'bg-[#C6FF33] text-black font-black'
                                 : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                         }`}>
-                            РИКЗ 2026
+                            ЦТ/ЦЭ 2026
                         </span>
                     </button>
 

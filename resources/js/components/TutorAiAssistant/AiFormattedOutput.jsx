@@ -349,7 +349,7 @@ export default function AiFormattedOutput({
                             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Анализ методики, спецификаций РИКЗ 2026 и составление конспекта...
+                            Анализ методики, экзаменационной программы 2026 и составление конспекта...
                         </p>
                     </div>
                 </div>

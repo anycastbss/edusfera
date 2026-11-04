@@ -1531,6 +1531,221 @@ try {
         exit;
     }
 
+    if ($action === 'platform_audit_logs') {
+        header('Content-Type: application/json; charset=utf-8');
+        $report = [
+            'generated_at' => date('Y-m-d H:i:s'),
+            'dates_analyzed' => ['2026-11-01', '2026-11-02'],
+            'log_files' => [],
+            'laravel_log_analysis' => [],
+            'telemetry' => [],
+            'users_registered' => [],
+            'user_audit_logs' => [],
+            'classroom_sessions' => [],
+            'lessons' => [],
+            'ai_logs' => [],
+            'failed_jobs' => [],
+        ];
+
+        // 1. Files in storage/logs
+        $logDir = __DIR__.'/../storage/logs';
+        $logFiles = glob($logDir.'/*.log');
+        $report['log_files'] = array_map(function($f) {
+            return [
+                'name' => basename($f),
+                'size_kb' => round(filesize($f) / 1024, 2),
+                'modified' => date('Y-m-d H:i:s', filemtime($f)),
+            ];
+        }, $logFiles ?: []);
+
+        // 2. Parse storage/logs/laravel.log specifically for Nov 1 and Nov 2
+        $mainLog = $logDir.'/laravel.log';
+        if (file_exists($mainLog)) {
+            $fp = fopen($mainLog, 'r');
+            $errors = [];
+            $currentError = null;
+            $lineCount = 0;
+            $entryCount = 0;
+            while (($line = fgets($fp)) !== false) {
+                $lineCount++;
+                if (preg_match('/^\[(2026-11-0[12]\s[0-9:]+)\]\s+(?:production|local)\.([A-Z]+):\s+(.*)$/', $line, $m)) {
+                    $entryCount++;
+                    if ($currentError) {
+                        $errors[] = $currentError;
+                        if (count($errors) > 500) {
+                            array_shift($errors);
+                        }
+                    }
+                    $currentError = [
+                        'timestamp' => $m[1],
+                        'level' => $m[2],
+                        'message' => trim($m[3]),
+                        'trace' => [],
+                    ];
+                } elseif ($currentError && count($currentError['trace']) < 15) {
+                    $currentError['trace'][] = trim($line);
+                }
+            }
+            if ($currentError) {
+                $errors[] = $currentError;
+            }
+            fclose($fp);
+
+            // Group errors
+            $grouped = [];
+            foreach ($errors as $e) {
+                $cleanMsg = preg_replace('/(at\s+[\/\w\.-]+:\d+|#\d+|\"[^\"]+\")/', '', $e['message']);
+                $cleanMsg = trim(substr($cleanMsg, 0, 120));
+                $key = $e['level'].': '.$cleanMsg;
+                if (!isset($grouped[$key])) {
+                    $grouped[$key] = [
+                        'level' => $e['level'],
+                        'first_seen' => $e['timestamp'],
+                        'last_seen' => $e['timestamp'],
+                        'count' => 0,
+                        'sample_message' => $e['message'],
+                        'sample_trace' => array_slice($e['trace'], 0, 8),
+                    ];
+                }
+                $grouped[$key]['count']++;
+                $grouped[$key]['last_seen'] = $e['timestamp'];
+            }
+
+            $report['laravel_log_analysis'] = [
+                'total_lines_read' => $lineCount,
+                'entries_found_for_dates' => $entryCount,
+                'grouped_errors' => array_values($grouped),
+                'recent_raw_errors' => array_slice($errors, -40),
+            ];
+        }
+
+        // 3. Platform Telemetry
+        if (Schema::hasTable('platform_telemetry')) {
+            $telemetryRequests = DB::table('platform_telemetry')
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->count();
+
+            $telemetryErrors = DB::table('platform_telemetry')
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->where(function($q) {
+                    $q->where('status_code', '>=', 400)->orWhereNotNull('error_message');
+                })
+                ->orderBy('created_at', 'desc')
+                ->limit(60)
+                ->get();
+
+            $topUrls = DB::table('platform_telemetry')
+                ->select('url', DB::raw('count(*) as count'), DB::raw('round(avg(duration_ms), 1) as avg_duration_ms'))
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->groupBy('url')
+                ->orderByDesc('count')
+                ->limit(25)
+                ->get();
+
+            $uniqueIps = DB::table('platform_telemetry')
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->distinct('ip_address')
+                ->count('ip_address');
+
+            $devices = DB::table('platform_telemetry')
+                ->select('device_type', 'browser', 'os', DB::raw('count(*) as count'))
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->groupBy('device_type', 'browser', 'os')
+                ->orderByDesc('count')
+                ->get();
+
+            $statusCodes = DB::table('platform_telemetry')
+                ->select('status_code', DB::raw('count(*) as count'))
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->groupBy('status_code')
+                ->orderByDesc('count')
+                ->get();
+
+            $report['telemetry'] = [
+                'total_requests' => $telemetryRequests,
+                'unique_visitors_ip' => $uniqueIps,
+                'status_codes' => $statusCodes,
+                'top_urls' => $topUrls,
+                'error_requests' => $telemetryErrors,
+                'devices' => $devices,
+            ];
+        }
+
+        // 4. Users registered yesterday and today
+        if (Schema::hasTable('users')) {
+            $newUsers = User::where('created_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($u) {
+                    $roleVal = $u->role instanceof \BackedEnum ? $u->role->value : $u->role;
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'role' => $roleVal,
+                        'google_id' => !empty($u->google_id),
+                        'yandex_id' => !empty($u->yandex_id),
+                        'created_at' => (string)$u->created_at,
+                        'has_tutor_profile' => $u->tutorProfile()->exists(),
+                    ];
+                });
+            $report['users_registered'] = $newUsers;
+        }
+
+        // 5. UserAuditLog
+        if (Schema::hasTable('user_audit_logs')) {
+            $auditLogs = DB::table('user_audit_logs')
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('created_at', 'desc')
+                ->limit(100)
+                ->get();
+            $report['user_audit_logs'] = $auditLogs;
+        }
+
+        // 6. Classroom sessions
+        if (Schema::hasTable('classroom_sessions')) {
+            $sessions = ClassroomSession::where('created_at', '>=', '2026-11-01 00:00:00')
+                ->orWhere('updated_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('id', 'desc')
+                ->limit(30)
+                ->get();
+            $report['classroom_sessions'] = $sessions;
+        }
+
+        // 7. Lessons
+        if (Schema::hasTable('lessons')) {
+            $lessons = Lesson::where('created_at', '>=', '2026-11-01 00:00:00')
+                ->orWhere('updated_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('id', 'desc')
+                ->limit(30)
+                ->get();
+            $report['lessons'] = $lessons;
+        }
+
+        // 8. AI Prompt Logs
+        if (Schema::hasTable('ai_prompt_logs')) {
+            $aiLogs = DB::table('ai_prompt_logs')
+                ->where('created_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
+            $report['ai_logs'] = $aiLogs;
+        }
+
+        // 9. Failed jobs
+        if (Schema::hasTable('failed_jobs')) {
+            $failedJobs = DB::table('failed_jobs')
+                ->where('failed_at', '>=', '2026-11-01 00:00:00')
+                ->orderBy('failed_at', 'desc')
+                ->limit(50)
+                ->get();
+            $report['failed_jobs'] = $failedJobs;
+        }
+
+        echo json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($action === 'view_log') {
         echo "📋 <b>Последние строки storage/logs/laravel.log:</b>\n\n";
         $logPath = __DIR__.'/../storage/logs/laravel.log';

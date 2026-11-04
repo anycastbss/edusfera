@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Edusfera — Умная подготовка к ЦТ и ЦЭ с ИИ | Платформа нового поколения</title>
     <meta name="description" content="Готовься к ЦТ и ЦЭ с персональными ИИ-агентами, интерактивной диагностикой знаний и проверенными репетиторами Беларуси. 100 баллов без зубрежки на платформе Edusfera.">
-    <meta name="keywords" content="подготовка к ЦТ, подготовка к ЦЭ, репетиторы Беларусь, ИИ репетитор, диагностика знаний ЦТ, тесты РИКЗ, онлайн подготовка к экзаменам">
+    <meta name="keywords" content="подготовка к ЦТ, подготовка к ЦЭ, репетиторы Беларусь, ИИ репетитор, диагностика знаний ЦТ, тесты ЦТ/ЦЭ, онлайн подготовка к экзаменам">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <link rel="canonical" href="https://edusfera.by/">
 

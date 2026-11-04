@@ -2358,7 +2358,7 @@
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">БЕЗЛИМИТНО</td>
                             </tr>
                             <tr>
-                                <td>ИИ-диагностика знаний и пробелов ученика (тесты РИКЗ)</td>
+                                <td>ИИ-диагностика знаний и пробелов ученика (тесты ЦТ/ЦЭ)</td>
                                 <td class="tutor-matrix-col-plan"><span class="tutor-matrix-cross">✕</span></td>
                                 <td class="tutor-matrix-col-plan" style="font-weight: 600; color: #059669;">До 50 / мес</td>
                                 <td class="tutor-matrix-col-plan tutor-matrix-highlight" style="font-weight: 800; color: #7C3AED;">БЕЗЛИМИТНО</td>

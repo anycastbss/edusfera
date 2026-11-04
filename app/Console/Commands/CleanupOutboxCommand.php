@@ -49,16 +49,19 @@ class CleanupOutboxCommand extends Command
         $totalDeleted = 0;
 
         do {
-            // Подзапрос по id для совместимости с PostgreSQL (нет DELETE ... LIMIT).
-            // На SQLite/MySQL это тоже корректно работает.
+            // Двухшаговое удаление по id для 100% совместимости с MariaDB/MySQL/PostgreSQL (нет ошибки subquery LIMIT).
+            $ids = DB::table('integration_outbox')
+                ->whereNotNull('published_at')
+                ->where('published_at', '<', $threshold)
+                ->limit(self::BATCH_SIZE)
+                ->pluck('id');
+
+            if ($ids->isEmpty()) {
+                break;
+            }
+
             $deleted = DB::table('integration_outbox')
-                ->whereIn('id', function ($query) use ($threshold): void {
-                    $query->select('id')
-                        ->from('integration_outbox')
-                        ->whereNotNull('published_at')
-                        ->where('published_at', '<', $threshold)
-                        ->limit(self::BATCH_SIZE);
-                })
+                ->whereIn('id', $ids)
                 ->delete();
 
             $totalDeleted += $deleted;

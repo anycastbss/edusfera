@@ -75,7 +75,7 @@ class PlatformConfigService
                 'gemini_api_key' => config('services.gemini.api_key', env('GEMINI_API_KEY', '')),
                 'model' => config('services.gemini.model', 'gemini-2.5-flash'),
                 'temperature' => 0.7,
-                'system_prompt' => "Ты — Майя, премиальный методический ИИ-помощник белорусской образовательной экосистемы Edusfera.by. Твоя специализация — подготовка школьников к ЦТ и ЦЭ по стандартам РИКЗ 2026 года.",
+                'system_prompt' => "Ты — Майя, премиальный методический ИИ-помощник белорусской образовательной экосистемы Edusfera.by. Твоя специализация — подготовка школьников к ЦТ и ЦЭ по программе 2026 года.",
             ],
             'billing' => [
                 'pro_monthly_price' => 40.00,

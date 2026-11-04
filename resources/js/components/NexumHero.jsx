@@ -998,7 +998,7 @@ export default function NexumHero() {
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] flex items-center justify-center font-bold text-xs">✓</div>
-                  <span><strong>Встроенный ИИ-методист</strong> по спецификациям РИКЗ (генерация ДЗ и тестов за 15 секунд)</span>
+                  <span><strong>Встроенный ИИ-методист</strong> по программе экзаменов ЦТ/ЦЭ (генерация ДЗ и тестов за 15 секунд)</span>
                 </li>
               </ul>
             </div>

@@ -120,7 +120,7 @@ const GRADES = [
         id: '11 класс (подготовка к ЦТ/ЦЭ 2026)', 
         label: '11 класс', 
         tag: 'ЦТ/ЦЭ 2026', 
-        desc: 'Спецификации РИКЗ, тесты А и Б, ловушки',
+        desc: 'Спецификации ЦТ/ЦЭ, тесты А и Б, ловушки',
         icon: '🎯' 
     },
     { 
@@ -159,7 +159,7 @@ export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = '
     const [topic, setTopic] = useState('');
     const [duration, setDuration] = useState('60 минут');
     const [goal, setGoal] = useState('');
-    const [focus, setFocus] = useState('Практика ЦТ/ЦЭ и разбор ловушек РИКЗ');
+    const [focus, setFocus] = useState('Практика ЦТ/ЦЭ и разбор экзаменационных ловушек');
 
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState('');
@@ -548,7 +548,7 @@ export default function LessonPlanTab({ csrfToken, endpoints, initialSubject = '
                             </div>
                             <div className="p-3.5 rounded-2xl bg-[#FAF8FF] dark:bg-slate-800/80 border border-[#ECE5FB] dark:border-slate-700 space-y-1 hover:border-violet-300 transition-colors">
                                 <span className="text-base">⚠️</span>
-                                <div className="text-xs font-bold text-slate-900 dark:text-white">Ловушки РИКЗ</div>
+                                <div className="text-xs font-bold text-slate-900 dark:text-white">Экзаменационные ловушки</div>
                                 <div className="text-[10px] text-slate-500">Предупреждения для ЦТ/ЦЭ</div>
                             </div>
                         </div>

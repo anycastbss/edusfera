@@ -66,7 +66,7 @@ class AiSettingsPage extends Page
                     ->label('API Ключ Google Gemini')
                     ->password()
                     ->placeholder('AIzaSy•••••••••••••••••••••••••')
-                    ->helperText('Используется для генератора планов уроков, тестов РИКЗ и ассистента в классе.'),
+                    ->helperText('Используется для генератора планов уроков, тестов ЦТ/ЦЭ и ассистента в классе.'),
                 TextInput::make('anthropic_key')
                     ->label('API Ключ Anthropic')
                     ->password()

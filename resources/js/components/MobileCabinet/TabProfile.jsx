@@ -441,7 +441,7 @@ export default function TabProfile({
       }
     } catch (err) {
       console.error(err);
-      setAiResponse('### Разбор задания от Майи\n1. Проанализировано условие задачи.\n2. Применен базовый алгоритм решения ЦТ.\n3. Ответ проверен на типовые ловушки спецификации РИКЗ.');
+      setAiResponse('### Разбор задания от Майи\n1. Проанализировано условие задачи.\n2. Применен базовый алгоритм решения ЦТ.\n3. Ответ проверен на типовые типовые ловушки экзаменационных тестов.');
     } finally {
       setIsAiLoading(false);
     }
@@ -1259,7 +1259,7 @@ export default function TabProfile({
                       <textarea
                         rows={3}
                         value={editMethodology}
-                        placeholder="Опишите структуру уроков: разбор теории, домашние задания, интерактивная доска, подготовка к типовым ловушкам спецификаций РИКЗ..."
+                        placeholder="Опишите структуру уроков: разбор теории, домашние задания, интерактивная доска, подготовка к типовым типовым ловушкам экзаменационных тестов..."
                         onChange={(e) => setEditMethodology(e.target.value)}
                         className="w-full p-3 rounded-xl border border-slate-200 dark:border-white/10 dark:bg-white/5 bg-slate-50 dark:text-white text-slate-900 text-xs focus:ring-2 focus:ring-[#7D39EB] outline-none resize-none"
                       />

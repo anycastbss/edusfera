@@ -74,7 +74,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Спецификация РИКЗ 2026</span>
+                <span>Спецификация ЦТ/ЦЭ 2026</span>
                 <span class="text-slate-300">·</span>
                 <span>Калиброванная оценка</span>
             </div>
@@ -95,7 +95,7 @@
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-bold uppercase tracking-wider text-[#86868b]">Текущий прогноз</span>
                     <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold">
-                        Калибровано по РИКЗ
+                        Калибровано по стандартам ЦТ/ЦЭ
                     </span>
                 </div>
 
@@ -209,7 +209,7 @@
                                         Edusfera AI
                                     </span>
                                 </h3>
-                                <p class="text-xs text-violet-300/80">Индивидуальный анализ спецификации РИКЗ под ваш результат</p>
+                                <p class="text-xs text-violet-300/80">Индивидуальный анализ спецификации ЦТ/ЦЭ под ваш результат</p>
                             </div>
                         </div>
 
@@ -244,7 +244,7 @@
                                 <span>Быстрый рост (+10-15 баллов)</span>
                             </div>
                             <ul class="text-xs text-emerald-100/90 space-y-1 list-disc list-inside">
-                                @foreach(($insights['fast_wins'] ?? ['Спецификация РИКЗ 2026', 'Часть Б']) as $win)
+                                @foreach(($insights['fast_wins'] ?? ['Спецификация ЦТ/ЦЭ 2026', 'Часть Б']) as $win)
                                     <li>{{ $win }}</li>
                                 @endforeach
                             </ul>
@@ -275,7 +275,7 @@
                         Выявленные дефициты знаний
                     </h2>
                     <p class="text-xs text-[#6e6e73] mt-0.5">
-                        Темы, в которых допущены ошибки, и разбор типичных ловушек РИКЗ
+                        Темы, в которых допущены ошибки, и разбор типичных экзаменационных ловушек
                     </p>
                 </div>
                 <span class="text-xs font-semibold text-[#86868b]">
@@ -288,21 +288,21 @@
                 @php
                     $defaultGaps = [
                         [
-                            'code' => 'РИКЗ Часть Б · Задание 5',
+                            'code' => 'Часть Б · Задание 5',
                             'topic' => $weakTopics[0] ?? 'Логарифмические неравенства (ОДЗ)',
                             'loss' => 6,
                             'mistake' => 'Забыта проверка области допустимых значений (ОДЗ) при смене основания, что привело к выбору ошибочного варианта.',
                             'stat' => '64% ошибаются на ЦТ'
                         ],
                         [
-                            'code' => 'РИКЗ Часть Б · Задание 10',
+                            'code' => 'Часть Б · Задание 10',
                             'topic' => $weakTopics[1] ?? 'Стереометрия и расстояния в пространстве',
                             'loss' => 7,
                             'mistake' => 'Неверное построение перпендикуляра к диагональной плоскости сечения призмы.',
                             'stat' => '71% теряют баллы'
                         ],
                         [
-                            'code' => 'РИКЗ Часть А · Задание 12',
+                            'code' => 'Часть А · Задание 12',
                             'topic' => $weakTopics[2] ?? 'Тригонометрический отбор корней',
                             'loss' => 4,
                             'mistake' => 'Включение постороннего корня, лежащего за пределами заданного числового отрезка.',
@@ -386,7 +386,7 @@
                                 </div>
 
                                 <p class="text-xs text-[#6e6e73] line-clamp-2 leading-relaxed">
-                                    {{ $tutor->bio ?? 'Экспертная подготовка к ЦТ и ЦЭ по спецификации РИКЗ. Разбор сложных заданий части Б.' }}
+                                    {{ $tutor->bio ?? 'Экспертная подготовка к ЦТ и ЦЭ по спецификации ЦТ/ЦЭ. Разбор сложных заданий части Б.' }}
                                 </p>
                             </div>
 
