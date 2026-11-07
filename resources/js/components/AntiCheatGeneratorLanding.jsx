@@ -484,10 +484,6 @@ export default function AntiCheatGeneratorLanding() {
         { label: 'Генератор ЦТ', href: '/generator', badge: '5 BYN' },
         { label: 'ИИ-Диагностика', href: '/diagnostic' },
         { label: 'Новости', href: '/news' },
-        { label: 'Как это работает', href: '/#how-it-works' },
-        { label: 'Предметы', href: '/#subjects' },
-        { label: 'Модель сервиса', href: '/#business-model' },
-        { label: 'Гарантии', href: '/#guarantees' },
         { label: 'Репетиторам', href: '/for-tutors', isSpecial: true },
     ];
 
@@ -589,17 +585,17 @@ export default function AntiCheatGeneratorLanding() {
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-3">
-                    <div className="rounded-full bg-white/10 px-1.5 py-1.5 backdrop-blur-lg flex items-center gap-1 border border-white/10">
+                    <div className="rounded-full bg-white/[0.06] p-1 backdrop-blur-xl flex items-center gap-0.5 border border-white/10 shadow-sm">
                         {navItems.map((item) => (
                             <button
                                 key={item.label}
                                 onClick={() => handleNavClick(item.href)}
-                                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                                className={`rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                                     item.isSpecial 
                                         ? 'bg-[#C6FF33] text-black font-extrabold shadow-sm hover:bg-[#d4ff59]' 
                                         : item.href === '/generator'
-                                            ? 'bg-white/15 text-white shadow-sm'
-                                            : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                            ? 'bg-white/15 text-white font-semibold shadow-xs'
+                                            : 'text-neutral-300 hover:bg-white/10 hover:text-white'
                                 }`}
                             >
                                 <span>{item.label}</span>
