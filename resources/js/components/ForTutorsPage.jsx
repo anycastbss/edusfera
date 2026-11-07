@@ -181,6 +181,13 @@ export default function ForTutorsPage() {
               >
                 Тарифы
               </button>
+              <a 
+                href="/generator" 
+                className="rounded-full px-3.5 py-1.5 text-sm font-semibold text-[#C6FF33] bg-[#C6FF33]/10 hover:bg-[#C6FF33]/20 border border-[#C6FF33]/30 transition-all flex items-center gap-1.5"
+              >
+                <span>Генератор тестов</span>
+                <span className="text-[10px] bg-[#C6FF33] text-black px-1.5 py-0.2 rounded-full font-bold">5 BYN</span>
+              </a>
               <button 
                 onClick={() => scrollToSection('faq')} 
                 className="rounded-full px-4 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
@@ -941,7 +948,7 @@ export default function ForTutorsPage() {
                 <div className="pt-4 border-t border-white/10">
                   <div className="text-xs uppercase font-semibold text-slate-400 mb-1">Стоимость подписки Pro:</div>
                   <div className="text-lg font-bold text-white">480 BYN / год (40 BYN/мес)</div>
-                  <div className="text-xs text-[#C6FF33] font-semibold mt-0.5">1-й месяц: 0 BYN (Бесплатно)</div>
+                  <div className="text-xs text-[#C6FF33] font-semibold mt-0.5">7 дней: 0 BYN (Пробный период)</div>
                 </div>
 
                 <div className="pt-4 border-t border-white/10 bg-[#C6FF33]/5 -mx-6 sm:-mx-8 p-6 sm:p-8 -mb-6 sm:-mb-8 rounded-b-2xl border-t border-[#C6FF33]/20">

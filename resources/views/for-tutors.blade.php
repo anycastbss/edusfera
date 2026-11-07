@@ -962,7 +962,7 @@
                                 <span class="font-mono-tech font-bold text-white">480 BYN</span>
                             </div>
                             <div class="flex justify-between items-center text-slate-300">
-                                <span>1-й месяц в подарок (Trial):</span>
+                                <span>7 дней в подарок (Trial):</span>
                                 <span class="font-mono-tech font-bold text-[#C6FF33]">0 BYN</span>
                             </div>
                             <div class="pt-3 border-t border-slate-800 flex justify-between items-baseline">
@@ -1112,7 +1112,7 @@
                                 <span class="font-extrabold text-4xl text-white" x-text="yearly ? '16' : '20'">20</span>
                                 <span class="font-mono-tech text-xs text-slate-400">BYN / месяц</span>
                             </div>
-                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">1-й месяц бесплатно (0 BYN)</div>
+                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">7 дней бесплатно (0 BYN)</div>
                             <div x-show="yearly" x-cloak class="font-mono-tech text-[11px] text-slate-400 mt-1">192 BYN / год при оплате за год</div>
                         </div>
 
@@ -1163,7 +1163,7 @@
                                 <span class="font-extrabold text-4xl text-white" x-text="yearly ? '32' : '40'">40</span>
                                 <span class="font-mono-tech text-xs text-slate-300">BYN / месяц</span>
                             </div>
-                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">1-й месяц бесплатно (0 BYN)</div>
+                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">7 дней бесплатно (0 BYN)</div>
                             <div x-show="yearly" x-cloak class="font-mono-tech text-[11px] text-slate-400 font-medium mt-1">384 BYN / год при оплате за год</div>
                         </div>
 
@@ -1217,7 +1217,7 @@
                                 <span class="font-extrabold text-5xl text-[#C6FF33]" x-text="yearly ? '48' : '60'">60</span>
                                 <span class="font-mono-tech text-xs text-slate-300">BYN / месяц</span>
                             </div>
-                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">1-й месяц бесплатно (0 BYN)</div>
+                            <div class="font-mono-tech text-xs font-bold text-[#C6FF33] mt-1">7 дней бесплатно (0 BYN)</div>
                             <div x-show="yearly" x-cloak class="font-mono-tech text-[11px] text-[#C6FF33] font-medium mt-1">576 BYN / год при оплате за год</div>
                         </div>
 

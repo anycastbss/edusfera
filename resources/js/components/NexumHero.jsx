@@ -1023,43 +1023,46 @@ export default function NexumHero() {
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-emerald-400">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            Надёжность и прозрачность
+            Честность и надёжность
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            4 гарантии защиты учеников и родителей
+            4 гарантии платформы Edusfera
           </h2>
+          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+            Создаём безопасные и прозрачные условия для преподавателей, учеников и родителей.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-3">
             <FileCheck className="w-8 h-8 text-violet-400 mb-2" />
-            <h4 className="text-base font-bold text-white">Верификация дипломов</h4>
+            <h4 className="text-base font-bold text-white">Дипломы проверены</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Все репетиторы проходят проверку дипломов и зарегистрированы в налоговых органах РБ (НПД).
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-3">
-            <Lock className="w-8 h-8 text-emerald-400 mb-2" />
-            <h4 className="text-base font-bold text-white">0 BYN для учеников</h4>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Поиск репетиторов, онлайн-класс и базовая ИИ-диагностика на 100% бесплатны для семей.
+              Модерация проверяет профильное образование и опыт каждого преподавателя перед публикацией в каталоге.
             </p>
           </div>
 
           <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-3">
             <DollarSign className="w-8 h-8 text-[#C6FF33] mb-2" />
-            <h4 className="text-base font-bold text-white">Прямой расчет</h4>
+            <h4 className="text-base font-bold text-white">0% скрытых комиссий</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Удобные прямые расчеты между учеником и преподавателем без скрытых комиссий платформы.
+              100% оплаты за уроки остаётся репетитору. Родители платят напрямую без наценок посредников и агентств.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-3">
+            <ShieldCheck className="w-8 h-8 text-emerald-400 mb-2" />
+            <h4 className="text-base font-bold text-white">Чеки для налога в 1 клик</h4>
+            <p className="text-slate-400 text-xs leading-relaxed">
+              Полная легальность для репетиторов по налогу на профдоход (НПД) в соответствии с законами Беларуси.
             </p>
           </div>
 
           <div className="rounded-2xl bg-slate-900/80 border border-slate-800 p-6 space-y-3">
             <Award className="w-8 h-8 text-amber-400 mb-2" />
-            <h4 className="text-base font-bold text-white">Отчёты о результатах</h4>
+            <h4 className="text-base font-bold text-white">Отчёты после каждого урока</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              Постурочные отчёты и трекинг баллов ЦТ/ЦЭ в личном кабинете после каждого занятия.
+              Родители и ученики видят пройденные темы, выполненные задания и реальный рост баллов в личном кабинете.
             </p>
           </div>
         </div>
@@ -1068,25 +1071,30 @@ export default function NexumHero() {
       {/* ─── 6. FINAL CALL TO ACTION HERO CARD ─── */}
       <section className="py-16 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-r from-violet-900 via-slate-900 to-indigo-900 border border-violet-500/30 p-10 sm:p-14 text-center space-y-6 relative overflow-hidden">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-white font-medium text-xs backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />
+            <span>Сезон подготовки к ЦТ и ЦЭ 2026</span>
+          </div>
+
           <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Готовы узнать свой реальный балл ЦТ прямо сейчас?
+            Начните заниматься или преподавать уже сегодня
           </h2>
           <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Пройдите 15-минутную бесплатную ИИ-диагностику и получите индивидуальный план подготовки до целевого балла.
+            Преподавателям — 7 дней бесплатного доступа без скрытых комиссий. Ученикам и родителям — проверенные репетиторы, интерактивный онлайн-класс и честная прямая оплата.
           </p>
 
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => setRegisterModalOpen(true)}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#C6FF33] text-black font-extrabold text-base hover:bg-[#b8f520] transition-transform hover:scale-105 cursor-pointer shadow-lg"
-            >
-              Начать бесплатный доступ
-            </button>
             <a
               href="/tutors"
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 text-white font-bold text-base hover:bg-white/20 transition-all cursor-pointer border border-white/20"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#C6FF33] text-black font-extrabold text-base hover:bg-[#d4ff59] transition-transform hover:scale-105 cursor-pointer shadow-[0_0_25px_rgba(198,255,51,0.3)]"
             >
-              Подобрать репетитора
+              Найти репетитора
+            </a>
+            <a
+              href="/for-tutors"
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/10 text-white font-bold text-base hover:bg-white/20 transition-all cursor-pointer border border-white/20 backdrop-blur-md"
+            >
+              Я преподаватель (7 дней 0 BYN) →
             </a>
           </div>
         </div>
