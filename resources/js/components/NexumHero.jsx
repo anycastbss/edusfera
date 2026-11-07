@@ -4,7 +4,7 @@ import {
   BrainCircuit, CheckCircle2, ShieldCheck, GraduationCap, 
   TrendingUp, Calendar, Award, ArrowRight, Lock, BookOpen, 
   Users, Check, FileCheck, DollarSign, ChevronDown, LogOut,
-  UserPlus, MessageSquare, Target
+  UserPlus, MessageSquare, Target, Search
 } from 'lucide-react';
 import Footer from './Footer';
 
@@ -116,12 +116,9 @@ export default function NexumHero() {
 
   const navItems = [
     { label: 'Каталог', href: '/tutors' },
+    { label: 'Генератор ЦТ', href: '/generator', badge: '5 BYN' },
     { label: 'ИИ-Диагностика', href: '/diagnostic' },
     { label: 'Новости', href: '/news' },
-    { label: 'Как это работает', href: '#how-it-works' },
-    { label: 'Предметы', href: '#subjects' },
-    { label: 'Модель сервиса', href: '#business-model' },
-    { label: 'Гарантии', href: '#guarantees' },
     { label: 'Репетиторам', href: '/for-tutors', isSpecial: true },
   ];
 
@@ -227,6 +224,11 @@ export default function NexumHero() {
                     }`}
                   >
                     <span>{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[9px] bg-[#C6FF33] text-black px-1.5 py-0.2 rounded-full uppercase font-black">
+                        {item.badge}
+                      </span>
+                    )}
                     {item.isSpecial && (
                       <span className="text-[9px] bg-black text-[#C6FF33] px-1.5 py-0.2 rounded-full uppercase font-black">
                         0 BYN
@@ -618,17 +620,17 @@ export default function NexumHero() {
           {/* Main Hero Content */}
           <main className="mt-auto flex flex-col lg:flex-row lg:items-end lg:justify-between px-5 pb-8 sm:px-8 sm:pb-12 lg:px-12 lg:pb-16 gap-6 sm:gap-8">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-500/20 border border-violet-400/30 text-violet-300 font-bold text-xs mb-4 backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />
-                Закрытый бета-тест первой белорусской рабочей среды для репетиторов
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/90 font-medium text-xs mb-4 backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-[#C6FF33] animate-pulse"></span>
+                <span>Платформа для репетиторов, учеников и родителей</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-[3.3rem] font-semibold leading-[1.08] tracking-tight text-white drop-shadow-md">
-                Готовься к ЦТ и ЦЭ с ИИ-агентами и лучшими преподавателями
+              <h1 className="text-3xl sm:text-4xl lg:text-[3.25rem] font-semibold leading-[1.1] tracking-tight text-white drop-shadow-md">
+                Онлайн-уроки без комиссий, посредников и переплат
               </h1>
 
               <p className="mt-4 text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
-                Узнайте свой реальный прогнозный балл за 15 минут и закрывайте пробелы с проверенными дипломированными репетиторами без переплат и посредников.
+                Преподаватели получают 100% оплаты без вычетов сервиса. Ученики готовятся к ЦТ и ЦЭ 2026 без стресса и зубрёжки. Родители платят напрямую репетитору и видят реальный результат каждого урока.
               </p>
 
               {user ? (
@@ -644,66 +646,68 @@ export default function NexumHero() {
               ) : (
                 <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
                   <a
-                    href="/diagnostic"
+                    href="/tutors"
                     className="inline-flex items-center justify-center gap-2.5 rounded-full bg-[#C6FF33] text-black font-extrabold px-7 py-3.5 text-sm sm:text-base hover:bg-[#d4ff59] transition-all shadow-[0_0_25px_rgba(198,255,51,0.3)] hover:scale-[1.02]"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Пройти ИИ-диагностику (0 BYN)</span>
+                    <Search className="w-4 h-4 text-black" />
+                    <span>Найти репетитора</span>
                   </a>
                   <a
-                    href="/tutors"
+                    href="/for-tutors"
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3.5 text-sm sm:text-base border border-white/15 backdrop-blur-md transition-all"
                   >
-                    <span>Выбрать репетитора →</span>
+                    <span>Преподавателям (7 дней 0 BYN) →</span>
+                  </a>
+                  <a
+                    href="/diagnostic"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium px-5 py-3.5 text-xs sm:text-sm border border-white/10 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />
+                    <span>Тест знаний (0 BYN)</span>
                   </a>
                 </div>
               )}
             </div>
 
-            {/* Right Cards: Честные и технологичные метрики новой платформы 2026 */}
+            {/* Right Cards: Понятные выгоды для 3 аудиторий без сложных слов */}
             <div className="flex flex-col gap-4 sm:flex-row lg:w-auto lg:gap-5 w-full">
-              {/* Card 1: Технологическая точность ЦТ/ЦЭ 2026 */}
-              <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-64 flex flex-col justify-between border border-white/10 shadow-xl">
+              {/* Card 1: Для репетиторов и преподавателей */}
+              <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-72 flex flex-col justify-between border border-white/10 shadow-xl">
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-2 h-2 rounded-full bg-[#C6FF33] animate-pulse"></span>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#C6FF33]">Новый сезон 2026</span>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#C6FF33]">Преподавателям</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] border border-[#C6FF33]/30 font-bold">0% комиссии</span>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-normal tracking-tight text-white font-mono">
-                    94.2%
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    100% вам
                   </div>
-                  <p className="text-sm leading-relaxed mt-2 text-white/80">
-                    Точность выявления скрытых пробелов знаний по структуре экзаменов ЦТ и ЦЭ.
+                  <p className="text-xs sm:text-sm leading-relaxed mt-2 text-slate-200">
+                    Все деньги за уроки остаются у вас. Видеокласс без лимитов времени и чеки для налога (НПД) в 1 клик.
                   </p>
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
-                  <span>Время теста:</span>
-                  <span className="font-mono text-white font-bold">~4 минуты</span>
+                  <span>Пробный период:</span>
+                  <span className="font-bold text-[#C6FF33]">7 дней бесплатно</span>
                 </div>
               </div>
 
-              {/* Card 2: Живой пример разбора от ИИ-ассистента */}
-              <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-80 border border-white/10 shadow-xl">
-                <div className="flex items-center justify-between gap-2.5 text-xs text-white/90">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded bg-violet-600 flex items-center justify-center font-bold text-[10px]">
-                      ✨
-                    </div>
-                    <span className="font-semibold text-white">Edusfera AI Ассистент</span>
+              {/* Card 2: Для учеников и родителей */}
+              <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-72 flex flex-col justify-between border border-white/10 shadow-xl">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-sky-400">Ученикам и родителям</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30 font-bold">Без наценок</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-400/30 font-medium">Онлайн</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                    Прямая оплата
+                  </div>
+                  <p className="text-xs sm:text-sm leading-relaxed mt-2 text-slate-200">
+                    Оплачивайте уроки напрямую репетитору (карта, ЕРИП). Проверенные дипломы и понятные отчёты об успехах ребенка.
+                  </p>
                 </div>
-                <p className="text-xs sm:text-sm leading-relaxed mt-3 text-slate-200 font-normal">
-                  "Тема «Тригонометрические уравнения»: обнаружена типичная ошибка в ОДЗ (пункт Б4). Рекомендую разобрать прототипы 2025 года."
-                </p>
-                <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/10">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
-                    <Target className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-white">Персональная траектория</div>
-                    <div className="text-[11px] text-white/60">Формируется сразу после диагностики</div>
-                  </div>
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300">
+                  <span>Тест знаний:</span>
+                  <span className="font-bold text-white">15 мин (0 BYN)</span>
                 </div>
               </div>
             </div>
@@ -716,13 +720,13 @@ export default function NexumHero() {
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-[#C6FF33]">
             <BrainCircuit className="w-4 h-4 text-[#C6FF33]" />
-            Умная технология подготовки
+            Как устроена Edusfera
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            Как Edusfera выводит на 80+ баллов ЦТ и ЦЭ
+            Всё для удобных занятий в 3 простых шага
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Мы объединили точную ИИ-диагностику пробелов знаний и лучших репетиторов Беларуси в один неразрывный учебный цикл.
+            Понятный и честный процесс для преподавателей, учеников и их родителей.
           </p>
         </div>
 
@@ -732,12 +736,12 @@ export default function NexumHero() {
             <div className="w-14 h-14 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400 font-extrabold text-xl group-hover:scale-110 transition-transform">
               01
             </div>
-            <h3 className="text-xl font-bold text-white">ИИ-Диагностика пробелов</h3>
+            <h3 className="text-xl font-bold text-white">Проверка знаний за 15 минут</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              За 15 минут ИИ-агент сканирует ваши знания по темам экзаменов ЦТ и ЦЭ, формирует базовый балл и находит скрытые слабые темы.
+              Быстрый онлайн-тест сразу показывает реальный уровень по темам ЦТ и ЦЭ 2026 и слабые места, которые нужно подтянуть.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-bold text-[#C6FF33]">
-              <span>Точность прогноза 94%</span>
+              <span>Бесплатно и без регистрации</span>
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
@@ -749,10 +753,10 @@ export default function NexumHero() {
             </div>
             <h3 className="text-xl font-bold text-white">Подбор проверенного репетитора</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Платформа предлагает проверенных преподавателей с опытом подготовки от 5 лет. Выбирайте по рейтингу, отзывам и видео-визиткам.
+              Смотрите видео-визитки, опыт и отзывы. Договаривайтесь об уроках и оплачивайте напрямую преподавателю без скрытых наценок.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-bold text-lime-400">
-              <span>Только дипломированные эксперты</span>
+              <span>Дипломы проверены модерацией</span>
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
@@ -762,12 +766,12 @@ export default function NexumHero() {
             <div className="w-14 h-14 rounded-2xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold text-xl group-hover:scale-110 transition-transform">
               03
             </div>
-            <h3 className="text-xl font-bold text-white">Виртуальный класс & Отчёты</h3>
+            <h3 className="text-xl font-bold text-white">Онлайн-класс и отчёты после урока</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Уроки проходят на интерактивной доске с онлайн-связью. После каждого занятия вы и родители получаете отчёт о росте баллов.
+              Уроки проходят на интерактивной доске с видеосвязью прямо в браузере. Родители видят понятный отчёт об успехах ребенка.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-bold text-sky-400">
-              <span>100% прозрачность для родителей</span>
+              <span>Без установки программ • Zoom не нужен</span>
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -973,7 +977,7 @@ export default function NexumHero() {
                   Преподавателям Беларуси
                 </span>
                 <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#C6FF33] text-black">
-                  1-й месяц 0 BYN
+                  7 дней 0 BYN
                 </span>
               </div>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-white mb-4">
