@@ -246,12 +246,12 @@ class TutorSubscriptionGatingTest extends TestCase
         $this->assertNotNull($user);
         $this->assertTrue($user->isTutor());
 
-        // Verify initial subscription is created as EXPIRED and NOT onboarded
+        // Verify initial subscription is created with 7-day TRIAL and NOT onboarded
         $sub = $user->subscription;
         $this->assertNotNull($sub);
-        $this->assertEquals(SubscriptionStatus::EXPIRED, $sub->status);
+        $this->assertEquals(SubscriptionStatus::TRIAL, $sub->status);
         $this->assertFalse((bool) $sub->is_onboarded);
-        $this->assertFalse($sub->isActive());
+        $this->assertTrue($sub->isInTrial());
 
         // 2. Complete onboarding without a promo code
         $onboardingRes = $this->actingAs($user)->postJson('/api/tutor/onboarding/complete', [
@@ -261,11 +261,16 @@ class TutorSubscriptionGatingTest extends TestCase
         $onboardingRes->assertOk();
         $sub->refresh();
         $this->assertTrue((bool) $sub->is_onboarded);
-        // Subscription must STILL be EXPIRED because no payment or promo code has occurred!
-        $this->assertEquals(SubscriptionStatus::EXPIRED, $sub->status);
+
+        // When the 7-day trial expires, paywall blocks access
+        $sub->update([
+            'status' => SubscriptionStatus::EXPIRED,
+            'trial_ends_at' => now()->subDay(),
+            'current_period_ends_at' => now()->subDay(),
+        ]);
         $this->assertFalse($sub->isActive());
 
-        // 3. Attempting to access cabinet or API MUST be blocked by paywall
+        // 3. Attempting to access cabinet or API with expired subscription MUST be blocked by paywall
         $cabinetRes = $this->actingAs($user)->get('/cabinet');
         $cabinetRes->assertRedirect(route('filament.admin.pages.tutor-subscription-page'));
 

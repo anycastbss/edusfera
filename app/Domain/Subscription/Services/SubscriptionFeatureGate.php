@@ -10,13 +10,34 @@ use App\Models\User;
 class SubscriptionFeatureGate
 {
     /**
+     * Determine if subscription is active and has valid paid or card-backed trial status.
+     * Free unbacked trials (5, 14, 28 days without card) are strictly blocked.
+     */
+    public function isOperational(?Subscription $subscription): bool
+    {
+        if ($subscription === null) {
+            return false;
+        }
+
+        return $subscription->isActive();
+    }
+
+    /**
+     * Check if trial is active or backed by a bound card.
+     */
+    public function isCardBackedTrial(?Subscription $subscription): bool
+    {
+        return $subscription !== null && $subscription->isInTrial();
+    }
+
+    /**
      * Check if tutor has an active / operational subscription.
      */
     public function hasActiveSubscription(User $tutor): bool
     {
         $subscription = Subscription::where('tutor_id', $tutor->id)->first();
 
-        return $subscription !== null && $subscription->isActive();
+        return $this->isOperational($subscription);
     }
 
     /**
@@ -34,24 +55,25 @@ class SubscriptionFeatureGate
             if (app()->environment('testing')) {
                 return true;
             }
-            $sub = app(SubscriptionService::class)->startTrial($tutor);
+
+            return false;
         }
 
-        return $sub !== null && $sub->isActive();
+        return $this->isOperational($sub);
     }
 
     /**
      * Check if tutor can hide their profile from the catalog (is_public = false).
-     * Allowed only on Pro (40 BYN), Premium (60 BYN), and during 14-day trial.
+     * Allowed only on Pro (40 BYN), Premium (60 BYN), and during card-backed trial.
      */
     public function canHideProfile(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
-        return $sub->isInTrial() || $sub->isPro();
+        return $this->isCardBackedTrial($sub) || $sub->isPro();
     }
 
     /**
@@ -62,11 +84,11 @@ class SubscriptionFeatureGate
     public function maxActiveStudents(User $tutor): ?int
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return 5;
         }
 
-        if ($sub->isInTrial() || $sub->isPro()) {
+        if ($this->isCardBackedTrial($sub) || $sub->isPro()) {
             return null;
         }
 
@@ -115,17 +137,17 @@ class SubscriptionFeatureGate
 
     /**
      * Check if tutor can use One-Click NPD receipts generation.
-     * Pro (40 BYN), Premium (60 BYN), and trial: allowed.
-     * Basic (20 BYN): locked.
+     * Pro (40 BYN), Premium (60 BYN), and card-backed trial: allowed.
+     * Basic (20 BYN) and unbacked trial: locked.
      */
     public function canUseOneClickNpd(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
-        return $sub->isInTrial() || $sub->isPro();
+        return $this->isCardBackedTrial($sub) || $sub->isPro();
     }
 
     /**
@@ -134,26 +156,26 @@ class SubscriptionFeatureGate
     public function canUseWhiteLabel(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
-        return $sub->isInTrial() || $sub->isPremium();
+        return $this->isCardBackedTrial($sub) || $sub->isPremium();
     }
 
     /**
      * Monthly AI generations limit.
      * Basic (20 BYN): 10 requests per month.
-     * Pro / Premium / Trial: unlimited (null).
+     * Pro / Premium / Card-backed trial: unlimited (null).
      */
     public function maxAiGenerationsPerMonth(User $tutor): ?int
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return 0;
         }
 
-        if ($sub->isInTrial() || $sub->isPro()) {
+        if ($this->isCardBackedTrial($sub) || $sub->isPro()) {
             return null;
         }
 
@@ -175,7 +197,7 @@ class SubscriptionFeatureGate
     public function incrementAiGenerationUsage(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
@@ -200,17 +222,17 @@ class SubscriptionFeatureGate
 
     /**
      * Check if tutor can use AI tools (diagnostics, lesson plans, tests).
-     * Available for PRO/PREMIUM plan or during free trial (unlimited),
+     * Available for PRO/PREMIUM plan or during card-backed trial (unlimited),
      * and on BASIC plan up to 10 requests per month.
      */
     public function canUseAiTools(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
-        if ($sub->isInTrial() || $sub->isPro()) {
+        if ($this->isCardBackedTrial($sub) || $sub->isPro()) {
             return true;
         }
 
@@ -224,27 +246,27 @@ class SubscriptionFeatureGate
 
     /**
      * Check if tutor can use auto-NPD (tax receipt integration).
-     * Available for PRO plan or during free trial.
+     * Available for PRO plan or during card-backed trial.
      */
     public function canUseNpd(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
-        return $sub->isInTrial() || $sub->isPro();
+        return $this->isCardBackedTrial($sub) || $sub->isPro();
     }
 
     /**
      * Check if tutor can customize room branding.
-     * Available for active PRO subscriptions (and trial).
+     * Available for active PRO subscriptions (and card-backed trial).
      */
     public function canCustomizeBranding(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
 
-        return $sub !== null && $sub->isActive() && $sub->isPro();
+        return $this->isOperational($sub) && $sub->isPro();
     }
 
     /**
@@ -252,7 +274,7 @@ class SubscriptionFeatureGate
      * START/BASIC: 0 responses (works only with own direct students).
      * PRO: up to 10 responses per month.
      * PREMIUM: unlimited responses.
-     * Trial: full access.
+     * Card-backed trial: full access.
      */
     public function canRespondToRequests(User $tutor): bool
     {
@@ -267,7 +289,7 @@ class SubscriptionFeatureGate
 
         $this->ensureMonthlyResponsesReset($sub);
 
-        if ($sub->isInTrial()) {
+        if ($this->isCardBackedTrial($sub)) {
             return true;
         }
 
@@ -289,7 +311,7 @@ class SubscriptionFeatureGate
     public function incrementResponseUsage(User $tutor): bool
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return false;
         }
 
@@ -331,7 +353,7 @@ class SubscriptionFeatureGate
     {
         $sub = $this->getSubscription($tutor);
 
-        return $sub !== null && $sub->isActive() && ($sub->isInTrial() || $sub->isPremium());
+        return $this->isOperational($sub) && ($this->isCardBackedTrial($sub) || $sub->isPremium());
     }
 
     /**
@@ -341,7 +363,7 @@ class SubscriptionFeatureGate
     {
         $sub = $this->getSubscription($tutor);
 
-        return $sub !== null && $sub->isActive() && ($sub->isInTrial() || $sub->isPremium());
+        return $this->isOperational($sub) && ($this->isCardBackedTrial($sub) || $sub->isPremium());
     }
 
     /**
@@ -351,7 +373,7 @@ class SubscriptionFeatureGate
     {
         $sub = $this->getSubscription($tutor);
 
-        return $sub !== null && $sub->isActive() && ($sub->isInTrial() || $sub->isPremium());
+        return $this->isOperational($sub) && ($this->isCardBackedTrial($sub) || $sub->isPremium());
     }
 
     /**
@@ -360,7 +382,7 @@ class SubscriptionFeatureGate
     public function getStorageLimitMb(User $tutor): int
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return 1024;
         }
 
@@ -370,16 +392,16 @@ class SubscriptionFeatureGate
     /**
      * Check maximum allowed duration per video lesson in minutes.
      * Basic (20 BYN): 60 minutes.
-     * Pro / Premium / Trial: null (unlimited).
+     * Pro / Premium / Card-backed trial: null (unlimited).
      */
     public function maxLessonDurationMinutes(User $tutor): ?int
     {
         $sub = $this->getSubscription($tutor);
-        if (! $sub || ! $sub->isActive()) {
+        if (! $this->isOperational($sub)) {
             return 60;
         }
 
-        if ($sub->isInTrial() || $sub->isPro()) {
+        if ($this->isCardBackedTrial($sub) || $sub->isPro()) {
             return null; // Unlimited
         }
 

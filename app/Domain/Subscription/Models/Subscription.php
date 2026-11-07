@@ -111,7 +111,12 @@ class Subscription extends Model
 
     public function isPro(): bool
     {
-        return in_array($this->plan, [SubscriptionPlan::PRO, SubscriptionPlan::PREMIUM], true);
+        return in_array($this->plan, [
+            SubscriptionPlan::PRO,
+            SubscriptionPlan::PREMIUM,
+            SubscriptionPlan::TEST_DRIVE,
+            SubscriptionPlan::FOUNDERS_CLUB,
+        ], true);
     }
 
     public function isPremium(): bool

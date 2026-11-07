@@ -48,7 +48,7 @@ class SubscriptionService
 
             $now = CarbonImmutable::now();
             $plan = $plan ?? SubscriptionPlan::PRO;
-            $trialDays = $plan->trialDays();
+            $trialDays = $plan->trialDays() ?: 7;
 
             return Subscription::create([
                 'tutor_id' => $tutor->id,
@@ -79,7 +79,7 @@ class SubscriptionService
             $isFounder = $founderCount < self::FOUNDER_LIMIT;
 
             $now = CarbonImmutable::now();
-            $trialDays = $plan->trialDays();
+            $trialDays = $plan->trialDays() ?: 7;
 
             return Subscription::create([
                 'tutor_id' => $tutor->id,
@@ -225,9 +225,17 @@ class SubscriptionService
         $plan = $plan ?? $subscription->plan;
         $now = CarbonImmutable::now();
 
-        $amountKopecks = $periodMonths === 12
-            ? $plan->yearlyPriceKopecks()
-            : ($plan->monthlyPriceKopecks() * $periodMonths);
+        if ($plan === SubscriptionPlan::TEST_DRIVE) {
+            $amountKopecks = 500; // 5.00 BYN
+            $periodMonths = 1;
+        } elseif ($plan === SubscriptionPlan::FOUNDERS_CLUB) {
+            $amountKopecks = 4900; // 49.00 BYN
+            $periodMonths = 3;
+        } else {
+            $amountKopecks = $periodMonths === 12
+                ? $plan->yearlyPriceKopecks()
+                : ($plan->monthlyPriceKopecks() * $periodMonths);
+        }
 
         do {
             $invoiceNumber = sprintf(
@@ -290,8 +298,6 @@ class SubscriptionService
 
             $trialBonusDays = 0;
             if (! $hasPaidBefore) {
-                // При первой оплате любого тарифа начисляется пробный период плана:
-                // Стандарт — 5 дней, Pro — 14 дней, Премиум — 28 дней
                 $trialBonusDays = $inv->plan->trialDays();
             }
 
@@ -299,8 +305,16 @@ class SubscriptionService
                 ? CarbonImmutable::parse($sub->current_period_ends_at)
                 : $now;
 
-            // Если это первая оплата, новый период отсчитывается от текущего момента + дни триала
-            if (! $hasPaidBefore) {
+            $isFounder = (bool) $sub->is_founder;
+
+            if ($inv->plan === SubscriptionPlan::TEST_DRIVE) {
+                // Тариф «Тест-драйв»: 7 дней полного доступа за 5 BYN
+                $newEnd = $now->addDays(7);
+            } elseif ($inv->plan === SubscriptionPlan::FOUNDERS_CLUB) {
+                // Спецтариф «Клуб основателей»: 3 месяца Pro + статус Основателя
+                $newEnd = $currentEnd->addMonths(3);
+                $isFounder = true;
+            } elseif (! $hasPaidBefore) {
                 $newEnd = $now->addDays($trialBonusDays)->addMonths($inv->period_months);
             } else {
                 $newEnd = $currentEnd->addMonths($inv->period_months);
@@ -309,9 +323,10 @@ class SubscriptionService
             $sub->update([
                 'plan' => $inv->plan,
                 'status' => SubscriptionStatus::ACTIVE,
+                'is_founder' => $isFounder,
                 'current_period_starts_at' => $now,
                 'current_period_ends_at' => $newEnd,
-                'trial_ends_at' => $trialBonusDays > 0 ? $now->addDays($trialBonusDays) : $sub->trial_ends_at,
+                'trial_ends_at' => $inv->plan === SubscriptionPlan::TEST_DRIVE ? $newEnd : null,
                 'grace_period_ends_at' => null,
                 'responses_used_this_month' => 0,
                 'is_onboarded' => true,

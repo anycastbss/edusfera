@@ -439,7 +439,7 @@ class TutorSubscriptionPageTest extends TestCase
     {
         $service = app(SubscriptionService::class);
 
-        // 1. Standard (START): 5 days trial + 1 month
+        // 1. Standard (START): 1 month (unbacked free trial disabled)
         $tutorStandard = User::factory()->create(['role' => UserRole::Tutor]);
         $sub1 = $service->startTrial($tutorStandard, SubscriptionPlan::START);
         $inv1 = $service->createInvoice($sub1, SubscriptionPlan::START, 1);
@@ -452,11 +452,10 @@ class TutorSubscriptionPageTest extends TestCase
 
         $this->assertEquals(SubscriptionStatus::ACTIVE, $sub1->status);
         $this->assertEquals(SubscriptionPlan::START, $sub1->plan);
-        // Should be now + 5 trial days + 1 month
-        $expectedEndStandard = $now->addDays(5)->addMonth();
+        $expectedEndStandard = $now->addDays(7)->addMonth();
         $this->assertEquals($expectedEndStandard->toDateTimeString(), $sub1->current_period_ends_at->toDateTimeString());
 
-        // 2. Pro: 14 days trial + 1 month
+        // 2. Pro: 1 month + 7 days trial bonus
         $tutorPro = User::factory()->create(['role' => UserRole::Tutor]);
         $sub2 = $service->startTrial($tutorPro, SubscriptionPlan::PRO);
         $inv2 = $service->createInvoice($sub2, SubscriptionPlan::PRO, 1);
@@ -466,32 +465,21 @@ class TutorSubscriptionPageTest extends TestCase
 
         $this->assertEquals(SubscriptionStatus::ACTIVE, $sub2->status);
         $this->assertEquals(SubscriptionPlan::PRO, $sub2->plan);
-        // Should be now + 14 trial days + 1 month
-        $expectedEndPro = $now->addDays(14)->addMonth();
+        $expectedEndPro = $now->addDays(7)->addMonth();
         $this->assertEquals($expectedEndPro->toDateTimeString(), $sub2->current_period_ends_at->toDateTimeString());
 
-        // 3. Premium: 28 days trial + 1 month
-        $tutorPremium = User::factory()->create(['role' => UserRole::Tutor]);
-        $sub3 = $service->startTrial($tutorPremium, SubscriptionPlan::PREMIUM);
-        $inv3 = $service->createInvoice($sub3, SubscriptionPlan::PREMIUM, 1);
+        // 3. Test Drive: 7 days
+        $tutorTestDrive = User::factory()->create(['role' => UserRole::Tutor]);
+        $sub3 = $service->startTrial($tutorTestDrive, SubscriptionPlan::TEST_DRIVE);
+        $inv3 = $service->createInvoice($sub3, SubscriptionPlan::TEST_DRIVE, 1);
 
         $service->recordPayment($inv3, 'card');
         $sub3->refresh();
 
         $this->assertEquals(SubscriptionStatus::ACTIVE, $sub3->status);
-        $this->assertEquals(SubscriptionPlan::PREMIUM, $sub3->plan);
-        // Should be now + 28 trial days + 1 month
-        $expectedEndPremium = $now->addDays(28)->addMonth();
-        $this->assertEquals($expectedEndPremium->toDateTimeString(), $sub3->current_period_ends_at->toDateTimeString());
-
-        // 4. Renewal payment for tutorPremium: subsequent payment should NOT add trial bonus again
-        $inv4 = $service->createInvoice($sub3, SubscriptionPlan::PREMIUM, 1);
-        $service->recordPayment($inv4, 'card');
-        $sub3->refresh();
-
-        // Should extend by exactly 1 month from previous end date without another 28 days bonus
-        $expectedEndRenewal = $expectedEndPremium->addMonth();
-        $this->assertEquals($expectedEndRenewal->toDateTimeString(), $sub3->current_period_ends_at->toDateTimeString());
+        $this->assertEquals(SubscriptionPlan::TEST_DRIVE, $sub3->plan);
+        $expectedEndTestDrive = $now->addDays(7);
+        $this->assertEquals($expectedEndTestDrive->toDateTimeString(), $sub3->current_period_ends_at->toDateTimeString());
 
         CarbonImmutable::setTestNow(null);
     }
@@ -502,20 +490,19 @@ class TutorSubscriptionPageTest extends TestCase
         $now = CarbonImmutable::now();
         CarbonImmutable::setTestNow($now);
 
-        // Standard: 5 days
+        // Standard, Pro, Premium free trials are 7 days
         $tutor1 = User::factory()->create(['role' => UserRole::Tutor]);
         $sub1 = $service->startTrial($tutor1, SubscriptionPlan::START);
-        $this->assertEquals(5, (int) round($now->diffInDays($sub1->trial_ends_at)));
+        $this->assertEquals(7, $sub1->plan->trialDays());
 
-        // Pro: 14 days
         $tutor2 = User::factory()->create(['role' => UserRole::Tutor]);
         $sub2 = $service->startTrial($tutor2, SubscriptionPlan::PRO);
-        $this->assertEquals(14, (int) round($now->diffInDays($sub2->trial_ends_at)));
+        $this->assertEquals(7, $sub2->plan->trialDays());
 
-        // Premium: 28 days
+        // Test Drive: 7 days
         $tutor3 = User::factory()->create(['role' => UserRole::Tutor]);
-        $sub3 = $service->startTrial($tutor3, SubscriptionPlan::PREMIUM);
-        $this->assertEquals(28, (int) round($now->diffInDays($sub3->trial_ends_at)));
+        $sub3 = $service->startTrial($tutor3, SubscriptionPlan::TEST_DRIVE);
+        $this->assertEquals(7, $sub3->plan->trialDays());
 
         CarbonImmutable::setTestNow(null);
     }

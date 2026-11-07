@@ -10,6 +10,8 @@ enum SubscriptionPlan: string
     case PRO = 'pro';
     case BASIC = 'basic';
     case PREMIUM = 'premium';
+    case TEST_DRIVE = 'test_drive';
+    case FOUNDERS_CLUB = 'founders_club';
 
     public function title(): string
     {
@@ -17,6 +19,8 @@ enum SubscriptionPlan: string
             self::START, self::BASIC => 'Стандарт',
             self::PRO => 'Pro',
             self::PREMIUM => 'Премиум',
+            self::TEST_DRIVE => 'Тест-драйв (7 дней)',
+            self::FOUNDERS_CLUB => 'Клуб основателей (3 месяца Pro)',
         };
     }
 
@@ -33,6 +37,8 @@ enum SubscriptionPlan: string
     public function monthlyPriceKopecks(): int
     {
         return match ($this) {
+            self::TEST_DRIVE => 500, // 5.00 BYN
+            self::FOUNDERS_CLUB => 4900, // 49.00 BYN
             self::START, self::BASIC => 2000,
             self::PRO => 4000,
             self::PREMIUM => 6000,
@@ -55,6 +61,8 @@ enum SubscriptionPlan: string
     public function yearlyPriceKopecks(): int
     {
         return match ($this) {
+            self::TEST_DRIVE => 500,
+            self::FOUNDERS_CLUB => 4900,
             self::START, self::BASIC => 19200,
             self::PRO => 38400,
             self::PREMIUM => 57600,
@@ -69,9 +77,11 @@ enum SubscriptionPlan: string
     public function trialDays(): int
     {
         return match ($this) {
-            self::START, self::BASIC => 5,
-            self::PRO => 14,
-            self::PREMIUM => 28,
+            self::TEST_DRIVE => 7,
+            self::START, self::BASIC => 7,
+            self::PRO => 7,
+            self::PREMIUM => 7,
+            self::FOUNDERS_CLUB => 0,
         };
     }
 
@@ -79,7 +89,8 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 0,
-            self::PRO => 10,
+            self::TEST_DRIVE, self::PRO => 10,
+            self::FOUNDERS_CLUB => 20,
             self::PREMIUM => null,
         };
     }
@@ -93,8 +104,8 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 10,
-            self::PRO => 50,
-            self::PREMIUM => null,
+            self::TEST_DRIVE, self::PRO => 50,
+            self::FOUNDERS_CLUB, self::PREMIUM => null,
         };
     }
 
@@ -102,6 +113,8 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 'Для старта',
+            self::TEST_DRIVE => '⚡ Антикризисный старт',
+            self::FOUNDERS_CLUB => '👑 Лимит 10 мест',
             self::PRO => '⭐ Хит продаж',
             self::PREMIUM => '👑 Топ-эксперт',
         };
@@ -111,6 +124,8 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 'Для работы со своими учениками в приватном кабинете (до 5 учеников)',
+            self::TEST_DRIVE => '7 дней полного PRO-доступа за 5 BYN: ИИ-методист, виртуальный класс LiveKit и чеки НПД',
+            self::FOUNDERS_CLUB => '3 месяца тарифа Pro со скидкой 60% (49 BYN вместо 120 BYN). Пожизненный статус Основателя',
             self::PRO => 'Для стабильного дохода: до 15 учеников, 50 генераций ИИ и авто-чеки НПД',
             self::PREMIUM => 'Режим «Личная школа» (White-Label), безлимит учеников и ТОП-1 в каталоге',
         };
@@ -127,6 +142,22 @@ enum SubscriptionPlan: string
                 'Расписание, CRM и персональная ссылка на запись',
                 'Базовое облачное хранилище (1 ГБ)',
                 'Ручной учет налогов (0 откликов на бирже)',
+            ],
+            self::TEST_DRIVE => [
+                '⚡ Полный доступ к ИИ-методисту (генерация вариантов ЦЭ/ЦТ без списывания, планы, тесты)',
+                'Интерактивный класс LiveKit + доска Excalidraw без ограничений по времени',
+                'Автоматическая выгрузка чеков НПД для МНС РБ в 1 клик',
+                'До 15 активных учеников и защищённое облако 15 ГБ',
+                'Через 7 дней — автопродление на стандартный тариф (40 BYN/мес), отмена в 1 клик',
+            ],
+            self::FOUNDERS_CLUB => [
+                '🔥 3 месяца полного безлимитного тарифа Pro (вместо 120 BYN по стандартной сетке 40 BYN/мес)',
+                '👑 Пожизненный статус «Основатель Edusfera» с золотым бейджем',
+                'Полный доступ к ИИ-методисту (генерация ЦТ/ЦЭ, домашка, тесты)',
+                'Интерактивный класс LiveKit + Excalidraw без ограничений',
+                'Авто-выгрузка чеков НПД для МНС РБ в 1 клик',
+                'Приоритет в каталоге репетиторов x2',
+                '🔒 Жесткий лимит предложения: Доступно 10 мест',
             ],
             self::PRO => [
                 'До 15 активных учеников',
@@ -157,7 +188,7 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 1,
-            self::PRO => 15,
+            self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO => 15,
             self::PREMIUM => 100,
         };
     }
@@ -166,7 +197,7 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 60,
-            self::PRO, self::PREMIUM => null,
+            self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO, self::PREMIUM => null,
         };
     }
 
@@ -178,7 +209,7 @@ enum SubscriptionPlan: string
     public function allowsCalendarSync(): bool
     {
         return match ($this) {
-            self::START, self::BASIC, self::PRO => false,
+            self::START, self::BASIC, self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO => false,
             self::PREMIUM => true,
         };
     }
@@ -187,14 +218,14 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => false,
-            self::PRO, self::PREMIUM => true,
+            self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO, self::PREMIUM => true,
         };
     }
 
     public function allowsVideoIntro(): bool
     {
         return match ($this) {
-            self::START, self::BASIC, self::PRO => false,
+            self::START, self::BASIC, self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO => false,
             self::PREMIUM => true,
         };
     }
@@ -202,7 +233,7 @@ enum SubscriptionPlan: string
     public function allowsInstantPayout(): bool
     {
         return match ($this) {
-            self::START, self::BASIC, self::PRO => false,
+            self::START, self::BASIC, self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO => false,
             self::PREMIUM => true,
         };
     }
@@ -211,14 +242,14 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => false,
-            self::PRO, self::PREMIUM => true,
+            self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO, self::PREMIUM => true,
         };
     }
 
     public function allowsDeepAnalytics(): bool
     {
         return match ($this) {
-            self::START, self::BASIC, self::PRO => false,
+            self::START, self::BASIC, self::TEST_DRIVE, self::FOUNDERS_CLUB, self::PRO => false,
             self::PREMIUM => true,
         };
     }
@@ -227,7 +258,9 @@ enum SubscriptionPlan: string
     {
         return match ($this) {
             self::START, self::BASIC => 1,
+            self::TEST_DRIVE => 3,
             self::PRO => 5,
+            self::FOUNDERS_CLUB => 7,
             self::PREMIUM => 10,
         };
     }

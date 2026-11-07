@@ -263,10 +263,11 @@ class AuroraAuthController extends Controller
                 ['tutor_id' => $user->id],
                 [
                     'plan' => $plan,
-                    'status' => SubscriptionStatus::EXPIRED,
+                    'status' => SubscriptionStatus::TRIAL,
                     'is_founder' => false,
+                    'trial_ends_at' => now()->addDays(7),
                     'current_period_starts_at' => now(),
-                    'current_period_ends_at' => now(),
+                    'current_period_ends_at' => now()->addDays(7),
                     'is_onboarded' => false,
                 ]
             );

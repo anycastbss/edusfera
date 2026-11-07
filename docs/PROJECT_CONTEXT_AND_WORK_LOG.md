@@ -1985,3 +1985,13 @@ curl -s -k -F "patch_file=@edusfera-patch.zip" "https://edusfera.by/migrate.php?
 - **Тестирование и деплой:**
   - Тестовый набор расширен до 10 тестов (включая проверку блокировки неавторизованного спуфинга оплаты) — 100% PASS (37 assertions).
   - Патч `edusfera-patch.zip` (498 файлов) успешно доставлен на боевой сервер `https://edusfera.by`.
+
+### 21. Возврат ознакомительного пробного периода в 7 дней (2026-11-07)
+- **Возврат 7-дневного бесплатного триала для репетиторов:**
+  - В `SubscriptionPlan.php` метод `trialDays()` возвращает 7 дней для всех основных тарифов (`START`, `PRO`, `PREMIUM`).
+  - В `SubscriptionFeatureGate.php` метод `isOperational()` разрешает полноценную работу преподавателя в период активного триала (`$subscription->isActive()`), а `isCardBackedTrial()` возвращает `true` на время триала, предоставляя доступ к виртуальному классу SFU, ИИ-инструментам, неограниченным ученикам и чекам НПД.
+  - В `AuroraAuthController.php` при регистрации нового репетитора создается подписка со статусом `TRIAL` на 7 дней (`trial_ends_at = now()->addDays(7)`).
+  - При истечении 7 дней доступ автоматически ограничивается пейволлом с предложением оплатить тариф.
+- **Тестирование и деплой:**
+  - Все тесты подписок (`AntiCrisisPaywallTest`, `BlockOneTariffLogicTest`, `TutorSubscriptionGatingTest`, `TutorSubscriptionPageTest`) успешно обновлены и пройдены — 100% PASS.
+  - Патч `edusfera-patch.zip` собран и успешно развернут на боевом сервере `https://edusfera.by`.

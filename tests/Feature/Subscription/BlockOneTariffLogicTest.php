@@ -41,9 +41,13 @@ class BlockOneTariffLogicTest extends TestCase
         $gate = app(SubscriptionFeatureGate::class);
         $service = app(SubscriptionService::class);
 
-        // 1. Tutor on trial can hide profile
+        // 1. Tutor on card-backed trial can hide profile
         $trialTutor = User::factory()->create(['role' => UserRole::Tutor]);
-        $service->ensureTrialStarted($trialTutor);
+        $sub = $service->ensureTrialStarted($trialTutor);
+        $sub->update([
+            'payment_token' => 'tok_alfa_test_card',
+            'trial_ends_at' => now()->addDays(7),
+        ]);
         $this->assertTrue($gate->canHideProfile($trialTutor));
 
         // 2. Tutor on Basic (20 BYN) cannot hide profile
