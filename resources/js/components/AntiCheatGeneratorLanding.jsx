@@ -604,12 +604,12 @@ export default function AntiCheatGeneratorLanding() {
                             >
                                 <span>{item.label}</span>
                                 {item.badge && (
-                                    <span className="text-[9px] bg-[#C6FF33] text-black px-1.5 py-0.2 rounded-full uppercase font-black">
+                                    <span className="text-[10px] bg-[#C6FF33] text-black font-extrabold px-1.5 py-0.5 rounded-full leading-none tracking-tight">
                                         {item.badge}
                                     </span>
                                 )}
                                 {item.isSpecial && (
-                                    <span className="text-[9px] bg-black text-[#C6FF33] px-1.5 py-0.2 rounded-full uppercase font-black">
+                                    <span className="text-[10px] bg-black text-[#C6FF33] px-1.5 py-0.5 rounded-full uppercase font-black leading-none">
                                         0 BYN
                                     </span>
                                 )}
@@ -1001,22 +1001,43 @@ export default function AntiCheatGeneratorLanding() {
             )}
 
             {/* ─── 2. HERO & MAIN CONFIGURATOR (ONE-SCREEN SAAS 5fr / 7fr) ─── */}
-            <main className="flex-1 w-full max-w-[1240px] mx-auto px-4 sm:px-6 pt-4 pb-12 sm:pt-6 sm:pb-16">
+            <main className="flex-1 w-full max-w-[1240px] mx-auto px-4 sm:px-6 pt-2 pb-12 sm:pt-4 sm:pb-16">
                 
-                {/* ACADEMIC & RESPECTABLE HERO */}
-                <div className="max-w-4xl space-y-3 mb-6 sm:mb-8">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-slate-300 shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-[#7D39EB] animate-pulse"></span>
-                        <span>ЭКЗАМЕНАЦИОННАЯ ПРОГРАММА БЕЛАРУСИ • СТАНДАРТЫ ЦТ И ЦЭ 2026</span>
+                {/* ELEGANT HERO */}
+                <div className="max-w-3xl space-y-3.5 mb-7 sm:mb-9">
+                    <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 text-xs font-medium text-neutral-300 backdrop-blur-md shadow-xs">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7D39EB] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7D39EB]"></span>
+                        </span>
+                        <span className="tracking-wide">Стандарты ЦТ и ЦЭ 2026 • Экзаменационная программа Беларуси</span>
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl lg:text-[38px] font-extrabold tracking-tight text-white leading-tight">
-                        15 индивидуальных вариантов проверочной работы на класс за 1 минуту: без списанных решений из ГДЗ и Photomath
+                    <h1 className="text-2xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-white leading-[1.18]">
+                        Контрольные работы на класс. <br className="hidden sm:inline" />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-white/60">
+                            Без единого шанса списать.
+                        </span>
                     </h1>
 
-                    <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-3xl font-normal">
-                        15 индивидуальных вариантов на класс. У соседа по парте те же формулы, но другие числа — Photomath и ГДЗ бессильны. Проверка стопки тетрадей за 2 минуты по единому мастер-ключу.
+                    <p className="text-sm sm:text-base text-neutral-400 leading-relaxed font-normal max-w-2xl">
+                        15 индивидуальных вариантов с разными числами в заданиях. Готовый к печати PDF-комплект на урок за 30 секунд — и сводная ведомость ответов для проверки стопки тетрадей за 2 минуты.
                     </p>
+
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 text-xs text-neutral-400">
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                            <span>Разные числа у каждого варианта</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                            <span>ГДЗ и Photomath бессильны</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                            <span>Печать на стандартном листе А4</span>
+                        </span>
+                    </div>
                 </div>
 
                 {/* TWO-COLUMN ARCHITECTURE: 5 COLS CONFIGURATOR + 7 COLS REAL WHITE A4 SHEET */}
