@@ -240,7 +240,24 @@ CRITICAL_FILES=(
     "resources/js/components/MobileCabinet/TabStudentWallet.jsx"
     "resources/views/partials/public-header.blade.php"
     "resources/views/partials/site-nav.blade.php"
+    "app/Http/Controllers/GeneratorCheckoutController.php"
+    "app/Models/GeneratorOrder.php"
+    "database/migrations/2026_11_06_090239_create_generator_orders_table.php"
+    "resources/js/components/AntiCheatGeneratorLanding.jsx"
+    "resources/views/generator.blade.php"
+    "resources/views/generator/pdf-template.blade.php"
+    "resources/views/generator/success.blade.php"
+    "resources/views/payments/generator-hosted.blade.php"
 )
+
+# Добавляем все модульные компоненты генератора
+if [ -d "resources/js/components/generator" ]; then
+    while IFS= read -r genfile; do
+        if [ -f "$genfile" ]; then
+            FILES+=("$genfile")
+        fi
+    done < <(find resources/js/components/generator -type f)
+fi
 
 # Добавляем скриншоты статей
 if [ -d "public/images/articles" ]; then
