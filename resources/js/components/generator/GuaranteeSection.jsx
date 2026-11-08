@@ -22,10 +22,10 @@ export default function GuaranteeSection() {
 
     return (
         <section className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-white/10 p-7 sm:p-10 backdrop-blur-xl shadow-2xl overflow-hidden">
-                {/* Emerald / Lime Glow */}
-                <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#C6FF33]/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#7D39EB]/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-white/10 p-7 sm:p-10 backdrop-blur-md shadow-2xl overflow-hidden">
+                {/* Emerald / Lime Glow - zero cost radial gradients */}
+                <div className="absolute top-0 right-1/4 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(198,255,51,0.08) 0%, transparent 70%)' }} />
+                <div className="absolute bottom-0 left-1/4 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.12) 0%, transparent 70%)' }} />
 
                 <div className="relative z-10">
                     {/* Header */}

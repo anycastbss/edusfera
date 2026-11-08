@@ -17,6 +17,27 @@ export default function NexumHero() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const userMenuRef = useRef(null);
+  const videoRef = useRef(null);
+  const heroSectionRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!videoRef.current) return;
+        if (entry.isIntersecting) {
+          videoRef.current.play().catch(() => {});
+        } else {
+          videoRef.current.pause();
+        }
+      },
+      { threshold: 0.05 }
+    );
+    if (heroSectionRef.current) {
+      observer.observe(heroSectionRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -136,9 +157,10 @@ export default function NexumHero() {
       
 
       {/* ─── 1. HERO SECTION (WITH PHOTO/VIDEO OR VIBRANT MOBILE AURORA) ─── */}
-      <section className="relative min-h-screen w-full overflow-hidden select-none font-geist flex flex-col justify-between bg-gradient-to-br from-neutral-950 via-slate-900 to-black">
+      <section ref={heroSectionRef} className="relative min-h-screen w-full overflow-hidden select-none font-geist flex flex-col justify-between bg-gradient-to-br from-neutral-950 via-slate-900 to-black">
         {/* Desktop Video (hidden on mobile to save 14.6 MB) */}
         <video
+          ref={videoRef}
           src="/videos/hero-bg.mp4"
           autoPlay
           loop
@@ -146,48 +168,31 @@ export default function NexumHero() {
           playsInline
           preload="none"
           className="hidden md:block absolute inset-0 h-full w-full object-cover z-0 pointer-events-none"
+          style={{ transform: 'translateZ(0)' }}
         />
 
-        {/* ─── VIBRANT ANIMATED MOBILE BACKGROUND (Rich, Colorful, High-Energy Aurora & Cyber Grid) ─── */}
+        {/* ─── VIBRANT MOBILE BACKGROUND (High-Performance Mesh - Zero Gaussian Blur Overhead) ─── */}
         <div className="md:hidden absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          {/* Deep vibrant cosmic foundation */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#13072b] via-[#0a0d24] to-[#030308]" />
-
-          {/* Animated Neon Violet Blob (Top-Left / Center) */}
+          {/* Deep vibrant cosmic foundation with native radial glows */}
           <div 
-            className="absolute -top-[10%] -left-[15%] w-[115vw] h-[115vw] rounded-full mix-blend-screen opacity-80 filter blur-[55px] animate-aurora-1"
+            className="absolute inset-0"
             style={{
-              background: 'radial-gradient(circle, rgba(125,57,235,0.85) 0%, rgba(147,51,234,0.5) 40%, rgba(99,102,241,0.2) 65%, transparent 75%)',
-            }}
-          />
-
-          {/* Animated Signature Neon Lime Blob (Center-Right / Bottom) */}
-          <div 
-            className="absolute top-[22%] -right-[20%] w-[110vw] h-[110vw] rounded-full mix-blend-screen opacity-75 filter blur-[60px] animate-aurora-2"
-            style={{
-              background: 'radial-gradient(circle, rgba(198,255,51,0.75) 0%, rgba(163,230,53,0.45) 35%, rgba(56,189,248,0.25) 60%, transparent 72%)',
-            }}
-          />
-
-          {/* Pulsing Central Energy Burst behind Headline & CTA */}
-          <div 
-            className="absolute top-[48%] -left-[10%] w-[95vw] h-[95vw] rounded-full mix-blend-screen opacity-65 filter blur-[50px] animate-aurora-3"
-            style={{
-              background: 'radial-gradient(circle, rgba(168,85,247,0.6) 0%, rgba(56,189,248,0.35) 45%, rgba(198,255,51,0.2) 65%, transparent 75%)',
+              background: 'radial-gradient(ellipse 95% 70% at 20% 12%, rgba(125,57,235,0.7) 0%, transparent 60%), radial-gradient(ellipse 85% 65% at 85% 30%, rgba(198,255,51,0.4) 0%, transparent 55%), radial-gradient(circle at 45% 65%, rgba(56,189,248,0.25) 0%, transparent 60%), linear-gradient(180deg, #13072b 0%, #0a0d24 55%, #010101 100%)',
+              transform: 'translateZ(0)',
             }}
           />
 
           {/* High-Tech Cyber Pattern Overlay */}
           <div 
-            className="absolute inset-0 opacity-20 bg-[radial-gradient(#C6FF33_1px,transparent_1px)] [background-size:24px_24px]" 
+            className="absolute inset-0 opacity-15 bg-[radial-gradient(#C6FF33_1px,transparent_1px)] [background-size:24px_24px]" 
           />
 
           {/* Floating animated glowing light particles / sparkles */}
           <div className="absolute inset-0">
-            <span className="absolute top-[18%] left-[12%] w-2 h-2 rounded-full bg-[#C6FF33] shadow-[0_0_12px_#C6FF33] animate-particle-drift" />
-            <span className="absolute top-[32%] right-[16%] w-2.5 h-2.5 rounded-full bg-[#7D39EB] shadow-[0_0_14px_#7D39EB] animate-particle-drift" style={{ animationDelay: '1.2s' }} />
-            <span className="absolute top-[58%] left-[22%] w-2 h-2 rounded-full bg-[#38BDF8] shadow-[0_0_10px_#38BDF8] animate-particle-drift" style={{ animationDelay: '2.4s' }} />
-            <span className="absolute top-[76%] right-[14%] w-2.5 h-2.5 rounded-full bg-[#C6FF33] shadow-[0_0_14px_#C6FF33] animate-particle-drift" style={{ animationDelay: '3.6s' }} />
+            <span className="absolute top-[18%] left-[12%] w-2 h-2 rounded-full bg-[#C6FF33] shadow-[0_0_12px_#C6FF33] animate-pulse" />
+            <span className="absolute top-[32%] right-[16%] w-2.5 h-2.5 rounded-full bg-[#7D39EB] shadow-[0_0_14px_#7D39EB] animate-pulse" style={{ animationDelay: '1.2s' }} />
+            <span className="absolute top-[58%] left-[22%] w-2 h-2 rounded-full bg-[#38BDF8] shadow-[0_0_10px_#38BDF8] animate-pulse" style={{ animationDelay: '2.4s' }} />
+            <span className="absolute top-[76%] right-[14%] w-2.5 h-2.5 rounded-full bg-[#C6FF33] shadow-[0_0_14px_#C6FF33] animate-pulse" style={{ animationDelay: '3.6s' }} />
           </div>
 
           {/* Subtle top/bottom contrast ramps for readability */}
@@ -716,7 +721,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 2. HOW IT WORKS SECTION (ПОШАГОВАЯ СХЕМА) ─── */}
-      <section id="how-it-works" className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
+      <section id="how-it-works" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }} className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-[#C6FF33]">
             <BrainCircuit className="w-4 h-4 text-[#C6FF33]" />
@@ -779,7 +784,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 3. INTERACTIVE DASHBOARD PREVIEW ─── */}
-      <section className="py-16 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto">
+      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }} className="py-16 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-r from-violet-950/60 via-slate-900 to-indigo-950/60 border border-slate-800 p-8 sm:p-12 relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             
@@ -870,7 +875,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 4. SUBJECTS GRID (ПРЕДМЕТЫ ПОДГОТОВКИ) ─── */}
-      <section id="subjects" className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
+      <section id="subjects" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }} className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-[#C6FF33]">
             <BookOpen className="w-4 h-4 text-[#C6FF33]" />
@@ -910,7 +915,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 4.5 BUSINESS MODEL: 0 BYN ДЛЯ УЧЕНИКОВ И ЧЕСТНАЯ ПОДПИСКА ДЛЯ РЕПЕТИТОРОВ ─── */}
-      <section id="business-model" className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
+      <section id="business-model" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }} className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#C6FF33]/10 border border-[#C6FF33]/30 text-xs font-bold text-[#C6FF33]">
             <Sparkles className="w-4 h-4 text-[#C6FF33]" />
@@ -1019,7 +1024,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 5. TRUST & GUARANTEES (ГАРАНТИИ И ЛЕГАЛЬНОСТЬ) ─── */}
-      <section id="guarantees" className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
+      <section id="guarantees" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 400px' }} className="py-20 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto border-t border-slate-800/60">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-bold text-emerald-400">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -1069,7 +1074,7 @@ export default function NexumHero() {
       </section>
 
       {/* ─── 6. FINAL CALL TO ACTION HERO CARD ─── */}
-      <section className="py-16 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto">
+      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 400px' }} className="py-16 px-5 sm:px-8 lg:px-12 max-w-7xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-r from-violet-900 via-slate-900 to-indigo-900 border border-violet-500/30 p-10 sm:p-14 text-center space-y-6 relative overflow-hidden">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-white font-medium text-xs backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />

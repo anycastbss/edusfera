@@ -681,10 +681,10 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── SPECIAL BLOCK: ОБЩЕСТВЕННЫЙ МЕТОДИЧЕСКИЙ СОВЕТ EDUSFERA ─── */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0B0F19] to-[#010101] border-b border-white/10 relative overflow-hidden">
+      <section style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }} className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0B0F19] to-[#010101] border-b border-white/10 relative overflow-hidden">
         {/* Ambient Gold & Purple Glow */}
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-[#7D39EB]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 -right-40 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.15) 0%, transparent 70%)' }} />
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="max-w-4xl mx-auto text-center mb-14">
@@ -786,7 +786,7 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── BLOCK 02 & 03: PROBLEMS VS EDUSFERA SOLUTIONS ─── */}
-      <section id="pains" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10">
+      <section id="pains" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }} className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10">
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -855,7 +855,7 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── BLOCK 04: INTERACTIVE SWISS-ENGINE CALCULATOR ─── */}
-      <section id="calculator" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10 relative">
+      <section id="calculator" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }} className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10 relative">
         <div className="max-w-5xl mx-auto">
           
           <div className="text-center max-w-2xl mx-auto mb-14">
@@ -970,7 +970,7 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── BLOCK 05: VALUE STACK & COMPARISON ─── */}
-      <section id="features" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10">
+      <section id="features" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
         <div className="max-w-7xl mx-auto">
           
           <div className="max-w-3xl mb-16 text-left">
@@ -986,7 +986,7 @@ export default function ForTutorsPage() {
           </div>
 
           {/* Value Stack Container */}
-          <div className="max-w-4xl rounded-3xl p-7 sm:p-10 border border-white/10 shadow-2xl bg-[#0B0F19]/80 backdrop-blur-xl">
+          <div className="max-w-4xl rounded-3xl p-7 sm:p-10 border border-white/10 shadow-2xl bg-[#0B0F19]/80 backdrop-blur-md">
             <div className="divide-y divide-white/10">
               
               <div className="py-4 sm:py-5 flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4 first:pt-0">
@@ -1037,7 +1037,7 @@ export default function ForTutorsPage() {
                 href="/register?role=tutor&plan=pro" 
                 className="inline-flex items-center justify-center font-extrabold text-xs sm:text-sm py-3.5 px-6 rounded-full bg-[#C6FF33] hover:bg-[#d4ff59] text-black shrink-0 w-full sm:w-auto shadow-[0_0_20px_rgba(198,255,51,0.25)] transition-all"
               >
-                Начать бесплатно (1 мес) →
+                Начать бесплатно (7 дней) →
               </a>
             </div>
 
@@ -1046,7 +1046,7 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── BLOCK 06: TARIFFS MATRIX ─── */}
-      <section id="pricing" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10">
+      <section id="pricing" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-2xl mx-auto mb-14">
@@ -1057,7 +1057,7 @@ export default function ForTutorsPage() {
               Честные <span className="text-[#C6FF33]">тарифы</span>
             </h2>
             <p className="text-sm sm:text-base text-slate-400 mb-8">
-              Первый месяц бесплатно на любом тарифе. Переключайтесь или отменяйте в любой момент без скрытых платежей.
+              7 дней пробного периода бесплатно на любом тарифе. Переключайтесь или отменяйте в любой момент без скрытых платежей.
             </p>
 
             {/* Toggle Month / Year */}
@@ -1178,14 +1178,14 @@ export default function ForTutorsPage() {
                 href="/register?role=tutor&plan=premium"
                 className="w-full py-4 px-6 rounded-full bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-xs text-center shadow-[0_0_25px_rgba(198,255,51,0.3)] transition-all"
               >
-                Выбрать Премиум (1 мес. 0 BYN) →
+                Выбрать Премиум (7 дней 0 BYN) →
               </a>
             </div>
 
           </div>
 
           {/* Guarantee & Quota Bar */}
-          <div className="mt-14 p-6 sm:p-8 rounded-2xl bg-[#0B0F19]/80 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 text-left shadow-xl backdrop-blur-xl">
+          <div className="mt-14 p-6 sm:p-8 rounded-2xl bg-[#0B0F19]/80 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 text-left shadow-xl backdrop-blur-md">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#C6FF33]/10 border border-[#C6FF33]/30 flex items-center justify-center text-[#C6FF33] shrink-0">
                 <ShieldCheck className="w-6 h-6" />
@@ -1206,7 +1206,7 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── BLOCK 09: FAQ ACCORDION ─── */}
-      <section id="faq" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10">
+      <section id="faq" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] border-b border-white/10" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
         <div className="max-w-4xl mx-auto">
           
           <div className="text-center max-w-2xl mx-auto mb-14">
@@ -1221,7 +1221,7 @@ export default function ForTutorsPage() {
           <div className="space-y-4">
             
             {/* FAQ 1 */}
-            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-xl">
+            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-md">
               <button 
                 id="faq-btn-1"
                 aria-controls="faq-answer-1"
@@ -1239,7 +1239,7 @@ export default function ForTutorsPage() {
             </div>
 
             {/* FAQ 2 */}
-            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-xl">
+            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-md">
               <button 
                 id="faq-btn-2"
                 aria-controls="faq-answer-2"
@@ -1257,7 +1257,7 @@ export default function ForTutorsPage() {
             </div>
 
             {/* FAQ 3 */}
-            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-xl">
+            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-md">
               <button 
                 id="faq-btn-3"
                 aria-controls="faq-answer-3"
@@ -1269,13 +1269,13 @@ export default function ForTutorsPage() {
               </button>
               {openFaq === 3 && (
                 <div id="faq-answer-3" role="region" aria-labelledby="faq-btn-3" className="px-6 pb-6 text-sm text-slate-300 leading-relaxed border-t border-white/10 pt-4">
-                  Стоимость тарифа Pro (40 BYN) равна ровно <strong>одному уроку</strong>. При этом один найденный ученик приносит 300–400 BYN в месяц, окупая подписку на год вперёд. Первый месяц — бесплатно.
+                  Стоимость тарифа Pro (40 BYN) равна ровно <strong>одному уроку</strong>. При этом один найденный ученик приносит 300–400 BYN в месяц, окупая подписку на год вперёд. Пробный период — 7 дней бесплатно.
                 </div>
               )}
             </div>
 
             {/* FAQ 4 */}
-            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-xl">
+            <div className="bg-[#0B0F19]/70 rounded-2xl border border-white/10 overflow-hidden shadow-lg backdrop-blur-md">
               <button 
                 id="faq-btn-4"
                 aria-controls="faq-answer-4"
@@ -1298,9 +1298,9 @@ export default function ForTutorsPage() {
       </section>
 
       {/* ─── FINAL CTA SLAB ─── */}
-      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] relative overflow-hidden">
+      <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-[#010101] relative overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(125,57,235,0.12),transparent_70%)] pointer-events-none"></div>
-        <div className="max-w-5xl mx-auto bg-[#0B0F19]/90 p-10 sm:p-16 rounded-3xl border border-white/10 text-center shadow-2xl relative overflow-hidden backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto bg-[#0B0F19]/90 p-10 sm:p-16 rounded-3xl border border-white/10 text-center shadow-2xl relative overflow-hidden backdrop-blur-md">
           <div className="relative z-10 max-w-2xl mx-auto">
             <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-[#C6FF33] font-semibold text-xs uppercase tracking-wider mb-4">
               Старт без рисков
@@ -1309,7 +1309,7 @@ export default function ForTutorsPage() {
               Займите место в своей <span className="text-[#C6FF33]">нише</span>
             </h2>
             <p className="text-base text-slate-300 mb-10 leading-relaxed">
-              Первый месяц бесплатно на тарифе Basic, Pro или Premium. Фиксация пожизненной цены основателя для первых 50 репетиторов Беларуси.
+              7 дней бесплатно на тарифе Basic, Pro или Premium. Фиксация пожизненной цены основателя для первых 50 репетиторов Беларуси.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a 

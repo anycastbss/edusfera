@@ -569,8 +569,8 @@ export default function AntiCheatGeneratorLanding() {
     return (
         <div className="min-h-screen bg-[#0B0B0E] text-white font-sans selection:bg-[#7D39EB] selection:text-white antialiased flex flex-col justify-between relative overflow-x-hidden">
             
-            {/* Ambient Background Glow (Edusfera Aurora Purple Glow) */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-b from-[#7D39EB]/25 via-[#7D39EB]/5 to-transparent blur-3xl pointer-events-none -z-10" />
+            {/* Ambient Background Glow (High-performance gradient mesh - Zero blur filter overhead) */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1200px] h-[500px] pointer-events-none -z-10" style={{ background: 'radial-gradient(ellipse 65% 50% at 50% 0%, rgba(125,57,235,0.2) 0%, transparent 70%)', transform: 'translateZ(0)' }} />
 
             {/* ─── 1. STANDARD EDUSFERA PLATFORM HEADER (IDENTICAL TO HOMEPAGE) ─── */}
             <nav className="flex items-center justify-between px-5 py-5 sm:px-8 sm:py-6 lg:px-12 w-full max-w-[1400px] mx-auto relative z-50">
@@ -1040,7 +1040,7 @@ export default function AntiCheatGeneratorLanding() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
                     
                     {/* LEFT COLUMN: Controls Surface (5 cols, Aurora Glass) */}
-                    <div className="lg:col-span-5 bg-[#121214]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_16px_36px_-4px_rgba(0,0,0,0.6)] space-y-5">
+                    <div className="lg:col-span-5 bg-[#121214]/95 backdrop-blur-md border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_16px_36px_-4px_rgba(0,0,0,0.6)] space-y-5">
                         
                         {/* Step 1: Subject Selection (Lucide Monochromatic SVG Icons) */}
                         <div>
@@ -1204,7 +1204,7 @@ export default function AntiCheatGeneratorLanding() {
                     </div>
 
                     {/* RIGHT COLUMN: Realistic Authentic White A4 Sheet Preview (7 cols) */}
-                    <div className="lg:col-span-7 bg-[#121214]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_16px_36px_-4px_rgba(0,0,0,0.6)] space-y-3.5">
+                    <div className="lg:col-span-7 bg-[#121214]/95 backdrop-blur-md border border-white/10 rounded-3xl p-5 sm:p-6 shadow-[0_16px_36px_-4px_rgba(0,0,0,0.6)] space-y-3.5">
                         
                         {/* Segmented preview tabs */}
                         <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -1399,23 +1399,37 @@ export default function AntiCheatGeneratorLanding() {
 
             </main>
 
-            {/* ─── HIGH-CONVERTING MODULAR SECTIONS ─── */}
-            <PainSolutionSection />
+            {/* ─── HIGH-CONVERTING MODULAR SECTIONS (Deferred Rendering with content-visibility) ─── */}
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
+                <PainSolutionSection />
+            </div>
 
-            <TimeSavedCalculator onOpenModal={() => setShowPayModal(true)} />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
+                <TimeSavedCalculator onOpenModal={() => setShowPayModal(true)} />
+            </div>
 
-            <BundleBreakdownSection onOpenModal={() => setShowPayModal(true)} />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
+                <BundleBreakdownSection onOpenModal={() => setShowPayModal(true)} />
+            </div>
 
-            <PricingTiersSection onSelectPlan={(quarterPass) => {
-                setIsQuarterPass(quarterPass);
-                setShowPayModal(true);
-            }} />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 600px' }}>
+                <PricingTiersSection onSelectPlan={(quarterPass) => {
+                    setIsQuarterPass(quarterPass);
+                    setShowPayModal(true);
+                }} />
+            </div>
 
-            <GuaranteeSection />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }}>
+                <GuaranteeSection />
+            </div>
 
-            <TestimonialsSection />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }}>
+                <TestimonialsSection />
+            </div>
 
-            <FaqSection />
+            <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 500px' }}>
+                <FaqSection />
+            </div>
 
             {/* ─── 3. REFINED CHECKOUT MODAL (AURORA GLASS) ─── */}
             <AnimatePresence>

@@ -73,7 +73,7 @@ export default function BundleBreakdownSection({ onOpenModal }) {
                     return (
                         <div
                             key={index}
-                            className="relative rounded-3xl bg-[#121214]/85 border border-white/10 p-6 sm:p-7 backdrop-blur-xl shadow-lg hover:border-violet-500/40 hover:shadow-[0_10px_30px_rgba(125,57,235,0.15)] transition-all flex flex-col justify-between group"
+                            className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-6 sm:p-7 backdrop-blur-md shadow-lg hover:border-violet-500/40 hover:shadow-[0_10px_30px_rgba(125,57,235,0.15)] transition-all flex flex-col justify-between group"
                         >
                             <div>
                                 <div className="flex items-center justify-between mb-5">

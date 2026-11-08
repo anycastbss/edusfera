@@ -59,8 +59,8 @@ export default function PainSolutionSection() {
             {/* Side-by-Side Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
                 {/* BEFORE: The Pain */}
-                <div className="relative rounded-3xl bg-[#121214]/80 border border-rose-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-[0_16px_36px_-4px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative rounded-3xl bg-[#121214]/90 border border-rose-500/20 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(0,0,0,0.5)] flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.08) 0%, transparent 70%)' }} />
                     <div>
                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-rose-500/15">
                             <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
@@ -102,8 +102,8 @@ export default function PainSolutionSection() {
                 </div>
 
                 {/* AFTER: The Solution */}
-                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-[#7D39EB]/40 p-6 sm:p-8 backdrop-blur-xl shadow-[0_16px_36px_-4px_rgba(125,57,235,0.2)] flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-56 h-56 bg-[#7D39EB]/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-[#7D39EB]/40 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(125,57,235,0.2)] flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-56 h-56 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.18) 0%, transparent 70%)' }} />
                     <div>
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#7D39EB]/25">
                             <div className="flex items-center gap-3">

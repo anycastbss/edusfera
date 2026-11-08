@@ -41,7 +41,7 @@ export default function PricingTiersSection({ onSelectPlan }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
                 
                 {/* Tier 1: Single Topic */}
-                <div className="relative rounded-3xl bg-[#121214]/90 border border-white/10 p-7 sm:p-8 backdrop-blur-xl shadow-lg flex flex-col justify-between hover:border-white/20 transition-all">
+                <div className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-7 sm:p-8 backdrop-blur-md shadow-lg flex flex-col justify-between hover:border-white/20 transition-all">
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
@@ -93,7 +93,7 @@ export default function PricingTiersSection({ onSelectPlan }) {
                 </div>
 
                 {/* Tier 2: Quarter Pass (Featured) */}
-                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border-2 border-[#7D39EB] p-7 sm:p-8 backdrop-blur-xl shadow-[0_20px_50px_rgba(125,57,235,0.25)] flex flex-col justify-between">
+                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border-2 border-[#7D39EB] p-7 sm:p-8 backdrop-blur-md shadow-[0_20px_50px_rgba(125,57,235,0.25)] flex flex-col justify-between">
                     {/* Top discount ribbon */}
                     <div className="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-gradient-to-r from-[#7D39EB] to-violet-600 text-white text-[10px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
                         <Zap className="w-3 h-3 text-[#C6FF33]" />

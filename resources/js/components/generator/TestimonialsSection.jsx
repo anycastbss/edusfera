@@ -56,7 +56,7 @@ export default function TestimonialsSection() {
                 {testimonials.map((item, index) => (
                     <div
                         key={index}
-                        className="relative rounded-3xl bg-[#121214]/90 border border-white/10 p-6 sm:p-7 backdrop-blur-xl shadow-lg flex flex-col justify-between hover:border-violet-500/30 transition-all group"
+                        className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-6 sm:p-7 backdrop-blur-md shadow-lg flex flex-col justify-between hover:border-violet-500/30 transition-all group"
                     >
                         <div>
                             {/* Card Top: Stars & City */}
