@@ -637,7 +637,7 @@ export default function NexumHero() {
                 alt="Edusfera — Интерактивный онлайн-класс"
                 width="1536"
                 height="1024"
-                className="relative z-10 w-full h-auto object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
+                className="relative z-10 w-full h-auto object-contain"
                 style={{
                   maskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
                   WebkitMaskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
