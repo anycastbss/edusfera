@@ -416,27 +416,30 @@ class GeneratorCheckoutController extends Controller
 
         if ($force || empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
             $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
-
-            // SEC-02 FIX: Strip raw HTML from markdown to prevent SSRF and injection
-            $htmlContent = Str::markdown($cleaned, [
-                'html_input' => 'strip',
-                'allow_unsafe_links' => false,
-            ]);
-
             $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
 
-            $pdf = Pdf::loadView('generator.pdf-standard-template', array_merge([
-                'order' => $order,
-                'content' => $cleaned,
-                'htmlContent' => $htmlContent,
-                'qrFilePath' => public_path('images/edusfera-qr.png'),
-            ], $parsedData))
-            ->setPaper('a4', 'portrait')
-            ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', false)
-            ->setOption('chroot', [public_path(), storage_path(), base_path()]); // SEC-02 FIX: Disabled remote fetching to prevent SSRF/LFI
+            // 1. High-end Python ReportLab engine from edusfera_pdf_generator
+            $pythonSuccess = \App\Services\Exam\PythonExamGeneratorService::generate($order, $parsedData, $relativePath);
 
-            Storage::disk('local')->put($relativePath, $pdf->output());
+            // 2. Fallback: Standard PDF engine
+            if (! $pythonSuccess || ! Storage::disk('local')->exists($relativePath)) {
+                // SEC-02 FIX: Strip raw HTML from markdown to prevent SSRF and injection
+                $htmlContent = Str::markdown($cleaned, [
+                    'html_input' => 'strip',
+                    'allow_unsafe_links' => false,
+                ]);
+
+                $pdf = Pdf::loadView('generator.pdf-standard-template', array_merge([
+                    'order' => $order,
+                    'content' => $cleaned,
+                    'htmlContent' => $htmlContent,
+                ], $parsedData))
+                ->setPaper('a4', 'portrait')
+                ->setOption('isHtml5ParserEnabled', true)
+                ->setOption('isRemoteEnabled', false);
+
+                Storage::disk('local')->put($relativePath, $pdf->output());
+            }
 
             $order->update([
                 'pdf_path' => $relativePath,
