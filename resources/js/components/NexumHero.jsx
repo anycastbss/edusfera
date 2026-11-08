@@ -626,6 +626,30 @@ export default function NexumHero() {
           {/* Main Hero Content */}
           <main className="mt-auto flex flex-col lg:flex-row lg:items-end lg:justify-between px-5 pb-8 sm:px-8 sm:pb-12 lg:px-12 lg:pb-16 gap-6 sm:gap-8">
             <div className="max-w-2xl">
+              {/* Mobile-Only 3D Hero Graphic (between Nav and Badge) */}
+              <div className="lg:hidden w-full flex justify-center items-center -mt-2 pb-2 pointer-events-none select-none">
+                <div className="relative w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[340px]">
+                  {/* Atmospheric Glow Aura */}
+                  <div 
+                    className="absolute -inset-4 bg-gradient-to-r from-violet-600/35 via-[#C6FF33]/20 to-sky-400/25 blur-2xl rounded-full opacity-60 pointer-events-none"
+                    aria-hidden="true"
+                  />
+
+                  <picture>
+                    <source srcSet="/images/hero-student-illustration.webp" type="image/webp" />
+                    <img
+                      src="/images/hero-student-illustration.png"
+                      alt="Edusfera — Интерактивный онлайн-класс и подготовка к экзаменам"
+                      width="1024"
+                      height="682"
+                      className="relative z-10 w-full h-auto object-contain drop-shadow-[0_12px_30px_rgba(125,57,235,0.4)]"
+                      loading="eager"
+                      fetchPriority="high"
+                    />
+                  </picture>
+                </div>
+              </div>
+
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-white/90 font-medium text-xs mb-4 backdrop-blur-md">
                 <span className="w-2 h-2 rounded-full bg-[#C6FF33] animate-pulse"></span>
                 <span>Платформа для репетиторов, учеников и родителей</span>
