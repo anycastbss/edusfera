@@ -632,22 +632,19 @@ export default function NexumHero() {
                 aria-hidden="true"
               />
 
-              <picture>
-                <source srcSet="/images/hero-student-illustration.webp" type="image/webp" />
-                <img
-                  src="/images/hero-student-illustration.png"
-                  alt="Edusfera — Интерактивный онлайн-класс"
-                  width="1536"
-                  height="1024"
-                  className="relative z-10 w-full h-auto object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
-                  style={{
-                    maskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
-                  }}
-                  loading="eager"
-                  fetchPriority="high"
-                />
-              </picture>
+              <img
+                src="/images/hero-student-illustration.png"
+                alt="Edusfera — Интерактивный онлайн-класс"
+                width="1536"
+                height="1024"
+                className="relative z-10 w-full h-auto object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.5)]"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 82%, transparent 100%)',
+                }}
+                loading="eager"
+                fetchPriority="high"
+              />
             </div>
           </div>
 
