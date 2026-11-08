@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDUSFERA — PDF Generator</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><span></span><i></i></div>
+        <div><strong>EDUSFERA</strong><small>PDF TEST GENERATOR</small></div>
+      </div>
+      <div class="top-note">Не зубри. Знай.</div>
+      <div class="local-pill"><span></span> Локальная обработка</div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">ИНСТРУМЕНТ ПРЕПОДАВАТЕЛЯ</p>
+          <h1>Создание печатных тестов</h1>
+          <p class="sub">Соберите задания, добавьте формулы и схемы — получите аккуратный чёрно-белый PDF формата A4.</p>
+        </div>
+        <div class="intro-stamp">A4<br><b>PDF</b></div>
+      </section>
+
+      <form id="testForm">
+        <section class="panel">
+          <div class="panel-head"><div><span class="step">01</span><h2>Параметры теста</h2></div><span class="muted">Общие настройки документа</span></div>
+          <div class="field-grid">
+            <label>Предмет<input id="subject" value="Математика" required></label>
+            <label>Название теста<input id="title" value="Пробный тест в формате ЦТ" required></label>
+            <label>Время выполнения<input id="duration" value="180 минут"></label>
+            <label>Максимальный балл<input id="maxScore" value="100"></label>
+            <label class="wide">Ссылка для QR-кода<input id="websiteUrl" value="https://edusfera.by"></label>
+            <label class="wide">Инструкция для ученика<textarea id="instructions" rows="2">В каждом задании выберите один правильный ответ из пяти предложенных. Запишите букву ответа в бланк в конце теста.</textarea></label>
+            <label class="wide">Название раздела<input id="sectionTitle" value="Часть A. Задания с выбором одного правильного ответа"></label>
+          </div>
+          <label class="check-row"><input id="includeAnswerSheet" type="checkbox" checked><span>Добавить отдельный бланк ответов в конец теста</span></label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div><span class="step">02</span><h2>Задания</h2></div>
+            <div class="task-tools"><span id="taskCount" class="muted">0 заданий</span><button type="button" class="btn secondary small" id="addTaskTop">＋ Добавить задание</button></div>
+          </div>
+          <div class="hint-line">Формулы вводите между знаками <code>$...$</code>, например <code>$x^2-4=0$</code>. Для рисунков загрузите PNG или JPG.</div>
+          <div id="tasks"></div>
+          <button type="button" class="add-task" id="addTaskBottom">＋ Добавить следующее задание</button>
+        </section>
+
+        <section class="panel bottom-panel">
+          <div class="panel-head"><div><span class="step">03</span><h2>Экспорт</h2></div><span class="muted">PDF для ученика и ключ преподавателя</span></div>
+          <div class="export-row">
+            <div><strong>Готово к печати</strong><p>Формат A4 · чёрно-белая печать · автоматическая нумерация страниц</p></div>
+            <button class="btn primary" id="generateBtn" type="submit"><span>Сформировать PDF</span><b>→</b></button>
+          </div>
+          <div id="status" class="status" aria-live="polite"></div>
+          <div id="downloads" class="downloads hidden">
+            <a id="studentLink" class="download-card" href="#"><span class="file-icon">PDF</span><span><b>Тест для ученика</b><small>Без правильных ответов</small></span><i>↓</i></a>
+            <a id="keyLink" class="download-card" href="#"><span class="file-icon">KEY</span><span><b>Ключ преподавателя</b><small>Ответы и пояснения</small></span><i>↓</i></a>
+            <a id="bundleLink" class="download-card archive" href="#"><span class="file-icon">ZIP</span><span><b>Скачать комплект</b><small>PDF + исходные данные JSON</small></span><i>↓</i></a>
+          </div>
+        </section>
+      </form>
+
+      <section class="utility-row">
+        <button type="button" class="text-button" id="loadExample">Загрузить пример теста по математике</button>
+        <label class="text-button import-label">Импортировать JSON<input id="importJson" type="file" accept=".json,application/json" hidden></label>
+        <button type="button" class="text-button" id="exportJson">Экспортировать задания в JSON</button>
+      </section>
+    </main>
+    <footer>EDUSFERA <span>•</span> Локальный генератор печатных тестов</footer>
+  </div>
+  <template id="taskTemplate">
+    <article class="task-card">
+      <div class="task-card-head"><div class="task-number">A1</div><div class="task-head-title">Задание</div><button type="button" class="remove-task" title="Удалить задание">×</button></div>
+      <div class="task-fields">
+        <label>Условие задания<textarea class="prompt" rows="2" placeholder="Например: Решите уравнение $x^2-5x+6=0$" required></textarea></label>
+        <div class="options-wrap">
+          <div class="option-heading"><b>Варианты ответа</b><span>Один правильный ответ</span></div>
+          <div class="option-grid">
+            <label><span>A</span><input class="option" data-option="A" placeholder="Вариант A" required></label>
+            <label><span>B</span><input class="option" data-option="B" placeholder="Вариант B" required></label>
+            <label><span>C</span><input class="option" data-option="C" placeholder="Вариант C" required></label>
+            <label><span>D</span><input class="option" data-option="D" placeholder="Вариант D" required></label>
+            <label><span>E</span><input class="option" data-option="E" placeholder="Вариант E" required></label>
+          </div>
+          <label class="correct-label">Правильный ответ<select class="correct"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></label>
+        </div>
+        <div class="task-lower">
+          <label>Пояснение для ключа преподавателя<textarea class="explanation" rows="2" placeholder="Краткое решение или пояснение (необязательно)"></textarea></label>
+          <div class="upload-box"><label>Рисунок / график <input class="diagram" type="file" accept="image/png,image/jpeg,image/webp"></label><small class="diagram-name">Файл не выбран</small><button type="button" class="clear-diagram hidden">Удалить рисунок</button></div>
+        </div>
+        <div class="preview"></div>
+      </div>
+    </article>
+  </template>
+  <script src="/app.js"></script>
+</body>
+</html>
