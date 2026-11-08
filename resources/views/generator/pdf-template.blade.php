@@ -41,9 +41,10 @@
         }
         .order-badge {
             float: right;
-            font-size: 8pt;
+            font-size: 8.5pt;
             color: #6b7280;
-            font-family: monospace;
+            font-family: DejaVu Sans, sans-serif;
+            font-weight: bold;
         }
         .content {
             margin-top: 15px;

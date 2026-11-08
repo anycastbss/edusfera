@@ -394,8 +394,9 @@ class GeneratorCheckoutController extends Controller
         $text = preg_replace('/\$([^\$\n]+)\$/u', '$1', $text);
         $text = str_replace('$', '', $text);
 
-        // 6. Fix options formatted as "1. " into "1) " so Markdown won't parse them into an ordered list
-        $text = preg_replace('/^(\s*)([1-4])\.\s+/m', '$1$2) ', $text);
+        // 6. Fix options so CommonMark doesn't turn them into wide <ol><li> lists
+        // Replace "1. " or "1) " with "1) " and ensure two spaces for line break in markdown
+        $text = preg_replace('/^(\s*[1-4])[\.\)]\s*(.+)$/m', '$1) $2  ', $text);
 
         return $text;
     }
