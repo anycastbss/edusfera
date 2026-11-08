@@ -871,6 +871,69 @@ try {
         exit;
     }
 
+    // ── ACTION: Check / Setup Python for PDF Generator ─────────────────
+    if ($action === 'check_python') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "🐍 <b>Диагностика Python окружения для Edusfera PDF Generator:</b>\n\n";
+
+        $pyBinary = \App\Services\Exam\PythonExamGeneratorService::getPythonBinary();
+        echo "1. Путь к Python: " . ($pyBinary ?: '❌ Не найден') . "\n";
+
+        if ($pyBinary) {
+            $ver = trim(shell_exec("$pyBinary --version 2>&1") ?? '');
+            echo "   Версия: {$ver}\n\n";
+
+            echo "2. Проверка ключевых модулей:\n";
+            $modules = ['reportlab', 'matplotlib', 'PIL', 'qrcode', 'pypdf'];
+            $missing = [];
+            foreach ($modules as $mod) {
+                $check = shell_exec("$pyBinary -c \"import {$mod}; print('OK')\" 2>&1");
+                if (trim($check ?? '') === 'OK') {
+                    echo "   ✓ {$mod}: УСТАНОВЛЕН\n";
+                } else {
+                    echo "   ❌ {$mod}: НЕ НАЙДЕН (" . trim($check ?? '') . ")\n";
+                    $missing[] = $mod;
+                }
+            }
+
+            if (! empty($missing)) {
+                echo "\n⚠️ Не все модули установлены. Попытка автоматической установки:\n";
+                $reqFile = base_path('edusfera_pdf_generator/requirements.txt');
+                echo "<a href='?key=edusfera2026&action=install_python_deps' style='display:inline-block;padding:8px 16px;background:#10b981;color:#fff;border-radius:8px;font-weight:bold;text-decoration:none;'>Установить зависимости через pip</a>\n\n";
+            } else {
+                echo "\n🎉 <b>Все Python-зависимости генератора в наличии и готовы к работе!</b>\n\n";
+            }
+        }
+
+        echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>← В меню</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
+    if ($action === 'install_python_deps') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "🚀 <b>Установка Python зависимостей для PDF Generator...</b>\n\n";
+
+        $pyBinary = \App\Services\Exam\PythonExamGeneratorService::getPythonBinary();
+        if (! $pyBinary) {
+            echo "❌ Python не найден на сервере.\n";
+            echo "</pre>";
+            exit;
+        }
+
+        $reqFile = base_path('edusfera_pdf_generator/requirements.txt');
+        $cmd = "$pyBinary -m pip install -r " . escapeshellarg($reqFile) . " --user 2>&1";
+        echo "Выполняется команда:\n{$cmd}\n\n";
+
+        $output = shell_exec($cmd);
+        echo htmlspecialchars($output ?? 'Нет вывода') . "\n\n";
+
+        echo "<a href='?key=edusfera2026&action=check_python' style='color:#38bdf8;font-weight:bold;'>← Проверить модули снова</a> | ";
+        echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>В меню</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
     // ── ACTION: Test Generator AI & PDF ───────────────────────────────
     if ($action === 'test_generator') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
@@ -925,7 +988,9 @@ try {
 
         $pdfFullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($order->pdf_path);
         $pdfSize = file_exists($pdfFullPath) ? filesize($pdfFullPath) : 0;
-        echo "3. Сборка PDF (DomPDF):\n";
+        $isPython = \App\Services\Exam\PythonExamGeneratorService::isAvailable();
+        echo "3. Сборка PDF:\n";
+        echo "   ✓ Движок генерации: " . ($isPython ? "🐍 Python ReportLab (edusfera_pdf_generator)" : "📄 DomPDF Standard Engine (Fallback)") . "\n";
         echo "   ✓ Размер готового PDF: ".round($pdfSize / 1024, 1)." КБ\n\n";
 
         echo "4. Предпросмотр начала сгенерированного документа:\n";

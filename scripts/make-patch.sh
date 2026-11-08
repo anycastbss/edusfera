@@ -246,9 +246,21 @@ CRITICAL_FILES=(
     "resources/js/components/AntiCheatGeneratorLanding.jsx"
     "resources/views/generator.blade.php"
     "resources/views/generator/pdf-template.blade.php"
+    "resources/views/generator/pdf-standard-template.blade.php"
+    "app/Services/Exam/ExamDocumentParser.php"
+    "app/Services/Exam/PythonExamGeneratorService.php"
     "resources/views/generator/success.blade.php"
     "resources/views/payments/generator-hosted.blade.php"
 )
+
+# Добавляем модуль edusfera_pdf_generator
+if [ -d "edusfera_pdf_generator" ]; then
+    while IFS= read -r pdfgenfile; do
+        if [[ ! "$pdfgenfile" =~ (\.venv/|__pycache__/|output/|\.DS_Store) ]] && [ -f "$pdfgenfile" ]; then
+            FILES+=("$pdfgenfile")
+        fi
+    done < <(find edusfera_pdf_generator -type f)
+fi
 
 # Добавляем все модульные компоненты генератора
 if [ -d "resources/js/components/generator" ]; then
