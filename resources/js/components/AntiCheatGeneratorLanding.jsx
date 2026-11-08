@@ -396,13 +396,6 @@ export default function AntiCheatGeneratorLanding() {
     const [previewTab, setPreviewTab] = useState('v1'); // 'v1' | 'v2' | 'keys'
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-
-    // Promo code & viral referral state
-    const [promoCode, setPromoCode] = useState('');
-    const [promoApplied, setPromoApplied] = useState(false);
-    const [promoDiscount, setPromoDiscount] = useState(0);
-    const [promoError, setPromoError] = useState('');
-    const [copiedShare, setCopiedShare] = useState(false);
     const [showZoomModal, setShowZoomModal] = useState(false);
 
     useEffect(() => {
@@ -419,48 +412,8 @@ export default function AntiCheatGeneratorLanding() {
             if (window.EDUSFERA_LINKED_ACCOUNTS) {
                 setLinkedAccounts(window.EDUSFERA_LINKED_ACCOUNTS);
             }
-
-            // Check URL for promo parameter (e.g., ?promo=EDUSFERA2026)
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const promoParam = urlParams.get('promo');
-                if (promoParam && promoParam.trim().toUpperCase() === 'EDUSFERA2026') {
-                    setPromoCode('EDUSFERA2026');
-                    setPromoApplied(true);
-                    setPromoDiscount(20);
-                }
-            } catch (e) {
-                // Ignore search params parsing error
-            }
         }
     }, []);
-
-    const handleApplyPromo = (codeToApply) => {
-        const code = (codeToApply !== undefined ? codeToApply : promoCode).trim().toUpperCase();
-        if (code === 'EDUSFERA2026') {
-            setPromoCode('EDUSFERA2026');
-            setPromoApplied(true);
-            setPromoDiscount(20);
-            setPromoError('');
-        } else if (code) {
-            setPromoApplied(false);
-            setPromoDiscount(0);
-            setPromoError('Промокод не найден или срок его действия истёк.');
-        } else {
-            setPromoApplied(false);
-            setPromoDiscount(0);
-            setPromoError('');
-        }
-    };
-
-    const handleCopyShareLink = () => {
-        const text = 'Коллеги, рекомендую генератор проверочных работ без списания на Edusfera.by: 15 вариантов с разными числами + сводная ведомость ответов для проверки за 2 минуты. Держите промокод на скидку 20%: EDUSFERA2026. Ссылка: https://edusfera.by/generator?promo=EDUSFERA2026';
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text);
-        }
-        setCopiedShare(true);
-        setTimeout(() => setCopiedShare(false), 3000);
-    };
 
     const cabinetUrl = isMobileDevice ? '/m' : '/admin';
     const financeUrl = isMobileDevice ? '/m?tab=finance' : '/admin/tutor-subscription-page';
@@ -596,7 +549,6 @@ export default function AntiCheatGeneratorLanding() {
                     topic: topic,
                     count: variantCount,
                     plan_type: planType,
-                    promo_code: promoApplied ? (promoCode.trim().toUpperCase() || 'EDUSFERA2026') : '',
                 }),
             });
 
@@ -1241,8 +1193,8 @@ export default function AntiCheatGeneratorLanding() {
                             >
                                 <span>
                                     {isQuarterPass 
-                                        ? `Оформить абонемент на четверть — ${promoApplied ? '15.20' : '19'} BYN` 
-                                        : `Сформировать комплект (${variantCount} вар.) — ${promoApplied ? '4.00' : '5'} BYN`}
+                                        ? 'Оформить абонемент на четверть — 19 BYN' 
+                                        : `Сформировать комплект (${variantCount} вар.) — 5 BYN`}
                                 </span>
                                 <ArrowRight className="w-5 h-5 text-white" />
                             </button>
@@ -1254,39 +1206,6 @@ export default function AntiCheatGeneratorLanding() {
                                 <span>•</span>
                                 <span>Чек НПД МНС РБ</span>
                             </div>
-                        </div>
-
-                        {/* Viral Referral / Teacher Lounge Card */}
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-900/25 via-white/[0.03] to-[#C6FF33]/10 border border-white/10 space-y-2 select-none">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                                    <Share2 className="w-3.5 h-3.5 text-[#C6FF33]" />
-                                    <span>Скидка 20% для учительской</span>
-                                </span>
-                                <span className="text-[10px] font-mono font-bold bg-[#C6FF33] text-black px-2 py-0.5 rounded-full">
-                                    EDUSFERA2026
-                                </span>
-                            </div>
-                            <p className="text-[11px] text-slate-300 leading-snug">
-                                Поделитесь с коллегами в школьном чате: промокод даёт <strong>скидку 20%</strong> на любой комплект проверочных работ.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={handleCopyShareLink}
-                                className="w-full py-2 px-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                            >
-                                {copiedShare ? (
-                                    <>
-                                        <Check className="w-3.5 h-3.5 text-[#C6FF33]" />
-                                        <span className="text-[#C6FF33] font-bold">Ссылка и промокод скопированы!</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>Скопировать ссылку для Telegram / Viber</span>
-                                    </>
-                                )}
-                            </button>
                         </div>
 
                     </div>
@@ -1571,17 +1490,8 @@ export default function AntiCheatGeneratorLanding() {
                                         {topic}
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-base font-mono font-bold text-[#C6FF33]">
-                                        {promoApplied 
-                                            ? (isQuarterPass ? '15.20 BYN' : '4.00 BYN') 
-                                            : (isQuarterPass ? '19.00 BYN' : '5.00 BYN')}
-                                    </div>
-                                    {promoApplied && (
-                                        <div className="text-[10px] text-slate-400 line-through">
-                                            {isQuarterPass ? '19.00 BYN' : '5.00 BYN'}
-                                        </div>
-                                    )}
+                                <div className="text-base font-mono font-bold text-[#C6FF33]">
+                                    {isQuarterPass ? '19.00 BYN' : '5.00 BYN'}
                                 </div>
                             </div>
 
@@ -1627,58 +1537,6 @@ export default function AntiCheatGeneratorLanding() {
                                     )}
                                 </div>
 
-                                {/* Promo Code Field */}
-                                <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-                                            <Tag className="w-3 h-3 text-[#C6FF33]" />
-                                            <span>Промокод на скидку:</span>
-                                        </label>
-                                        {promoApplied && (
-                                            <span className="text-[10px] font-bold text-black bg-[#C6FF33] px-2 py-0.5 rounded-full">
-                                                -20% применен
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <input
-                                            type="text"
-                                            value={promoCode}
-                                            onChange={(e) => {
-                                                setPromoCode(e.target.value);
-                                                if (promoError) setPromoError('');
-                                            }}
-                                            placeholder="EDUSFERA2026"
-                                            disabled={isSubmitting || promoApplied}
-                                            className="flex-1 bg-[#18181C] border border-white/10 focus:border-[#7D39EB] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 uppercase font-mono focus:outline-none"
-                                        />
-                                        {promoApplied ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setPromoApplied(false);
-                                                    setPromoDiscount(0);
-                                                    setPromoCode('');
-                                                }}
-                                                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-semibold cursor-pointer shrink-0"
-                                            >
-                                                Сбросить
-                                            </button>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleApplyPromo()}
-                                                className="px-3.5 py-2 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black text-xs font-extrabold cursor-pointer shrink-0"
-                                            >
-                                                Применить
-                                            </button>
-                                        )}
-                                    </div>
-                                    {promoError && (
-                                        <p className="text-[10px] text-rose-400">{promoError}</p>
-                                    )}
-                                </div>
-
                                 {/* Order Bump / Pass Toggle */}
                                 <div 
                                     onClick={() => !isSubmitting && setIsQuarterPass(!isQuarterPass)}
@@ -1702,7 +1560,7 @@ export default function AntiCheatGeneratorLanding() {
                                             </span>
                                         </div>
                                         <p className="text-[11px] text-slate-400 leading-tight">
-                                            10 любых тем за <strong>{promoApplied ? '15.20 BYN' : '19 BYN'}</strong> (вместо {promoApplied ? '40 BYN' : '50 BYN'}). Разовый платёж без автосписаний.
+                                            10 любых тем за <strong>19 BYN</strong> (по 1.90 BYN за тему вместо 5 BYN). Разовый платёж без автосписаний.
                                         </p>
                                     </div>
                                 </div>
@@ -1729,9 +1587,7 @@ export default function AntiCheatGeneratorLanding() {
                                             <>
                                                 <Lock className="w-3.5 h-3.5 text-white" />
                                                 <span>
-                                                    {promoApplied
-                                                        ? (isQuarterPass ? 'Оплатить со скидкой 15.20 BYN' : 'Оплатить со скидкой 4.00 BYN')
-                                                        : (isQuarterPass ? 'Оплатить абонемент 19.00 BYN' : 'Оплатить картой 5.00 BYN')}
+                                                    {isQuarterPass ? 'Оплатить абонемент 19.00 BYN' : 'Оплатить картой 5.00 BYN'}
                                                 </span>
                                             </>
                                         )}
@@ -1855,7 +1711,7 @@ export default function AntiCheatGeneratorLanding() {
                                     }}
                                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                                 >
-                                    Сформировать комплект ({promoApplied ? '4.00' : '5.00'} BYN) →
+                                    Сформировать комплект (5.00 BYN) →
                                 </button>
                             </div>
                         </motion.div>
