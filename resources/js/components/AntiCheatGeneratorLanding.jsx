@@ -390,6 +390,8 @@ export default function AntiCheatGeneratorLanding() {
     const [selectedSubject, setSelectedSubject] = useState('math');
     const [topic, setTopic] = useState('Иррациональные уравнения (часть Б ЦТ/ЦЭ)');
     const [variantCount, setVariantCount] = useState(15);
+    const [tasksCountA, setTasksCountA] = useState(2);
+    const [tasksCountB, setTasksCountB] = useState(1);
     const [email, setEmail] = useState(user?.email || '');
     const [showPayModal, setShowPayModal] = useState(false);
     const [isQuarterPass, setIsQuarterPass] = useState(false);
@@ -549,6 +551,8 @@ export default function AntiCheatGeneratorLanding() {
                     subject: subjectName,
                     topic: topic,
                     count: variantCount,
+                    count_a: tasksCountA,
+                    count_b: tasksCountB,
                     plan_type: planType,
                     test_bypass: isAdmin ? 1 : 0,
                 }),
@@ -1142,10 +1146,76 @@ export default function AntiCheatGeneratorLanding() {
                             )}
                         </div>
 
-                        {/* Step 3: Variant Count (Segmented Control) */}
+                        {/* Step 3: Tasks in Variant (Part A & Part B) */}
+                        <div className="pt-2 border-t border-white/5 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    3. ЗАДАНИЙ В ОДНОМ ВАРИАНТЕ
+                                </label>
+                                <span className="text-[10px] font-mono font-bold text-[#C6FF33] bg-[#C6FF33]/10 px-2 py-0.5 rounded-full border border-[#C6FF33]/25">
+                                    Итого: {tasksCountA + tasksCountB} зад. (A1{tasksCountA > 1 ? `..A${tasksCountA}` : ''}{tasksCountB > 0 ? `, Б1${tasksCountB > 1 ? `..Б${tasksCountB}` : ''}` : ''})
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                {/* Part A Selector */}
+                                <div className="p-2.5 rounded-xl bg-[#141418] border border-white/10 space-y-1.5">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="font-semibold text-slate-300">
+                                            Часть А <span className="text-[10px] text-slate-500 font-normal">(тест)</span>
+                                        </span>
+                                        <span className="font-bold text-[#C6FF33] font-mono text-[11px]">{tasksCountA} зад.</span>
+                                    </div>
+                                    <div className="grid grid-cols-5 gap-1 p-0.5 rounded-lg bg-[#0B0B0E]">
+                                        {[1, 2, 3, 4, 5].map((cnt) => (
+                                            <button
+                                                key={cnt}
+                                                type="button"
+                                                onClick={() => setTasksCountA(cnt)}
+                                                className={`py-1 rounded text-xs font-semibold transition-all text-center cursor-pointer ${
+                                                    tasksCountA === cnt
+                                                        ? 'bg-[#7D39EB] text-white font-bold shadow-xs'
+                                                        : 'text-slate-400 hover:text-white'
+                                                }`}
+                                            >
+                                                {cnt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Part B Selector */}
+                                <div className="p-2.5 rounded-xl bg-[#141418] border border-white/10 space-y-1.5">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="font-semibold text-slate-300">
+                                            Часть Б <span className="text-[10px] text-slate-500 font-normal">(число)</span>
+                                        </span>
+                                        <span className="font-bold text-[#C6FF33] font-mono text-[11px]">{tasksCountB} зад.</span>
+                                    </div>
+                                    <div className="grid grid-cols-5 gap-1 p-0.5 rounded-lg bg-[#0B0B0E]">
+                                        {[1, 2, 3, 4, 5].map((cnt) => (
+                                            <button
+                                                key={cnt}
+                                                type="button"
+                                                onClick={() => setTasksCountB(cnt)}
+                                                className={`py-1 rounded text-xs font-semibold transition-all text-center cursor-pointer ${
+                                                    tasksCountB === cnt
+                                                        ? 'bg-[#7D39EB] text-white font-bold shadow-xs'
+                                                        : 'text-slate-400 hover:text-white'
+                                                }`}
+                                            >
+                                                {cnt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step 4: Variant Count (Segmented Control) */}
                         <div className="pt-2 border-t border-white/5">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                                3. КОЛИЧЕСТВО ВАРИАНТОВ НА КЛАСС
+                                4. КОЛИЧЕСТВО ВАРИАНТОВ НА КЛАСС
                             </label>
                             <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#18181C] border border-white/10">
                                 {VARIANT_COUNTS.map((item) => (
@@ -1170,10 +1240,10 @@ export default function AntiCheatGeneratorLanding() {
                             </div>
                         </div>
 
-                        {/* Step 4: Pricing Format (Single vs Quarter Pass) */}
+                        {/* Step 5: Pricing Format (Single vs Quarter Pass) */}
                         <div className="pt-2 border-t border-white/5">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                                4. ФОРМАТ ПОКУПКИ
+                                5. ФОРМАТ ПОКУПКИ
                             </label>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -1511,8 +1581,8 @@ export default function AntiCheatGeneratorLanding() {
                                     <div className="text-xs font-bold text-white">
                                         {isQuarterPass ? 'Абонемент на четверть (10 тем)' : `${currentSubjectName}: ${variantCount} вар.`}
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-0.5 truncate max-w-[170px]" title={topic}>
-                                        {topic}
+                                    <div className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[220px]" title={topic}>
+                                        {topic} • {tasksCountA + tasksCountB} зад. (A:{tasksCountA}, Б:{tasksCountB})
                                     </div>
                                 </div>
                                 <div className="text-base font-mono font-bold text-[#C6FF33]">

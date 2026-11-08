@@ -876,13 +876,16 @@ try {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
         echo "⚡ <b>Тестирование Генератора Вариантов (AI + DomPDF)...</b>\n\n";
 
+        $countA = (int) ($_GET['count_a'] ?? 2);
+        $countB = (int) ($_GET['count_b'] ?? 1);
+
         $orderNumber = 'TEST-'.strtoupper(\Illuminate\Support\Str::random(6));
         $order = \App\Models\GeneratorOrder::create([
             'order_number' => $orderNumber,
             'email' => 'admin@edusfera.by',
             'subject' => 'Математика',
             'topic' => 'Иррациональные уравнения (часть Б ЦТ/ЦЭ)',
-            'variant_count' => 5,
+            'variant_count' => 3,
             'amount_kopecks' => 500,
             'currency' => 'BYN',
             'status' => 'generating',
@@ -891,13 +894,16 @@ try {
             'payload' => [
                 'plan_type' => 'single',
                 'credits_total' => 1,
+                'count_a' => $countA,
+                'count_b' => $countB,
             ],
         ]);
 
         echo "1. Тестовый заказ создан: {$orderNumber}\n";
         echo "   Предмет: {$order->subject}\n";
         echo "   Тема: {$order->topic}\n";
-        echo "   Количество вариантов: {$order->variant_count}\n\n";
+        echo "   Количество вариантов: {$order->variant_count}\n";
+        echo "   Заданий в Части А: {$countA}, в Части Б: {$countB}\n\n";
 
         $gemini = app(\App\Services\Ai\GeminiService::class);
         $controller = app(\App\Http\Controllers\GeneratorCheckoutController::class);

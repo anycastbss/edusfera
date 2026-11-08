@@ -62,6 +62,8 @@ class GeneratorCheckoutController extends Controller
             'subject' => ['required', 'string', 'max:100'],
             'topic' => ['required', 'string', 'max:255'],
             'count' => ['nullable', 'integer', 'min:5', 'max:30'],
+            'count_a' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'count_b' => ['nullable', 'integer', 'min:0', 'max:10'],
             'plan_type' => ['nullable', 'string', 'in:single,quarter_pass'],
             'test_bypass' => ['nullable'],
         ], [
@@ -75,6 +77,8 @@ class GeneratorCheckoutController extends Controller
         $subject = self::normalizeSubject($rawSubject);
         $topic = trim($validated['topic']);
         $variantCount = (int) ($validated['count'] ?? 15);
+        $countA = (int) ($validated['count_a'] ?? 2);
+        $countB = (int) ($validated['count_b'] ?? 1);
         $planType = $validated['plan_type'] ?? 'single';
 
         $isQuarterPass = ($planType === 'quarter_pass');
@@ -97,6 +101,8 @@ class GeneratorCheckoutController extends Controller
                 'plan_type' => $planType,
                 'is_quarter_pass' => $isQuarterPass,
                 'credits_total' => $isQuarterPass ? 10 : 1,
+                'count_a' => $countA,
+                'count_b' => $countB,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ],
@@ -440,12 +446,56 @@ class GeneratorCheckoutController extends Controller
     /**
      * Internal generation logic with Gemini
      */
+    /**
+     * Build sample template for Part A tasks in prompt
+     */
+    protected function buildPartAPromptTemplate(int $countA): string
+    {
+        $out = "";
+        for ($i = 1; $i <= $countA; $i++) {
+            $out .= "**Задание А{$i} (Часть А, с выбором ответа):**  \n".
+                    "Условие тестового задания А{$i}...  \n".
+                    "1) вариант 1  \n".
+                    "2) вариант 2  \n".
+                    "3) вариант 3  \n".
+                    "4) вариант 4  \n\n";
+        }
+        return trim($out);
+    }
+
+    /**
+     * Build sample template for Part B tasks in prompt
+     */
+    protected function buildPartBPromptTemplate(int $countB): string
+    {
+        if ($countB <= 0) {
+            return "";
+        }
+        $out = "";
+        for ($i = 1; $i <= $countB; $i++) {
+            $out .= "**Задание Б{$i} (Часть Б, с кратким ответом):**  \n".
+                    "Текст задачи повышенной сложности Б{$i}. В бланк ответов запишите полученное целое число.  \n".
+                    "[ Ответ: ____________ ]  \n\n";
+        }
+        return trim($out);
+    }
+
+    /**
+     * Internal generation logic with Gemini
+     */
     protected function generateContentAndPdf(GeneratorOrder $order, GeminiService $gemini): void
     {
         $count = min(25, max(5, $order->variant_count));
+        $countA = max(1, min(5, (int) ($order->payload['count_a'] ?? 2)));
+        $countB = max(0, min(5, (int) ($order->payload['count_b'] ?? 1)));
         // SEC-04 FIX: Sanitize topic and subject against prompt injection
         $cleanTopic = htmlspecialchars(strip_tags(trim((string) $order->topic)), ENT_QUOTES, 'UTF-8');
         $cleanSubject = htmlspecialchars(strip_tags(trim((string) $order->subject)), ENT_QUOTES, 'UTF-8');
+
+        $partADesc = sprintf("%d заданий Части А (с выбором ответа)", $countA);
+        $partBDesc = $countB > 0
+            ? sprintf("%d заданий Части Б (с кратким целым числовым ответом)", $countB)
+            : "без Части Б";
 
         $prompt = sprintf(
             "Ты — ведущий методист-составитель проверочных и экзаменационных работ Беларуси.\n".
@@ -454,6 +504,7 @@ class GeneratorCheckoutController extends Controller
             "- Дисциплина: %s\n".
             "- Тема: %s\n".
             "- Количество вариантов: %d шт.\n".
+            "- Структура каждого варианта: %s и %s\n".
             "</order_specification>\n\n".
             "════════════════════════════════════════════════════════════════\n".
             "КРИТИЧЕСКИЕ ТРЕБОВАНИЯ К ФОРМУЛАМ И ОФОРМЛЕНИЮ (СТРОГО!):\n".
@@ -473,32 +524,29 @@ class GeneratorCheckoutController extends Controller
             "ЭТАЛОННЫЙ ОБРАЗЕЦ СТРУКТУРЫ КАЖДОГО ВАРИАНТА:\n\n".
             "### Вариант 1\n".
             "Учащийся: ___________________________   Класс: _______   Дата: ____________\n\n".
-            "**Задание А1 (Часть А, с выбором ответа):**  \n".
-            "Укажите корень уравнения √(2x + 7) = x − 4:  \n".
-            "1) 1  \n".
-            "2) 9  \n".
-            "3) 1 и 9  \n".
-            "4) −1  \n\n".
-            "**Задание Б1 (Часть Б, с кратким ответом):**  \n".
-            "Решите уравнение √(x² − 5x + 6) · √(x − 1) = 0. В бланк ответов запишите произведение всех действительных корней уравнения.  \n".
-            "[ Ответ: ____________ ]\n\n".
+            "%s\n\n".
+            "%s\n\n".
             "---\n\n".
             "Составь такие варианты для всех %d вариантов (от Вариант 1 до Вариант %d).\n\n".
             "════════════════════════════════════════════════════════════════\n".
             "ФИНАЛЬНЫЙ БЛОК (ОБЯЗАТЕЛЬНО В КОНЦЕ):\n".
             "## Сводная мастер-таблица правильных ответов для преподавателя\n".
             "Составь сводную таблицу в Markdown со всеми %d вариантами:\n".
-            "| Вариант | Ответ А1 | Ответ Б1 | Экзаменационная ловушка (пояснение для учителя) |\n".
-            "| :---: | :---: | :---: | :--- |\n".
-            "| 1 | 2 (9) | 6 | Посторонний корень x=1 отсекается условием ОДЗ x − 4 ≥ 0. В Б1 корни 1, 2, 3. |\n".
-            "...\n".
+            "| Вариант | Ответы Части А (%s) | %sЭкзаменационная ловушка (пояснение для учителя) |\n".
+            "| :---: | :---: | :--- |\n".
             "Заполни таблицу для всех %d вариантов без пропусков.",
             $cleanSubject,
             $cleanTopic,
             $count,
+            $partADesc,
+            $partBDesc,
+            $this->buildPartAPromptTemplate($countA),
+            $this->buildPartBPromptTemplate($countB),
             $count,
             $count,
             $count,
+            "А1" . ($countA > 1 ? "..А{$countA}" : ""),
+            $countB > 0 ? "Ответы Части Б (Б1" . ($countB > 1 ? "..Б{$countB}" : "") . ") | " : "",
             $count
         );
 
