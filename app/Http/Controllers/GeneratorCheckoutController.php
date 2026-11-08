@@ -60,6 +60,7 @@ class GeneratorCheckoutController extends Controller
             'topic' => ['required', 'string', 'max:255'],
             'count' => ['nullable', 'integer', 'min:5', 'max:30'],
             'plan_type' => ['nullable', 'string', 'in:single,quarter_pass'],
+            'promo_code' => ['nullable', 'string', 'max:50'],
         ], [
             'email.required' => 'Укажите адрес электронной почты для получения материалов.',
             'email.email' => 'Пожалуйста, введите корректный адрес электронной почты.',
@@ -72,9 +73,20 @@ class GeneratorCheckoutController extends Controller
         $topic = trim($validated['topic']);
         $variantCount = (int) ($validated['count'] ?? 15);
         $planType = $validated['plan_type'] ?? 'single';
+        $promoCode = trim($validated['promo_code'] ?? '');
 
         $isQuarterPass = ($planType === 'quarter_pass');
-        $amountByn = $isQuarterPass ? 19.00 : 5.00;
+        $baseAmountByn = $isQuarterPass ? 19.00 : 5.00;
+
+        // Apply promo code discount (EDUSFERA2026 gives 20% discount)
+        $hasDiscount = false;
+        $discountPercent = 0;
+        if (! empty($promoCode) && strtoupper($promoCode) === 'EDUSFERA2026') {
+            $hasDiscount = true;
+            $discountPercent = 20;
+        }
+
+        $amountByn = $hasDiscount ? round($baseAmountByn * (1 - $discountPercent / 100), 2) : $baseAmountByn;
         $amountKopecks = (int) round($amountByn * 100);
         $orderNumber = ($isQuarterPass ? 'PASS-' : 'VAR-').strtoupper(Str::random(8));
 
@@ -93,6 +105,9 @@ class GeneratorCheckoutController extends Controller
                 'plan_type' => $planType,
                 'is_quarter_pass' => $isQuarterPass,
                 'credits_total' => $isQuarterPass ? 10 : 1,
+                'promo_code' => $promoCode,
+                'discount_percent' => $discountPercent,
+                'base_amount_byn' => $baseAmountByn,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ],
@@ -103,9 +118,10 @@ class GeneratorCheckoutController extends Controller
 
         $redirectUrl = route('generator.checkout.hosted', ['order' => $order->order_number]);
 
+        $promoNotice = $hasDiscount ? ' [Скидка 20%]' : '';
         $description = $isQuarterPass
-            ? sprintf('Edusfera Вариант (Абонемент 10 тем): %s [%s]', mb_substr($topic, 0, 30), $orderNumber)
-            : sprintf('Edusfera Вариант (%d вар.): %s [%s]', $variantCount, mb_substr($topic, 0, 40), $orderNumber);
+            ? sprintf('Edusfera Вариант (Абонемент 10 тем%s): %s [%s]', $promoNotice, mb_substr($topic, 0, 30), $orderNumber)
+            : sprintf('Edusfera Вариант (%d вар.%s): %s [%s]', $variantCount, $promoNotice, mb_substr($topic, 0, 40), $orderNumber);
 
         try {
             $paymentResult = $gateway->createPayment([

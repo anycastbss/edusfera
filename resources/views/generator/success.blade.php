@@ -67,6 +67,36 @@
                 <span>Скачать PDF файл с вариантами</span>
             </a>
 
+            {{-- VIRAL TEACHER REFERRAL CARD --}}
+            <div class="p-4 rounded-2xl bg-gradient-to-r from-purple-900/30 via-white/[0.04] to-[#C6FF33]/15 border border-white/10 text-left space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>🎁</span>
+                        <span>Поделитесь с коллегами в учительской</span>
+                    </span>
+                    <span class="text-[10px] font-mono font-bold bg-[#C6FF33] text-black px-2 py-0.5 rounded-full">
+                        Скидка 20%
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-300 leading-snug">
+                    Отправьте ссылку коллегам в школьный чат: промокод <strong class="text-white">EDUSFERA2026</strong> даёт скидку 20% на любой комплект проверочных работ.
+                </p>
+                <div class="flex items-center gap-2 pt-1">
+                    <button 
+                        type="button" 
+                        onclick="copySuccessShareLink()" 
+                        id="share-btn"
+                        class="flex-1 py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke-width="2"></path>
+                        </svg>
+                        <span id="share-btn-text">Скопировать для Telegram / Viber</span>
+                    </button>
+                </div>
+            </div>
+
             {{-- UPSELL CARD TO PLATFORM (B2B SaaS Conversion) --}}
             <div class="p-5 rounded-2xl bg-gradient-to-br from-[#7D39EB]/15 via-white/[0.03] to-[#C6FF33]/10 border border-white/10 text-left space-y-3">
                 <div class="flex items-center gap-2">
@@ -94,5 +124,25 @@
         </div>
 
     </div>
+
+    <script>
+        function copySuccessShareLink() {
+            const text = 'Коллеги, рекомендую сервис проверочных работ без списания на Edusfera.by: 15 вариантов с разными числами + сводная ведомость ответов для проверки за 2 минуты. Держите промокод на скидку 20%: EDUSFERA2026. Ссылка: https://edusfera.by/generator?promo=EDUSFERA2026';
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text);
+            }
+            const btnText = document.getElementById('share-btn-text');
+            if (btnText) {
+                btnText.textContent = 'Ссылка и промокод скопированы!';
+                btnText.parentElement.style.borderColor = '#C6FF33';
+                btnText.parentElement.style.color = '#C6FF33';
+                setTimeout(() => {
+                    btnText.textContent = 'Скопировать для Telegram / Viber';
+                    btnText.parentElement.style.borderColor = 'rgba(255,255,255,0.1)';
+                    btnText.parentElement.style.color = '#ffffff';
+                }, 3000);
+            }
+        }
+    </script>
 </body>
 </html>
