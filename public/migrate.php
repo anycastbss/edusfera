@@ -359,11 +359,14 @@ if ($action === 'menu') {
                 </form>
 
                 <div style="margin-top: 12px; display: flex; gap: 10px;">
+                    <a href="?key=edusfera2026&action=test_generator" class="btn btn-green" style="font-size: 0.85rem; height: 38px; width: auto; padding: 0 16px; flex: 1.2;">
+                        ⚡ Тест Генератора (AI + PDF)
+                    </a>
                     <a href="?key=edusfera2026&action=test_ai" class="btn btn-purple" style="font-size: 0.85rem; height: 38px; width: auto; padding: 0 16px; flex: 1;">
-                        🔍 Протестировать Gemini Service
+                        🔍 Gemini Service
                     </a>
                     <a href="?key=edusfera2026&action=test_xbox_dns" class="btn btn-cyan" style="font-size: 0.85rem; height: 38px; width: auto; padding: 0 16px; flex: 1;">
-                        🎮 Диагностика DNS (181.215.40.49, 31.58.216.201)
+                        🎮 DNS
                     </a>
                 </div>
 
@@ -839,6 +842,72 @@ try {
         echo "     GEMINI_DNS_SERVERS={$dnsServers}\n\n";
         echo "   ✓ Кэш конфигурации сброшен.\n\n";
         echo "<a href='?key=edusfera2026&action=test_ai' style='color:#38bdf8; font-weight:bold;'>👉 Проверить вызов Gemini API</a> | ";
+        echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>← В меню</a>\n";
+        echo '</pre>';
+        exit;
+    }
+
+    // ── ACTION: Test Generator AI & PDF ───────────────────────────────
+    if ($action === 'test_generator') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "⚡ <b>Тестирование Генератора Вариантов (AI + DomPDF)...</b>\n\n";
+
+        $orderNumber = 'TEST-'.strtoupper(\Illuminate\Support\Str::random(6));
+        $order = \App\Models\GeneratorOrder::create([
+            'order_number' => $orderNumber,
+            'email' => 'admin@edusfera.by',
+            'subject' => 'Математика',
+            'topic' => 'Иррациональные уравнения (часть Б ЦТ/ЦЭ)',
+            'variant_count' => 5,
+            'amount_kopecks' => 500,
+            'currency' => 'BYN',
+            'status' => 'generating',
+            'paid_at' => now(),
+            'payment_method' => 'admin_test_bypass',
+            'payload' => [
+                'plan_type' => 'single',
+                'credits_total' => 1,
+            ],
+        ]);
+
+        echo "1. Тестовый заказ создан: {$orderNumber}\n";
+        echo "   Предмет: {$order->subject}\n";
+        echo "   Тема: {$order->topic}\n";
+        echo "   Количество вариантов: {$order->variant_count}\n\n";
+
+        $gemini = app(\App\Services\Ai\GeminiService::class);
+        $controller = app(\App\Http\Controllers\GeneratorCheckoutController::class);
+
+        $reflection = new ReflectionClass($controller);
+        $method = $reflection->getMethod('generateContentAndPdf');
+        $method->setAccessible(true);
+
+        $t0 = microtime(true);
+        echo "2. Отправка запроса в Google Gemini AI...\n";
+        $method->invoke($controller, $order, $gemini);
+        $order->refresh();
+        $dur = round(microtime(true) - $t0, 2);
+
+        echo "   ✓ Время генерации: {$dur} сек.\n";
+        echo "   ✓ Длина сгенерированного текста: ".mb_strlen($order->generated_content)." символов\n";
+        echo "   ✓ Статус заказа: {$order->status}\n";
+        echo "   ✓ Путь к PDF: {$order->pdf_path}\n\n";
+
+        $pdfFullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($order->pdf_path);
+        $pdfSize = file_exists($pdfFullPath) ? filesize($pdfFullPath) : 0;
+        echo "3. Сборка PDF (DomPDF):\n";
+        echo "   ✓ Размер готового PDF: ".round($pdfSize / 1024, 1)." КБ\n\n";
+
+        echo "4. Предпросмотр начала сгенерированного документа:\n";
+        echo "--------------------------------------------------------\n";
+        echo htmlspecialchars(mb_substr((string) $order->generated_content, 0, 800))."...\n";
+        echo "--------------------------------------------------------\n\n";
+
+        $successUrl = route('generator.success', ['order' => $order->order_number]);
+        $downloadUrl = route('generator.download', ['order' => $order->order_number]);
+
+        echo "👉 <b>Страница готового заказа на сайте:</b> <a href='{$successUrl}' target='_blank' style='color:#C6FF33; font-weight:bold;'>{$successUrl}</a>\n";
+        echo "👉 <b>Прямая ссылка на скачивание PDF:</b> <a href='{$downloadUrl}' target='_blank' style='color:#38bdf8; font-weight:bold;'>{$downloadUrl}</a>\n\n";
         echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>← В меню</a>\n";
         echo '</pre>';
         exit;
