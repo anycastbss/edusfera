@@ -423,14 +423,18 @@ class GeneratorCheckoutController extends Controller
                 'allow_unsafe_links' => false,
             ]);
 
-            $pdf = Pdf::loadView('generator.pdf-template', [
+            $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
+
+            $pdf = Pdf::loadView('generator.pdf-standard-template', array_merge([
                 'order' => $order,
                 'content' => $cleaned,
                 'htmlContent' => $htmlContent,
-            ])
+                'qrFilePath' => public_path('images/edusfera-qr.png'),
+            ], $parsedData))
             ->setPaper('a4', 'portrait')
             ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', false); // SEC-02 FIX: Disabled remote fetching to prevent SSRF/LFI
+            ->setOption('isRemoteEnabled', false)
+            ->setOption('chroot', [public_path(), storage_path(), base_path()]); // SEC-02 FIX: Disabled remote fetching to prevent SSRF/LFI
 
             Storage::disk('local')->put($relativePath, $pdf->output());
 
