@@ -15,6 +15,7 @@ export default function NexumHero() {
   const [user, setUser] = useState(typeof window !== 'undefined' ? window.EDUSFERA_USER : null);
   const [linkedAccounts, setLinkedAccounts] = useState(typeof window !== 'undefined' ? (window.EDUSFERA_LINKED_ACCOUNTS || []) : []);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileRole, setMobileRole] = useState('tutor'); // 'tutor' | 'student'
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const userMenuRef = useRef(null);
   const videoRef = useRef(null);
@@ -639,13 +640,17 @@ export default function NexumHero() {
               </p>
 
               {user ? (
-                <div className="mt-6 sm:mt-8">
+                <div className="mt-5 sm:mt-8">
                   <a
                     href={cabinetUrl}
-                    className="inline-flex items-center justify-center gap-3 rounded-full bg-white text-black font-bold px-7 py-3.5 text-sm sm:text-base hover:bg-white/90 transition-all cursor-pointer shadow-lg hover:scale-[1.02]"
+                    className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-black font-bold px-6 py-3 sm:px-7 sm:py-3.5 text-sm sm:text-base hover:bg-white/90 transition-all cursor-pointer shadow-lg hover:scale-[1.02]"
                   >
-                    <LayoutDashboard className="w-5 h-5 text-violet-600" />
-                    <span>Перейти в Личный Кабинет ({user.name || 'Профиль'})</span>
+                    <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 shrink-0" />
+                    <span>В Личный Кабинет</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-black/10 text-black font-extrabold shrink-0">
+                      {user.role_label || (user.role === 'tutor' ? 'Репетитор' : user.role === 'admin' ? 'Админ' : 'Кабинет')}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-black shrink-0 hidden sm:inline" />
                   </a>
                 </div>
               ) : (
@@ -674,8 +679,123 @@ export default function NexumHero() {
               )}
             </div>
 
-            {/* Right Cards: Понятные выгоды для 3 аудиторий без сложных слов */}
-            <div className="flex flex-col gap-4 sm:flex-row lg:w-auto lg:gap-5 w-full">
+            {/* ─── MOBILE ONLY: SEGMENTED ROLE SWITCHER (Variant 1) ─── */}
+            <div className="lg:hidden w-full space-y-3 mt-4">
+              {/* Segmented Control Bar */}
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/[0.08] border border-white/15 backdrop-blur-md text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setMobileRole('tutor')}
+                  className={`py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mobileRole === 'tutor'
+                      ? 'bg-[#C6FF33] text-black font-extrabold shadow-md'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  <span>👨‍🏫 Репетиторам</span>
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                    mobileRole === 'tutor' ? 'bg-black text-[#C6FF33]' : 'bg-[#C6FF33]/20 text-[#C6FF33]'
+                  }`}>
+                    0%
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileRole('student')}
+                  className={`py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mobileRole === 'student'
+                      ? 'bg-white text-black font-extrabold shadow-md'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  <span>🎓 Ученикам</span>
+                </button>
+              </div>
+
+              {/* Dynamic Role Card */}
+              {mobileRole === 'tutor' ? (
+                <div className="rounded-2xl bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-[#C6FF33]/[0.08] border border-[#C6FF33]/30 p-5 backdrop-blur-md space-y-3.5 shadow-xl animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xl font-extrabold text-white tracking-tight">
+                      100% денег за уроки — вам
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#C6FF33]/20 text-[#C6FF33] border border-[#C6FF33]/30">
+                      0% комиссии
+                    </span>
+                  </div>
+
+                  <ul className="space-y-1.5 text-xs text-slate-200">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" />
+                      <span>Видеокласс без лимитов времени (SFU)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" />
+                      <span>Авто-чеки для налога на профдоход (НПД)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33] shrink-0" />
+                      <span>Гостевой вход ученика в 1 клик без регистрации</span>
+                    </li>
+                  </ul>
+
+                  <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-3">
+                    <div className="text-[11px] text-slate-300">
+                      Пробный период: <strong className="text-[#C6FF33]">7 дней бесплатно</strong>
+                    </div>
+                    <a
+                      href="/for-tutors"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-xs shadow-md transition-all shrink-0"
+                    >
+                      <span>Начать 0 BYN</span>
+                      <ArrowRight className="w-3 h-3 text-black" />
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-sky-500/[0.08] border border-sky-400/30 p-5 backdrop-blur-md space-y-3.5 shadow-xl animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xl font-extrabold text-white tracking-tight">
+                      Прямая оплата без наценок
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                      Без наценок
+                    </span>
+                  </div>
+
+                  <ul className="space-y-1.5 text-xs text-slate-200">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      <span>Проверенные дипломы и рейтинг репетиторов</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      <span>Подготовка по стандартам ЦТ и ЦЭ 2026</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      <span>Оплата напрямую преподавателю (карта, ЕРИП)</span>
+                    </li>
+                  </ul>
+
+                  <div className="pt-2.5 border-t border-white/10 flex items-center justify-between gap-3">
+                    <div className="text-[11px] text-slate-300">
+                      ИИ-диагностика: <strong className="text-white">15 мин (0 BYN)</strong>
+                    </div>
+                    <a
+                      href="/tutors"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-black font-extrabold text-xs shadow-md transition-all shrink-0"
+                    >
+                      <span>Найти репетитора</span>
+                      <ArrowRight className="w-3 h-3 text-black" />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── DESKTOP ONLY: TWO STATIC CARDS (HIDDEN ON MOBILE) ─── */}
+            <div className="hidden lg:flex flex-row lg:w-auto lg:gap-5 w-full">
               {/* Card 1: Для репетиторов и преподавателей */}
               <div className="rounded-2xl bg-white/10 backdrop-blur-lg p-5 sm:p-6 sm:w-72 flex flex-col justify-between border border-white/10 shadow-xl">
                 <div>
