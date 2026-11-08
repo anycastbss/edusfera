@@ -44,6 +44,7 @@
             'email' => auth()->user()->email,
             'role' => is_object(auth()->user()->role) ? auth()->user()->role->value : auth()->user()->role,
             'role_label' => \App\Services\MultiAccountService::roleLabel(auth()->user()->role),
+            'is_admin' => auth()->user()->isAdmin(),
         ] : null;
         $linkedAccounts = $authUser ? app(\App\Services\MultiAccountService::class)->getLinkedAccounts() : [];
         $paymentStatus = request()->query('payment');

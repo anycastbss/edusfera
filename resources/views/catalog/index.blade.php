@@ -342,9 +342,9 @@
             <form method="GET" action="{{ route('tutors.index') }}"
                   class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 transition-all"
                   :class="filtersOpen ? '' : 'hidden md:block'">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-12 gap-4 items-end">
                     <!-- Subject -->
-                    <div class="flex flex-col gap-1.5 lg:col-span-1">
+                    <div class="flex flex-col gap-1.5 sm:col-span-1 md:col-span-2 xl:col-span-3">
                         <label for="subject" class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Предмет</label>
                         <select id="subject" name="subject" class="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
                             <option value="">Все предметы</option>
@@ -355,14 +355,14 @@
                     </div>
 
                     <!-- Max price -->
-                    <div class="flex flex-col gap-1.5 lg:col-span-1">
+                    <div class="flex flex-col gap-1.5 sm:col-span-1 md:col-span-2 xl:col-span-2">
                         <label for="price_max" class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Макс. цена</label>
-                        <input id="price_max" type="number" min="0" step="1" name="price_max" value="{{ request('price_max') }}" placeholder="До ₽"
+                        <input id="price_max" type="number" min="0" step="1" name="price_max" value="{{ request('price_max') }}" placeholder="До BYN"
                                class="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
                     </div>
 
                     <!-- Sort -->
-                    <div class="flex flex-col gap-1.5 lg:col-span-1">
+                    <div class="flex flex-col gap-1.5 sm:col-span-2 md:col-span-2 xl:col-span-2">
                         <label for="sort" class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Сортировка</label>
                         <select id="sort" name="sort" class="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all">
                             <option value="rating" @selected(request('sort','rating')==='rating')>По рейтингу</option>
@@ -377,7 +377,7 @@
                     </div>
 
                     <!-- Checkboxes -->
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4 lg:col-span-2">
+                    <div class="flex flex-wrap items-center gap-4 sm:col-span-2 md:col-span-4 xl:col-span-3 py-2.5">
                         <label class="flex items-center gap-2 cursor-pointer select-none group" for="exam_track">
                             <input id="exam_track" type="checkbox" name="exam_track" value="1" @checked(request()->boolean('exam_track'))
                                    class="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 accent-violet-600">
@@ -395,11 +395,13 @@
                         </label>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex gap-2 lg:col-span-1">
+                    <!-- Actions (Применить + Сбросить) -->
+                    <div class="flex gap-2 sm:col-span-2 md:col-span-2 xl:col-span-2">
                         @if(request('q'))<input type="hidden" name="q" value="{{ request('q') }}">@endif
-                        <button class="flex-1 h-11 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-colors shadow-sm" type="submit">Применить</button>
-                        <a class="h-11 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center transition-colors" href="{{ route('tutors.index') }}">
+                        <button class="flex-1 h-11 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm transition-all shadow-sm flex items-center justify-center cursor-pointer whitespace-nowrap" type="submit">
+                            Применить
+                        </button>
+                        <a class="h-11 px-3.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center transition-colors cursor-pointer" href="{{ route('tutors.index') }}" title="Сбросить фильтры">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </a>
                     </div>
@@ -519,16 +521,22 @@
                             </div>
 
                             <!-- Bottom: price + slot + actions -->
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5 pt-5 border-t border-gray-100">
-                                <div class="flex items-center gap-4">
-                                    <div class="text-xl font-black text-gray-900">{{ number_format((float)$tutor->price_per_hour, 2, '.', ' ') }}&nbsp;<x-byn-icon class="h-[0.9em] w-[0.9em] -mt-1"/>/час</div>
-                                    <div class="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 rounded-lg px-2.5 py-1 leading-snug max-w-[14rem] truncate">
+                            <div class="mt-5 pt-4 border-t border-gray-100 space-y-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="text-xl font-black text-gray-900 whitespace-nowrap">
+                                        {{ number_format((float)$tutor->price_per_hour, 2, '.', ' ') }}&nbsp;<x-byn-icon class="h-[0.9em] w-[0.9em] -mt-1"/>/час
+                                    </div>
+                                    <div class="text-xs font-semibold text-lime-700 bg-lime-50 border border-lime-200 rounded-lg px-2.5 py-1 leading-snug truncate max-w-[13rem] sm:max-w-[16rem]" title="{{ $availabilityHints[$tutor->user_id] ?? 'Ближайшее окно уточняется' }}">
                                         {{ $availabilityHints[$tutor->user_id] ?? 'Ближайшее окно уточняется' }}
                                     </div>
                                 </div>
-                                <div class="flex gap-2 w-full sm:w-auto">
-                                    <a class="flex-1 sm:flex-initial h-10 px-5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold flex items-center justify-center transition-all shadow-sm hover:shadow-md" href="{{ route('tutors.show', $tutor) }}">Записаться</a>
-                                    <a class="flex-1 sm:flex-initial h-10 px-5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors" href="{{ route('tutors.show', $tutor) }}">Подробнее</a>
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <a class="h-10 px-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold flex items-center justify-center transition-all shadow-sm hover:shadow-md text-center whitespace-nowrap cursor-pointer" href="{{ route('tutors.show', $tutor) }}">
+                                        Записаться
+                                    </a>
+                                    <a class="h-10 px-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-bold flex items-center justify-center transition-colors text-center whitespace-nowrap cursor-pointer" href="{{ route('tutors.show', $tutor) }}">
+                                        Подробнее
+                                    </a>
                                 </div>
                             </div>
                         </article>

@@ -532,6 +532,7 @@ export default function AntiCheatGeneratorLanding() {
         const currentSubjectObj = SUBJECTS.find(s => s.id === selectedSubject);
         const subjectName = currentSubjectObj ? currentSubjectObj.name : selectedSubject;
         const planType = isQuarterPass ? 'quarter_pass' : 'single';
+        const isAdmin = Boolean(user?.is_admin || user?.role === 'admin');
 
         setIsSubmitting(true);
 
@@ -549,6 +550,7 @@ export default function AntiCheatGeneratorLanding() {
                     topic: topic,
                     count: variantCount,
                     plan_type: planType,
+                    test_bypass: isAdmin ? 1 : 0,
                 }),
             });
 
@@ -1594,6 +1596,19 @@ export default function AntiCheatGeneratorLanding() {
                                     <span><strong>Методическая гарантия:</strong> если найдете неточность в задании — бесплатно заменим тему или вернем деньги.</span>
                                 </div>
 
+                                {/* Admin Mode Notification */}
+                                {Boolean(user?.is_admin || user?.role === 'admin') && (
+                                    <div className="p-3 rounded-xl bg-[#7D39EB]/15 border border-[#7D39EB]/40 text-xs text-white space-y-1">
+                                        <div className="flex items-center gap-1.5 font-bold text-[#C6FF33]">
+                                            <Sparkles className="w-4 h-4 text-[#C6FF33] shrink-0" />
+                                            <span>Режим администратора активен</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-300 leading-tight">
+                                            Тестовая генерация без списания средств в Альфа-Банке. ИИ составит варианты и сразу откроет готовый PDF.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {/* Submit button */}
                                 <div className="space-y-2 pt-1">
                                     <button
@@ -1604,14 +1619,23 @@ export default function AntiCheatGeneratorLanding() {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                                <span>Подготовка платежа...</span>
+                                                <span>{Boolean(user?.is_admin || user?.role === 'admin') ? 'Составление вариантов и верстка PDF (~10-15 сек)...' : 'Подготовка платежа...'}</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Lock className="w-3.5 h-3.5 text-white" />
-                                                <span>
-                                                    {isQuarterPass ? 'Оплатить абонемент 19.00 BYN' : 'Оплатить картой 5.00 BYN'}
-                                                </span>
+                                                {Boolean(user?.is_admin || user?.role === 'admin') ? (
+                                                    <>
+                                                        <Sparkles className="w-4 h-4 text-[#C6FF33]" />
+                                                        <span>Сгенерировать тест (Администратор — 0 BYN)</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Lock className="w-3.5 h-3.5 text-white" />
+                                                        <span>
+                                                            {isQuarterPass ? 'Оплатить абонемент 19.00 BYN' : 'Оплатить картой 5.00 BYN'}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </>
                                         )}
                                     </button>
