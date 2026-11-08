@@ -53,7 +53,7 @@
                 <ul class="site-footer__links">
                     <li><a href="{{ route('tutors.index') }}">Каталог репетиторов</a></li>
                     <li>
-                        <a href="{{ route('generator.index') }}" class="site-footer__badge-link">
+                        <a href="{{ route('generator') }}" class="site-footer__badge-link">
                             <span>Генератор вариантов</span>
                             <span class="site-footer__tag" style="background: #C6FF33; color: #000; font-weight: 800;">5 BYN</span>
                         </a>
