@@ -14,26 +14,44 @@ class PythonExamGeneratorService
      */
     public static function getPythonBinary(): ?string
     {
-        $localVenv = base_path('edusfera_pdf_generator/.venv/bin/python');
-        if (file_exists($localVenv) && is_executable($localVenv)) {
-            return $localVenv;
-        }
+        try {
+            $localVenv = base_path('edusfera_pdf_generator/.venv/bin/python');
+            if (@file_exists($localVenv) && @is_executable($localVenv)) {
+                return $localVenv;
+            }
 
-        $systemPy = trim(shell_exec('which python3 2>/dev/null') ?? '');
-        if (! empty($systemPy) && file_exists($systemPy)) {
-            return $systemPy;
+            // Test executing python3 directly without checking paths outside open_basedir
+            $output = @shell_exec('python3 --version 2>&1');
+            if ($output && stripos($output, 'python') !== false) {
+                return 'python3';
+            }
+        } catch (\Throwable $e) {
+            return null;
         }
 
         return null;
     }
 
     /**
-     * Check if Python and generator.py are available
+     * Check if Python, generator.py and required libraries are available
      */
     public static function isAvailable(): bool
     {
-        $generatorPy = base_path('edusfera_pdf_generator/generator.py');
-        return file_exists($generatorPy) && self::getPythonBinary() !== null;
+        try {
+            $generatorPy = base_path('edusfera_pdf_generator/generator.py');
+            if (! @file_exists($generatorPy)) {
+                return false;
+            }
+            $py = self::getPythonBinary();
+            if (! $py) {
+                return false;
+            }
+            // Check if reportlab is importable
+            $test = @shell_exec($py . ' -c "import reportlab" 2>&1');
+            return empty(trim($test ?? ''));
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

@@ -922,7 +922,7 @@ try {
         }
 
         $reqFile = base_path('edusfera_pdf_generator/requirements.txt');
-        $cmd = "$pyBinary -m pip install -r " . escapeshellarg($reqFile) . " --user 2>&1";
+        $cmd = "$pyBinary -m pip install -r " . escapeshellarg($reqFile) . " --user --break-system-packages 2>&1";
         echo "Выполняется команда:\n{$cmd}\n\n";
 
         $output = shell_exec($cmd);
