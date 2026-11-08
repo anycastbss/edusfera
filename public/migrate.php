@@ -847,6 +847,30 @@ try {
         exit;
     }
 
+    // ── ACTION: Fix / Re-render Order PDF ────────────────────────────
+    if ($action === 'fix_order_pdf') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        $orderNum = $_GET['order'] ?? 'VAR-5CRUGLMX';
+        $order = \App\Models\GeneratorOrder::where('order_number', $orderNum)->first();
+        if (! $order) {
+            echo "Заказ {$orderNum} не найден!\n";
+            exit;
+        }
+
+        echo "🔄 Пересборка PDF для заказа {$orderNum} с новым алгоритмом формул...\n";
+        $controller = app(\App\Http\Controllers\GeneratorCheckoutController::class);
+        $reflection = new ReflectionClass($controller);
+        $method = $reflection->getMethod('ensurePdfExists');
+        $method->setAccessible(true);
+        $path = $method->invoke($controller, $order, true);
+
+        $downloadUrl = route('generator.download', ['order' => $order->order_number]);
+        echo "✓ PDF пересобран: {$path} (".round(filesize($path) / 1024, 1)." КБ)\n\n";
+        echo "👉 Скачать обновленный PDF: <a href='{$downloadUrl}' style='color:#C6FF33;'>{$downloadUrl}</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
     // ── ACTION: Test Generator AI & PDF ───────────────────────────────
     if ($action === 'test_generator') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";

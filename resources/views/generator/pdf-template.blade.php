@@ -122,7 +122,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="order-badge">Заказ № {{ $order->order_number }}</div>
+        <div class="order-badge">Заказ: # {{ $order->order_number }}</div>
         <span class="badge">БЕЛАРУСЬ • ЦТ/ЦЭ 2026 • РЭСПУБЛІКАНСКІ СТАНДАРТ</span>
         <div class="title">{{ $order->subject }}: {{ $order->topic }}</div>
         <div class="meta">

@@ -330,22 +330,95 @@ class GeneratorCheckoutController extends Controller
     }
 
     /**
+     * Clean and convert LaTeX mathematical expressions into crisp Unicode for DomPDF printing
+     */
+    public static function cleanMathFormulasForPrint(string $text): string
+    {
+        // 1. Convert LaTeX square roots: \sqrt{...} -> √( ... )
+        $text = preg_replace('/\\\\sqrt\{([^}]+)\}/u', '√($1)', $text);
+        $text = preg_replace('/\\\\sqrt\s*([0-9a-zA-Z]+)/u', '√$1', $text);
+
+        // 2. Convert LaTeX fractions: \frac{a}{b} -> (a)/(b)
+        $text = preg_replace('/\\\\frac\{([^}]+)\}\{([^}]+)\}/u', '($1)/($2)', $text);
+
+        // 3. Convert powers like x^2, x^3, x^4, x^{-1} to unicode superscripts
+        $superscripts = [
+            '0' => '⁰', '1' => '¹', '2' => '²', '3' => '³', '4' => '⁴',
+            '5' => '⁵', '6' => '⁶', '7' => '⁷', '8' => '⁸', '9' => '⁹',
+            '+' => '⁺', '-' => '⁻', '=' => '⁼', '(' => '⁽', ')' => '⁾',
+            'n' => 'ⁿ', 'x' => 'ˣ',
+        ];
+        $text = preg_replace_callback('/\^\{?([0-9+\-nx]+)\}?/u', function ($m) use ($superscripts) {
+            $val = $m[1];
+            $res = '';
+            for ($i = 0; $i < mb_strlen($val); $i++) {
+                $ch = mb_substr($val, $i, 1);
+                $res .= $superscripts[$ch] ?? '^'.$ch;
+            }
+            return $res;
+        }, $text);
+
+        // 4. Common LaTeX mathematical symbols to clean Unicode
+        $replacements = [
+            '\\cdot' => '·',
+            '\\times' => '×',
+            '\\pm' => '±',
+            '\\mp' => '∓',
+            '\\le' => '≤',
+            '\\leq' => '≤',
+            '\\ge' => '≥',
+            '\\geq' => '≥',
+            '\\neq' => '≠',
+            '\\approx' => '≈',
+            '\\infty' => '∞',
+            '\\pi' => 'π',
+            '\\degree' => '°',
+            '\\circ' => '°',
+            '\\quad' => '  ',
+            '\\qquad' => '    ',
+            '\\,' => ' ',
+            '\\;' => ' ',
+            '\\!' => '',
+            '\\left(' => '(',
+            '\\right)' => ')',
+            '\\left[' => '[',
+            '\\right]' => ']',
+            '\\left\\{' => '{',
+            '\\right\\}' => '}',
+            '\\text{' => '',
+        ];
+        $text = str_replace(array_keys($replacements), array_values($replacements), $text);
+
+        // 5. Strip remaining dollar signs used in LaTeX inline & block math ($...$ and $$...$$)
+        $text = preg_replace('/\$\$+/u', '', $text);
+        $text = preg_replace('/\$([^\$\n]+)\$/u', '$1', $text);
+        $text = str_replace('$', '', $text);
+
+        // 6. Fix options formatted as "1. " into "1) " so Markdown won't parse them into an ordered list
+        $text = preg_replace('/^(\s*)([1-4])\.\s+/m', '$1$2) ', $text);
+
+        return $text;
+    }
+
+    /**
      * Ensure PDF file is rendered and cached to local storage
      */
-    protected function ensurePdfExists(GeneratorOrder $order): string
+    protected function ensurePdfExists(GeneratorOrder $order, bool $force = false): string
     {
         $relativePath = "generator_orders/{$order->order_number}.pdf";
 
-        if (empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
+        if ($force || empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
+            $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
+
             // SEC-02 FIX: Strip raw HTML from markdown to prevent SSRF and injection
-            $htmlContent = Str::markdown((string) $order->generated_content, [
+            $htmlContent = Str::markdown($cleaned, [
                 'html_input' => 'strip',
                 'allow_unsafe_links' => false,
             ]);
 
             $pdf = Pdf::loadView('generator.pdf-template', [
                 'order' => $order,
-                'content' => $order->generated_content,
+                'content' => $cleaned,
                 'htmlContent' => $htmlContent,
             ])
             ->setPaper('a4', 'portrait')
@@ -356,6 +429,7 @@ class GeneratorCheckoutController extends Controller
 
             $order->update([
                 'pdf_path' => $relativePath,
+                'generated_content' => $cleaned,
             ]);
         }
 
@@ -373,47 +447,78 @@ class GeneratorCheckoutController extends Controller
         $cleanSubject = htmlspecialchars(strip_tags(trim((string) $order->subject)), ENT_QUOTES, 'UTF-8');
 
         $prompt = sprintf(
-            "Ты — ведущий методист-эксперт по экзаменационной подготовке Беларуси.\n".
-            "Составь официальный пакет проверочной работы по государственным стандартам ЦТ / ЦЭ 2026 года.\n\n".
+            "Ты — ведущий методист-составитель проверочных и экзаменационных работ Беларуси.\n".
+            "Составь официальный комплект заданий для всего класса по государственным стандартам ЦТ и ЦЭ Республики Беларусь 2026 года.\n\n".
             "<order_specification>\n".
-            "- Предмет: %s\n".
+            "- Дисциплина: %s\n".
             "- Тема: %s\n".
             "- Количество вариантов: %d шт.\n".
             "</order_specification>\n\n".
-            "СТРУКТУРА ДЛЯ КАЖДОГО ВАРИАНТА:\n".
-            "Для каждого варианта от 1 до %d оформи два блока:\n".
-            "### Вариант N\n".
-            "**Задание А1 (Часть А, с выбором ответа):**\n".
-            "Текст условия задачи. Четыре варианта ответа (1, 2, 3, 4).\n\n".
-            "**Задание Б1 (Часть Б, с кратким ответом):**\n".
-            "Текст задачи повышенной сложности. Место для записи ответа: [ Ответ: _______ ].\n\n".
-            "ВАЖНЕЙШИЕ ПРАВИЛА:\n".
-            "1. В каждом варианте используй РАЗНЫЕ входные числовые данные и контекст, но СТРОГО ОДИНАКОВЫЙ уровень сложности и алгоритм решения (защита от списывания в классе).\n".
-            "2. В самом конце работы ОБЯЗАТЕЛЬНО составь единую общую таблицу:\n".
-            "## Сводная мастер-таблица правильных ответов для учителя\n".
-            "Оформи её в виде красивой Markdown-таблицы со столбцами: | Вариант | Ответ А1 | Ответ Б1 | Типовая экзаменационная ловушка |\n".
-            "3. Приведи точные ответы для всех %d вариантов без пропусков.\n".
-            "Форматируй в чистый Markdown.",
+            "════════════════════════════════════════════════════════════════\n".
+            "КРИТИЧЕСКИЕ ТРЕБОВАНИЯ К ФОРМУЛАМ И ОФОРМЛЕНИЮ (СТРОГО!):\n".
+            "1. СТРОЖАЙШЕ ЗАПРЕЩЕНО использовать LaTeX, знаки доллара ($ или $$) и обратные слэши (\\sqrt, \\frac, \\cdot)!\n".
+            "   Документ верстается напрямую в печатный бланк PDF для школы.\n".
+            "2. Все математические выражения пиши ТОЛЬКО в чистом человекочитаемом текстовом виде с символами Юникода:\n".
+            "   - Знак корня: пиши '√' и скобки, например: √(2x + 7) = x − 4\n".
+            "   - Степени: пиши верхним индексом Юникода: x², x³, (x − 1)², a²\n".
+            "   - Умножение: символ '·' (а не звездочка и не \\cdot)\n".
+            "   - Знак минус: '−' или '-'\n".
+            "   - Дроби: через косую черту '(a + b) / c'\n".
+            "   - Знаки сравнения: '≤', '≥', '≠', '±'\n".
+            "3. Формат вариантов ответов в Части А: строго '1) ...', '2) ...', '3) ...', '4) ...' (с круглой скобкой, КАЖДЫЙ с новой строки, НЕ через точку 1.).\n".
+            "4. Часть Б: по правилам ЦТ/ЦЭ Беларуси ответом ВСЕГДА должно быть СТРОГО ЦЕЛОЕ ЧИСЛО (положительное или отрицательное, например: 6, -2, 14, 0). Никаких дробей или выражений с корнями в ответе Части Б!\n".
+            "5. Защита от списывания: в каждом варианте должны быть РАЗНЫЕ числа и другие корни, но одинаковый метод решения.\n\n".
+            "════════════════════════════════════════════════════════════════\n".
+            "ЭТАЛОННЫЙ ОБРАЗЕЦ СТРУКТУРЫ КАЖДОГО ВАРИАНТА:\n\n".
+            "### Вариант 1\n".
+            "Учащийся: ___________________________   Класс: _______   Дата: ____________\n\n".
+            "**Задание А1 (Часть А, с выбором ответа):**  \n".
+            "Укажите корень уравнения √(2x + 7) = x − 4:  \n".
+            "1) 1  \n".
+            "2) 9  \n".
+            "3) 1 и 9  \n".
+            "4) −1  \n\n".
+            "**Задание Б1 (Часть Б, с кратким ответом):**  \n".
+            "Решите уравнение √(x² − 5x + 6) · √(x − 1) = 0. В бланк ответов запишите произведение всех действительных корней уравнения.  \n".
+            "[ Ответ: ____________ ]\n\n".
+            "---\n\n".
+            "Составь такие варианты для всех %d вариантов (от Вариант 1 до Вариант %d).\n\n".
+            "════════════════════════════════════════════════════════════════\n".
+            "ФИНАЛЬНЫЙ БЛОК (ОБЯЗАТЕЛЬНО В КОНЦЕ):\n".
+            "## Сводная мастер-таблица правильных ответов для преподавателя\n".
+            "Составь сводную таблицу в Markdown со всеми %d вариантами:\n".
+            "| Вариант | Ответ А1 | Ответ Б1 | Экзаменационная ловушка (пояснение для учителя) |\n".
+            "| :---: | :---: | :---: | :--- |\n".
+            "| 1 | 2 (9) | 6 | Посторонний корень x=1 отсекается условием ОДЗ x − 4 ≥ 0. В Б1 корни 1, 2, 3. |\n".
+            "...\n".
+            "Заполни таблицу для всех %d вариантов без пропусков.",
             $cleanSubject,
             $cleanTopic,
+            $count,
+            $count,
             $count,
             $count,
             $count
         );
 
-        $system = 'Ты — официальный методист-составитель заданий ЦТ и ЦЭ Беларуси по спецификациям 2026 года. Пиши четко, академично, форматируй формулы и таблицы аккуратно в Markdown.';
+        $system = 'Ты — ведущий методист-составитель проверочных заданий по государственным стандартам Беларуси (ЦТ/ЦЭ 2026). '.
+                  'Пиши чисто, профессионально, с красивыми академическими формулировками. '.
+                  'КАТЕГОРИЧЕСКИЙ ЗАПРЕТ НА LaTeX: никогда не используй знаки $ и команды LaTeX, формулы пиши только знаками Юникода (√, ², ³, ·, ≤, ≥). '.
+                  'В Части Б ответ ВСЕГДА обязан быть целым числом.';
 
         try {
             $result = $gemini->generateText($prompt, $system, timeoutSeconds: 75);
 
             if (! empty($result)) {
+                $cleanedResult = self::cleanMathFormulasForPrint($result);
+
                 $order->update([
                     'status' => 'completed',
-                    'generated_content' => $result,
+                    'generated_content' => $cleanedResult,
                 ]);
 
                 // Pre-generate and cache PDF immediately
-                $this->ensurePdfExists($order);
+                $this->ensurePdfExists($order, force: true);
 
                 return;
             }
@@ -425,9 +530,9 @@ class GeneratorCheckoutController extends Controller
         $fallbackContent = $this->buildFallbackContent($order, $count);
         $order->update([
             'status' => 'completed',
-            'generated_content' => $fallbackContent,
+            'generated_content' => self::cleanMathFormulasForPrint($fallbackContent),
         ]);
-        $this->ensurePdfExists($order);
+        $this->ensurePdfExists($order, force: true);
     }
 
     /**
