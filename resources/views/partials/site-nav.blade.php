@@ -12,6 +12,10 @@
             <a href="{{ route('tutors.index') }}" class="ed-nav__link">Каталог</a>
         @endif
         <a href="{{ route('for-tutors') }}" class="ed-nav__link">Преподавателям</a>
+        <a href="{{ route('generator') }}" class="ed-nav__link" style="display:inline-flex; align-items:center; gap:0.35rem;">
+            <span>Генератор вариантов</span>
+            <span style="font-size:0.65rem; background:#C6FF33; color:#000; font-weight:800; padding:1px 5px; border-radius:4px;">5 BYN</span>
+        </a>
         <a href="{{ route('news.index') }}" class="ed-nav__link">Новости</a>
         @auth
             @php

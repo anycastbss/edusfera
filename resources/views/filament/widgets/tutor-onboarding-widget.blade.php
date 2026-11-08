@@ -129,4 +129,115 @@
             </div>
         </div>
     @endif
+
+    {{-- Tariff Selection Modal (Рисунок А.9 — Антикризисные офферы) --}}
+    @if($showTariffModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/75 backdrop-blur-sm animate-fade-in">
+            <div class="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+                <div class="flex items-start justify-between gap-4 mb-6">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wide uppercase bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
+                            ⚡ Антикризисные тарифы
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-gray-950 dark:text-white mt-2">
+                            Выберите формат старта практики
+                        </h2>
+                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Мгновенная активация через эквайринг Альфа-Банка. Полный доступ без блокировок.
+                        </p>
+                    </div>
+                    <button wire:click="dismissTariffModal" type="button" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {{-- OFFER 1: Тест-драйв --}}
+                    <div class="p-5 rounded-2xl border-2 border-emerald-500/80 bg-emerald-50/40 dark:bg-emerald-950/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300">
+                                    ⚡ Быстрый старт
+                                </span>
+                                <div class="text-right">
+                                    <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">5 BYN</div>
+                                    <div class="text-[10px] text-gray-500">сразу за 7 дней</div>
+                                </div>
+                            </div>
+                            <h3 class="font-extrabold text-base text-gray-950 dark:text-white mb-2">
+                                Тариф «Тест-драйв» (7 дней)
+                            </h3>
+                            <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-2 mb-4">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-emerald-600 font-bold">✓</span>
+                                    <span>Полный доступ к ИИ-методисту (генерация вариантов ЦЭ/ЦТ)</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-emerald-600 font-bold">✓</span>
+                                    <span>Интерактивный класс LiveKit + Excalidraw</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-emerald-600 font-bold">✓</span>
+                                    <span>Выгрузка чеков НПД для МНС РБ в 1 клик</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                    <span>•</span>
+                                    <span>Через 7 дней — автопродление (40 BYN/мес Pro), отмена в 1 клик</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('filament.admin.pages.tutor-subscription-page') }}" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm text-center shadow-sm transition">
+                            Подключить за 5 BYN →
+                        </a>
+                    </div>
+
+                    {{-- OFFER 2: Клуб основателей --}}
+                    <div class="p-5 rounded-2xl border-2 border-amber-500/80 bg-amber-50/40 dark:bg-amber-950/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/30 text-amber-800 dark:text-amber-300">
+                                    👑 Лимит 10 мест
+                                </span>
+                                <div class="text-right">
+                                    <div class="text-xs line-through text-gray-400">120 BYN</div>
+                                    <div class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-none">49 BYN</div>
+                                    <div class="text-[10px] text-gray-500">за 3 месяца Pro</div>
+                                </div>
+                            </div>
+                            <h3 class="font-extrabold text-base text-gray-950 dark:text-white mb-2">
+                                «Клуб основателей» (3 мес. Pro)
+                            </h3>
+                            <ul class="text-xs text-gray-700 dark:text-gray-300 space-y-2 mb-4">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-amber-600 font-bold">✓</span>
+                                    <span><strong>3 месяца тарифа Pro</strong> со скидкой 60%</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-amber-600 font-bold">✓</span>
+                                    <span>Пожизненный статус Основателя платформы</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-amber-600 font-bold">✓</span>
+                                    <span>Безлимитный ИИ, класс LiveKit и чеки НПД</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-amber-700 dark:text-amber-400 font-semibold">
+                                    <span>🔒</span>
+                                    <span>Доступно только 10 мест</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('filament.admin.pages.tutor-subscription-page') }}" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm text-center shadow-sm transition">
+                            Вступить за 49 BYN →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button wire:click="dismissTariffModal" type="button" class="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 underline">
+                        Вернуться в панель управления
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

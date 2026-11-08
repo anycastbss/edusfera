@@ -283,9 +283,26 @@ class TutorSubscriptionPage extends Page
         return SubscriptionPlan::tryFrom($code) ?? SubscriptionPlan::PRO;
     }
 
+    public function getFoundersSpotsRemainingProperty(): int
+    {
+        $taken = SubscriptionInvoice::where('plan', SubscriptionPlan::FOUNDERS_CLUB->value)
+            ->where('status', InvoiceStatus::PAID)
+            ->count();
+
+        return max(1, 10 - $taken);
+    }
+
     public function getCheckoutBaseAmountProperty(): float
     {
         $plan = $this->checkoutPlan;
+
+        if ($plan === SubscriptionPlan::TEST_DRIVE) {
+            return 5.0;
+        }
+
+        if ($plan === SubscriptionPlan::FOUNDERS_CLUB) {
+            return 49.0;
+        }
 
         return (float) ($this->isYearly ? $plan->yearlyPriceByn() : $plan->monthlyPriceByn());
     }
@@ -538,9 +555,19 @@ class TutorSubscriptionPage extends Page
         $this->paymentErrorMessage = null;
         $this->paymentSuccessMessage = null;
         $this->selectedPlanCode = $planName;
-        $baseAmountByn = $this->isYearly ? $plan->yearlyPriceByn() : $plan->monthlyPriceByn();
+
+        if ($plan === SubscriptionPlan::TEST_DRIVE) {
+            $baseAmountByn = 5.0;
+            $periodMonths = 1;
+        } elseif ($plan === SubscriptionPlan::FOUNDERS_CLUB) {
+            $baseAmountByn = 49.0;
+            $periodMonths = 3;
+        } else {
+            $baseAmountByn = $this->isYearly ? $plan->yearlyPriceByn() : $plan->monthlyPriceByn();
+            $periodMonths = $this->isYearly ? 12 : 1;
+        }
+
         $amountByn = $baseAmountByn;
-        $periodMonths = $this->isYearly ? 12 : 1;
 
         $promoModel = null;
         $discountAmount = 0.0;

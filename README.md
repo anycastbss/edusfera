@@ -1,6 +1,6 @@
 # Edusfera
 
-Edusfera is a modern Laravel 12 SaaS platform for tutors and exam preparation (CT/CE in Belarus). The platform operates on a **SaaS subscription model for tutors with 0% commission on conducted lessons**, providing an interactive Virtual Classroom, smart scheduling, automated NPD receipt generation (for self-employed tutors), AI diagnostic tools, and secure escrow payments via Alfa-Bank.
+Edusfera is a modern Laravel 12 SaaS platform for tutors and exam preparation (CT/CE in Belarus). The platform operates on a **SaaS subscription model for tutors with 0% commission on conducted lessons**, providing an interactive Virtual Classroom, smart scheduling, automated NPD receipt generation (for self-employed tutors), AI diagnostic tools, and direct peer-to-peer student settlements (ERIP / bank card / cash) with zero commission on tutor earnings.
 
 ## Stack
 
@@ -10,16 +10,18 @@ Edusfera is a modern Laravel 12 SaaS platform for tutors and exam preparation (C
 - PostgreSQL 16
 - Redis
 - Mailhog
-- Vite
+- Vite 7 + Tailwind CSS v4 + React 19 (Virtual Classroom LiveKit & Excalidraw)
 
 ## Business Model & Main Flows
 
-- **Tutor SaaS Subscriptions:** 30-day free trial (0 BYN), Basic (20 BYN/mo), Pro (40 BYN/mo), Premium (60 BYN/mo), and Founder status.
-- **0% Lesson Commission:** Tutors keep 100% of their hourly rates (minus standard bank card acquiring fee).
+- **Tutor SaaS Subscriptions & Anti-Crisis Offers:**
+  - **Test-Drive (7 days):** 5 BYN instant payment for full Pro features (AI lesson generator, LiveKit virtual classroom, NPD receipts in 1-click).
+  - **Founders Club (3 months Pro):** 49 BYN one-time (60% discount, limited to 10 spots) with lifetime Founder status badge.
+  - **Standard Plans:** Basic (20 BYN/mo), Pro (40 BYN/mo), Premium (60 BYN/mo White-Label). Unbacked free trials without card binding are restricted to maintain service quality and prevent spam.
+- **0% Lesson Commission & Direct Settlements:** Tutors keep 100% of their hourly rates. Students pay tutors directly (cash, ERIP, card transfer) without platform escrow, intermediate transit, or balance hold.
 - **Automated NPD Tax Receipts:** Generation of fiscal receipts and income registries for the Belarusian Ministry of Taxes and Duties ("ProfDohod" app).
-- **Escrow & Safe Checkout:** Student payments are held on a secure escrow account until successful lesson completion in the Virtual Classroom.
+- **Interactive Virtual Classroom & 1-Click Guest Join:** Fullscreen LiveKit WebRTC video call + shared Excalidraw whiteboard. Tutors can schedule lessons for unregistered students via signed instant link (`/classroom/join/{lesson}?token=...`) with no login or install required.
 - **Tutor Catalog & Trajectories:** Filterable public tutor catalog, diagnostics, and structured lesson packages.
-- **Moderated In-Platform Chat:** Protected communications and contact exchange safeguards.
 - **Tutor & Student Dashboards:** Full-featured management portals powered by Filament.
 
 ## Local Run

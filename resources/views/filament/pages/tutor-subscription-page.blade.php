@@ -1723,6 +1723,300 @@
                 font-size: 0.8125rem;
             }
         }
+
+        /* ═══ Anti-Crisis Special Offers ═══════════════════════════════ */
+        .tutor-anticrisis-container {
+            background: linear-gradient(135deg, rgba(125, 57, 235, 0.08) 0%, rgba(198, 255, 51, 0.05) 50%, rgba(12, 10, 20, 0.4) 100%);
+            border: 1.5px solid rgba(125, 57, 235, 0.25);
+            border-radius: 28px;
+            padding: 28px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 12px 36px -10px rgba(125, 57, 235, 0.15);
+        }
+        .dark .tutor-anticrisis-container {
+            background: linear-gradient(135deg, rgba(125, 57, 235, 0.15) 0%, rgba(198, 255, 51, 0.08) 50%, rgba(15, 23, 42, 0.7) 100%);
+            border-color: rgba(125, 57, 235, 0.4);
+        }
+        .tutor-anticrisis-header {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 24px auto;
+        }
+        .tutor-anticrisis-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 14px;
+            border-radius: 9999px;
+            background: #7D39EB;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .tutor-anticrisis-title {
+            margin: 0 0 8px 0;
+            font-size: 1.45rem;
+            font-weight: 900;
+            color: #0F172A;
+        }
+        .dark .tutor-anticrisis-title {
+            color: #FFFFFF;
+        }
+        .tutor-anticrisis-desc {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #64748B;
+            line-height: 1.45;
+        }
+        .dark .tutor-anticrisis-desc {
+            color: #94A3B8;
+        }
+        .tutor-anticrisis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .tutor-anticrisis-card {
+            background: #FFFFFF;
+            border: 2px solid #E2E8F0;
+            border-radius: 22px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+        .dark .tutor-anticrisis-card {
+            background: #111827;
+            border-color: #1F2937;
+        }
+        .tutor-anticrisis-card--testdrive {
+            border-color: #059669;
+            box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.15);
+        }
+        .dark .tutor-anticrisis-card--testdrive {
+            border-color: rgba(5, 150, 105, 0.6);
+        }
+        .tutor-anticrisis-card--founders {
+            border-color: #F59E0B;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);
+        }
+        .dark .tutor-anticrisis-card--founders {
+            background: linear-gradient(180deg, #111827 0%, rgba(30, 27, 75, 0.5) 100%);
+            border-color: rgba(245, 158, 11, 0.6);
+        }
+        .tutor-anticrisis-card-badge {
+            align-self: flex-start;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: rgba(5, 150, 105, 0.12);
+            color: #059669;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .tutor-anticrisis-card-badge--gold {
+            background: rgba(245, 158, 11, 0.15);
+            color: #D97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .tutor-anticrisis-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .tutor-anticrisis-card-title {
+            margin: 0 0 4px 0;
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #0F172A;
+        }
+        .dark .tutor-anticrisis-card-title {
+            color: #FFFFFF;
+        }
+        .tutor-anticrisis-card-sub {
+            margin: 0;
+            font-size: 0.8125rem;
+            color: #64748B;
+        }
+        .dark .tutor-anticrisis-card-sub {
+            color: #94A3B8;
+        }
+        .tutor-anticrisis-price-wrap {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .tutor-anticrisis-oldprice {
+            font-size: 0.85rem;
+            text-decoration: line-through;
+            color: #94A3B8;
+            font-weight: 700;
+        }
+        .tutor-anticrisis-price {
+            font-size: 2.25rem;
+            font-weight: 900;
+            color: #059669;
+            line-height: 1;
+        }
+        .tutor-anticrisis-price--gold {
+            color: #D97706;
+        }
+        .dark .tutor-anticrisis-price--gold {
+            color: #FBBF24;
+        }
+        .tutor-anticrisis-curr {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748B;
+            margin-top: 2px;
+        }
+        .tutor-anticrisis-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 0.84rem;
+            color: #334155;
+        }
+        .dark .tutor-anticrisis-features {
+            color: #CBD5E1;
+        }
+        .tutor-anticrisis-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.4;
+        }
+        .tutor-anticrisis-check {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: rgba(5, 150, 105, 0.15);
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 900;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .tutor-anticrisis-check--gold {
+            background: rgba(245, 158, 11, 0.2);
+            color: #D97706;
+        }
+        .tutor-anticrisis-feature-highlight {
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(5, 150, 105, 0.08);
+            border: 1px dashed rgba(5, 150, 105, 0.3);
+            font-weight: 600;
+        }
+        .tutor-anticrisis-feature-highlight--gold {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #B45309;
+        }
+        .dark .tutor-anticrisis-feature-highlight--gold {
+            color: #FCD34D;
+        }
+        .tutor-anticrisis-btn {
+            width: 100%;
+            height: 48px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 0.9375rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .tutor-anticrisis-btn--testdrive {
+            background: #059669;
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+        }
+        .tutor-anticrisis-btn--testdrive:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+        .tutor-anticrisis-btn--founders {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+        }
+        .tutor-anticrisis-btn--founders:hover {
+            background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+            transform: translateY(-1px);
+        }
+        .tutor-checkout-switcher-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .tutor-checkout-tab-btn {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1.5px solid #E2E8F0;
+            background: #F8FAFC;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s ease;
+        }
+        .dark .tutor-checkout-tab-btn {
+            background: #1E293B;
+            border-color: #334155;
+            color: #F8FAFC;
+        }
+        .tutor-checkout-tab-btn.is-active.is-testdrive {
+            border-color: #059669;
+            background: rgba(5, 150, 105, 0.08);
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+        }
+        .tutor-checkout-tab-btn.is-active.is-founders {
+            border-color: #F59E0B;
+            background: rgba(245, 158, 11, 0.1);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+        }
+        .tutor-checkout-offer-note {
+            padding: 12px 14px;
+            border-radius: 14px;
+            font-size: 0.8125rem;
+            line-height: 1.45;
+            margin-bottom: 16px;
+        }
+        .tutor-checkout-offer-note--testdrive {
+            background: rgba(5, 150, 105, 0.08);
+            border: 1px solid rgba(5, 150, 105, 0.3);
+            color: #065F46;
+        }
+        .dark .tutor-checkout-offer-note--testdrive {
+            color: #6EE7B7;
+            background: rgba(5, 150, 105, 0.15);
+        }
+        .tutor-checkout-offer-note--founders {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #92400E;
+        }
+        .dark .tutor-checkout-offer-note--founders {
+            color: #FCD34D;
+            background: rgba(245, 158, 11, 0.18);
+        }
     </style>
 
     <div class="tutor-sub-container" x-data="{ isYearly: @entangle('isYearly') }">
@@ -1944,6 +2238,87 @@
                     <span x-show="isYearly">Оплата один раз в год · 2 месяца в подарок</span>
                     <span x-show="!isYearly">Списание каждый месяц · Отмена в любой момент</span>
                 </p>
+            </div>
+
+            {{-- 3b. Anti-Crisis Special Offers (Тест-драйв 5 BYN & Клуб основателей 49 BYN) --}}
+            <div class="tutor-anticrisis-container">
+                <div class="tutor-anticrisis-header">
+                    <div class="tutor-anticrisis-badge">🔥 СПЕЦИАЛЬНЫЕ АНТИКРИЗИСНЫЕ ОФФЕРЫ</div>
+                    <h2 class="tutor-anticrisis-title">Мгновенный старт практики с гарантией окупаемости</h2>
+                    <p class="tutor-anticrisis-desc">Два предложения с мгновенным списанием через эквайринг Альфа-Банка. Выберите удобный формат старта:</p>
+                </div>
+
+                <div class="tutor-anticrisis-grid">
+                    {{-- OFFER 1: Тест-драйв (7 дней) — 5 BYN --}}
+                    <div class="tutor-anticrisis-card tutor-anticrisis-card--testdrive">
+                        <div class="tutor-anticrisis-card-badge">⚡ ХИТ БЫСТРОГО СТАРТА</div>
+                        <div class="tutor-anticrisis-card-top">
+                            <div>
+                                <h3 class="tutor-anticrisis-card-title">Тариф «Тест-драйв» (7 дней)</h3>
+                                <p class="tutor-anticrisis-card-sub">Полный доступ ко всем PRO-инструментам на 7 дней</p>
+                            </div>
+                            <div class="tutor-anticrisis-price-wrap">
+                                <span class="tutor-anticrisis-price">5</span>
+                                <span class="tutor-anticrisis-curr">BYN сразу</span>
+                            </div>
+                        </div>
+
+                        <ul class="tutor-anticrisis-features">
+                            <li><span class="tutor-anticrisis-check">✓</span> <span><strong>Полный доступ к ИИ-методисту</strong> (генерация вариантов ЦЭ/ЦТ без списывания, планы, тесты)</span></li>
+                            <li><span class="tutor-anticrisis-check">✓</span> <span><strong>Интерактивный класс LiveKit + Excalidraw</strong> без лимитов по времени</span></li>
+                            <li><span class="tutor-anticrisis-check">✓</span> <span><strong>Автоматическая выгрузка чеков НПД</strong> в 1 клик для МНС РБ</span></li>
+                            <li><span class="tutor-anticrisis-check">✓</span> <span><strong>До 15 активных учеников</strong> и облачное хранилище 15 ГБ</span></li>
+                            <li class="tutor-anticrisis-feature-highlight"><span class="tutor-anticrisis-check">⚡</span> <span>Через 7 дней — автопродление на стандартный тариф (40 BYN/мес Pro), отмена в 1 клик</span></li>
+                        </ul>
+
+                        <button 
+                            wire:click="openPaymentModal('test_drive')" 
+                            type="button" 
+                            class="tutor-anticrisis-btn tutor-anticrisis-btn--testdrive"
+                        >
+                            <span>⚡ Попробовать «Тест-драйв» · 5 BYN →</span>
+                        </button>
+                    </div>
+
+                    {{-- OFFER 2: Клуб основателей (3 месяца Pro) — 49 BYN --}}
+                    <div class="tutor-anticrisis-card tutor-anticrisis-card--founders">
+                        <div class="tutor-anticrisis-card-badge tutor-anticrisis-card-badge--gold">
+                            👑 ЛИМИТ: ДОСТУПНО 10 МЕСТ (Осталось {{ $this->foundersSpotsRemaining }} из 10)
+                        </div>
+                        <div class="tutor-anticrisis-card-top">
+                            <div>
+                                <h3 class="tutor-anticrisis-card-title">Спецтариф «Клуб основателей»</h3>
+                                <p class="tutor-anticrisis-card-sub">3 месяца безлимитного Pro со скидкой 60%</p>
+                            </div>
+                            <div class="tutor-anticrisis-price-wrap">
+                                <div class="tutor-anticrisis-oldprice">120 BYN</div>
+                                <span class="tutor-anticrisis-price tutor-anticrisis-price--gold">49</span>
+                                <span class="tutor-anticrisis-curr">BYN разово</span>
+                            </div>
+                        </div>
+
+                        <ul class="tutor-anticrisis-features">
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>3 месяца полного Pro</strong> (16.3 BYN/мес вместо 40 BYN/мес)</span></li>
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>Пожизненный статус «Основатель Edusfera»</strong> с золотым бейджем</span></li>
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>Полный доступ к ИИ-методисту</strong> (генератор ЦТ/ЦЭ, домашка, тесты)</span></li>
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>Интерактивный класс LiveKit + Excalidraw</strong> без ограничений</span></li>
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>Авто-выгрузка чеков НПД</strong> для МНС РБ в 1 клик</span></li>
+                            <li><span class="tutor-anticrisis-check tutor-anticrisis-check--gold">✓</span> <span><strong>Приоритет в каталоге репетиторов x2</strong></span></li>
+                            <li class="tutor-anticrisis-feature-highlight tutor-anticrisis-feature-highlight--gold">
+                                <span class="tutor-anticrisis-check tutor-anticrisis-check--gold">🔒</span> 
+                                <span><strong>Жесткий лимит предложения:</strong> Доступно 10 мест (Осталось {{ $this->foundersSpotsRemaining }} мест)</span>
+                            </li>
+                        </ul>
+
+                        <button 
+                            wire:click="openPaymentModal('founders_club')" 
+                            type="button" 
+                            class="tutor-anticrisis-btn tutor-anticrisis-btn--founders"
+                        >
+                            <span>👑 Вступить в Клуб основателей · 49 BYN →</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {{-- 4. Plans Comparison Grid --}}
@@ -2524,6 +2899,42 @@
                             </button>
                         </div>
 
+                        {{-- Quick Offer Selector in Modal --}}
+                        <div class="tutor-checkout-switcher-grid">
+                            <button type="button" 
+                                    wire:click="openPaymentModal('test_drive')" 
+                                    class="tutor-checkout-tab-btn {{ $checkoutPlanCode === 'test_drive' ? 'is-active is-testdrive' : '' }}">
+                                <div style="font-weight: 800; font-size: 0.875rem; color: #059669;">⚡ Тест-драйв (7 дней)</div>
+                                <div style="font-size: 0.72rem; color: #64748B; margin-top: 2px;">5 BYN сразу · автопродление</div>
+                            </button>
+                            <button type="button" 
+                                    wire:click="openPaymentModal('founders_club')" 
+                                    class="tutor-checkout-tab-btn {{ $checkoutPlanCode === 'founders_club' ? 'is-active is-founders' : '' }}">
+                                <div style="font-weight: 800; font-size: 0.875rem; color: #D97706;">👑 Клуб основателей</div>
+                                <div style="font-size: 0.72rem; color: #64748B; margin-top: 2px;">49 BYN разово · Лимит 10 мест</div>
+                            </button>
+                        </div>
+
+                        {{-- Specific Offer Conditions Banner --}}
+                        @if($checkoutPlanCode === 'test_drive')
+                            <div class="tutor-checkout-offer-note tutor-checkout-offer-note--testdrive">
+                                ⚡ <strong>Тариф «Тест-драйв (7 дней)» — 5 BYN сразу:</strong><br>
+                                • Полный доступ к ИИ-методисту (генерация вариантов ЦЭ/ЦТ без списывания)<br>
+                                • Интерактивный класс LiveKit + Excalidraw без лимита времени<br>
+                                • Выгрузка чеков НПД для МНС РБ в 1 клик<br>
+                                • До 15 учеников и 15 ГБ облака<br>
+                                <em>Через 7 дней — автопродление на стандартный тариф (40 BYN/мес Pro), если не отменили в 1 клик в кабинете.</em>
+                            </div>
+                        @elseif($checkoutPlanCode === 'founders_club')
+                            <div class="tutor-checkout-offer-note tutor-checkout-offer-note--founders">
+                                👑 <strong>Спецтариф «Клуб основателей (3 месяца Pro)» — 49 BYN разово:</strong><br>
+                                • 3 месяца безлимитного тарифа Pro (вместо 120 BYN, выгода 60%)<br>
+                                • Пожизненный статус «Основатель Edusfera» с золотым бейджем<br>
+                                • Полный доступ к ИИ-методисту, классу LiveKit и чекам НПД<br>
+                                • <strong>Жесткий лимит: Доступно 10 мест</strong> (Осталось {{ $this->foundersSpotsRemaining }} из 10 мест).
+                            </div>
+                        @endif
+
                         {{-- Plan Overview Box --}}
                         <div class="tutor-checkout-plan-box">
                             <div class="tutor-checkout-plan-top">
@@ -2539,13 +2950,14 @@
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <span class="tutor-checkout-plan-duration">
-                                        {{ $isYearly ? '1 год (12 мес.)' : '1 месяц' }}
+                                        @if($activePlan->value === 'test_drive')
+                                            7 дней (пробный)
+                                        @elseif($activePlan->value === 'founders_club')
+                                            3 месяца (Pro)
+                                        @else
+                                            {{ $isYearly ? '1 год (12 мес.)' : '1 месяц' }}
+                                        @endif
                                     </span>
-                                    @if($this->hasFirstPaymentTrialBonus)
-                                        <span style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; background: #ECFDF5; color: #059669; font-size: 11px; font-weight: 800;">
-                                            +{{ $activePlan->trialDays() }} дней триала
-                                        </span>
-                                    @endif
                                 </div>
                             </div>
                             <p class="tutor-checkout-plan-desc">

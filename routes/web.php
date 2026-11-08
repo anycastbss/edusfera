@@ -38,6 +38,34 @@ Route::get('/platform', function () {
     return view('home');
 })->name('platform');
 
+Route::get('/generator', function () {
+    return view('generator');
+})->name('generator');
+
+Route::post('/checkout/generator', [\App\Http\Controllers\GeneratorCheckoutController::class, 'initiate'])
+    ->middleware(['throttle:10,1'])
+    ->name('generator.checkout.initiate');
+
+Route::get('/checkout/generator/hosted/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'hosted'])
+    ->middleware(['throttle:20,1'])
+    ->name('generator.checkout.hosted');
+
+Route::get('/checkout/generator/callback/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'callback'])
+    ->middleware(['throttle:20,1'])
+    ->name('generator.checkout.callback');
+
+Route::get('/generator/status/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'status'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.status');
+
+Route::get('/generator/success/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'success'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.success');
+
+Route::get('/generator/download/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'downloadPdf'])
+    ->middleware(['throttle:20,1'])
+    ->name('generator.download');
+
 Route::redirect('/promo', '/', 301);
 Route::any('/promo/{any}', function () {
     return redirect('/', 301);

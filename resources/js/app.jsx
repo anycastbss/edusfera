@@ -80,6 +80,10 @@ function mountMobileCabinet() {
   mountLazy('cabinet-app', () => import('./components/MobileCabinet/MobileCabinetApp'));
 }
 
+function mountGenerator() {
+  mountLazy('generator-app-root', () => import('./components/AntiCheatGeneratorLanding'));
+}
+
 function initMounts() {
   mountHomepage();
   mountAuth();
@@ -89,6 +93,7 @@ function initMounts() {
   mountOnboarding();
   mountMessenger();
   mountMobileCabinet();
+  mountGenerator();
 }
 
 if (typeof document !== 'undefined') {

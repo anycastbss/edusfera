@@ -46,8 +46,14 @@ class AlfaBankPaymentGateway implements PaymentGatewayInterface
         $amountInKopecks = (int) round($amount * 100);
         $isWalletTopUp = isset($data['wallet_topup']) && $data['wallet_topup'] === true;
         $isSubscription = isset($data['subscription']) && $data['subscription'] === true;
+        $isCustomOrder = ! empty($data['return_url']) && ! empty($data['order_number']);
 
-        if ($isWalletTopUp) {
+        if ($isCustomOrder) {
+            $returnUrl = (string) $data['return_url'];
+            $failUrl = (string) ($data['fail_url'] ?? $returnUrl);
+            $description = (string) ($data['description'] ?? 'Оплата заказа Edusfera');
+            $orderNumber = (string) $data['order_number'];
+        } elseif ($isWalletTopUp) {
             $returnUrl = route('filament.admin.pages.wallet', ['payment' => 'success']);
             $failUrl = route('filament.admin.pages.wallet', ['payment' => 'failed']);
             $description = 'Пополнение баланса Edusfera (Пользователь #'.($data['user_id'] ?? 0).')';
@@ -65,8 +71,8 @@ class AlfaBankPaymentGateway implements PaymentGatewayInterface
             $orderNumber = 'lesson_'.$lessonId.'_'.time();
         }
 
-        // Одностадийная оплата (register.do) для подписок и баланса; двухстадийная (registerPreAuth.do) для холдирования уроков
-        $endpoint = ($isSubscription || $isWalletTopUp)
+        // Одностадийная оплата (register.do) для подписок, баланса и разовых заказов; двухстадийная (registerPreAuth.do) для холдирования уроков
+        $endpoint = ($isSubscription || $isWalletTopUp || $isCustomOrder)
             ? $this->apiUrl.'/register.do'
             : $this->apiUrl.'/registerPreAuth.do';
 
@@ -232,6 +238,24 @@ class AlfaBankPaymentGateway implements PaymentGatewayInterface
     public function verifyPayment(string $transactionId): bool
     {
         return $this->getPaymentStatusDetails($transactionId)['success'];
+    }
+
+    /**
+     * Стандартизированный метод проверки статуса заказа
+     *
+     * @return array{is_paid: bool, success: bool, status: int, message: string, raw: array}
+     */
+    public function getOrderStatus(string $transactionId): array
+    {
+        $details = $this->getPaymentStatusDetails($transactionId);
+
+        return [
+            'is_paid' => $details['success'],
+            'success' => $details['success'],
+            'status' => $details['order_status'],
+            'message' => $details['message'],
+            'raw' => $details['raw'] ?? [],
+        ];
     }
 
     /**
