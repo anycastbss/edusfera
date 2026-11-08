@@ -1006,40 +1006,63 @@ export default function AntiCheatGeneratorLanding() {
             {/* ─── 2. HERO & MAIN CONFIGURATOR (ONE-SCREEN SAAS 5fr / 7fr) ─── */}
             <main className="flex-1 w-full max-w-[1240px] mx-auto px-4 sm:px-6 pt-2 pb-12 sm:pt-4 sm:pb-16">
                 
-                {/* ELEGANT HERO */}
-                <div className="max-w-3xl space-y-3.5 mb-7 sm:mb-9">
-                    <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 text-xs font-medium text-neutral-300 backdrop-blur-md shadow-xs">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7D39EB] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7D39EB]"></span>
-                        </span>
-                        <span className="tracking-wide">Стандарты ЦТ и ЦЭ 2026 • Экзаменационная программа Беларуси</span>
+                {/* ELEGANT HERO WITH DESKTOP 3D VISUAL */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center mb-6 sm:mb-8">
+                    {/* Left: Text & Key Highlights (7-8 cols) */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-3.5">
+                        <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 text-xs font-medium text-neutral-300 backdrop-blur-md shadow-xs">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7D39EB] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7D39EB]"></span>
+                            </span>
+                            <span className="tracking-wide">Стандарты ЦТ и ЦЭ 2026 • Экзаменационная программа Беларуси</span>
+                        </div>
+
+                        <h1 className="text-2xl sm:text-4xl lg:text-[40px] xl:text-[42px] font-extrabold tracking-tight text-white leading-[1.18]">
+                            Контрольные работы на класс. <br className="hidden sm:inline" />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-white/60">
+                                Без единого шанса списать.
+                            </span>
+                        </h1>
+
+                        <p className="text-sm sm:text-base text-neutral-400 leading-relaxed font-normal max-w-2xl">
+                            15 индивидуальных вариантов с разными числами в заданиях. Готовый к печати PDF-комплект на урок за 30 секунд — и сводная ведомость ответов для проверки стопки тетрадей за 2 минуты.
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 text-xs text-neutral-400">
+                            <span className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                                <span>Разные числа у каждого варианта</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                                <span>ГДЗ и Photomath бессильны</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
+                                <span>Печать на стандартном листе А4</span>
+                            </span>
+                        </div>
                     </div>
 
-                    <h1 className="text-2xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-white leading-[1.18]">
-                        Контрольные работы на класс. <br className="hidden sm:inline" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-white/60">
-                            Без единого шанса списать.
-                        </span>
-                    </h1>
-
-                    <p className="text-sm sm:text-base text-neutral-400 leading-relaxed font-normal max-w-2xl">
-                        15 индивидуальных вариантов с разными числами в заданиях. Готовый к печати PDF-комплект на урок за 30 секунд — и сводная ведомость ответов для проверки стопки тетрадей за 2 минуты.
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1 text-xs text-neutral-400">
-                        <span className="flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
-                            <span>Разные числа у каждого варианта</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
-                            <span>ГДЗ и Photomath бессильны</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#C6FF33]" />
-                            <span>Печать на стандартном листе А4</span>
-                        </span>
+                    {/* Right: Floating 3D Graphic (PC/Desktop only, 4-5 cols) */}
+                    <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 justify-center xl:justify-end items-center pointer-events-none select-none">
+                        <div className="relative w-full max-w-[280px] xl:max-w-[320px]">
+                            {/* Subtle Ambient Backlight */}
+                            <div 
+                                className="absolute inset-0 bg-gradient-to-tr from-violet-600/30 via-[#C6FF33]/15 to-transparent blur-3xl rounded-full opacity-60"
+                                aria-hidden="true"
+                            />
+                            <img
+                                src="/images/generator-hero-graphic.png"
+                                alt="Онлайн-урок и интерактивный класс Edusfera"
+                                width="1199"
+                                height="1312"
+                                className="relative z-10 w-full h-auto object-contain drop-shadow-[0_12px_32px_rgba(125,57,235,0.25)]"
+                                loading="eager"
+                                fetchPriority="high"
+                            />
+                        </div>
                     </div>
                 </div>
 
