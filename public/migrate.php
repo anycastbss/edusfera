@@ -941,9 +941,12 @@ try {
 
         $countA = (int) ($_GET['count_a'] ?? 2);
         $countB = (int) ($_GET['count_b'] ?? 1);
+        $grade = $_GET['grade'] ?? '7';
+        $workType = $_GET['work_type'] ?? 'independent';
+        $difficulty = $_GET['difficulty'] ?? 'base';
 
         $subject = $_GET['subject'] ?? 'Математика';
-        $topic = $_GET['topic'] ?? 'Иррациональные уравнения (часть Б ЦТ/ЦЭ)';
+        $topic = $_GET['topic'] ?? 'Линейные уравнения с одной переменной';
         $orderNumber = 'TEST-'.strtoupper(\Illuminate\Support\Str::random(6));
         $order = \App\Models\GeneratorOrder::create([
             'order_number' => $orderNumber,
@@ -961,6 +964,9 @@ try {
                 'credits_total' => 1,
                 'count_a' => $countA,
                 'count_b' => $countB,
+                'grade' => $grade,
+                'work_type' => $workType,
+                'difficulty' => $difficulty,
             ],
         ]);
 
