@@ -636,6 +636,10 @@ class GeneratorCheckoutController extends Controller
 
         try {
             $result = $gemini->generateText($prompt, $system, timeoutSeconds: 75);
+            if (empty($result)) {
+                // Retry once with slightly shorter prompt if needed
+                $result = $gemini->generateText($prompt, $system, timeoutSeconds: 75);
+            }
 
             if (! empty($result)) {
                 $cleanedResult = self::cleanMathFormulasForPrint($result);
@@ -668,27 +672,47 @@ class GeneratorCheckoutController extends Controller
      */
     protected function buildFallbackContent(GeneratorOrder $order, int $count): string
     {
+        $subjectType = $this->getSubjectType($order->subject);
+        $countA = (int) ($order->payload['count_a'] ?? 4);
+        $countB = (int) ($order->payload['count_b'] ?? 2);
+
         $out = "# Комплект проверочных вариантов ЦТ/ЦЭ 2026\n\n";
         $out .= "**Предмет:** {$order->subject}  \n";
         $out .= "**Тема:** {$order->topic}  \n\n";
 
         for ($i = 1; $i <= $count; $i++) {
-            $numA = 2 * $i + 3;
-            $numB = $i * 5;
             $out .= "### Вариант {$i}\n\n";
-            $out .= "**Задание А1:** Выберите правильный вариант ответа для условия при базовом значении параметра \$k = {$i}:\n";
-            $out .= "1) {$numA}\n2) ".($numA + 4)."\n3) ".($numA - 2)."\n4) ".($numA * 2)."\n\n";
-            $out .= "**Задание Б1:** Найдите числовое значение выражения при начальных условиях \$x = {$numB} и запишите целое число:\n";
-            $out .= "Ответ: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]\n\n---\n\n";
+
+            if ($subjectType === 'humanities') {
+                $out .= "**Задание А1:** Какое ключевое историческое событие связано с указанной темой ({$order->topic})?\n";
+                $out .= "1) Кревская уния 1385 г.\n2) Грюнвальдская битва 1410 г.\n3) Люблинская уния 1569 г.\n4) Издание Статута ВКЛ 1588 г.\n\n";
+                $out .= "**Задание Б1 (установление соответствия):** Установите соответствие между историческими деятелями и фактами:\n";
+                $out .= "А) Франциск Скорина  1) Издание Статута 1588 г.\n";
+                $out .= "Б) Лев Сапега        2) Первопечатник (Библия 1517 г.)\n";
+                $out .= "В) Витовт            3) Победа в Грюнвальдской битве\n";
+                $out .= "Г) Миндовг           4) Основание ВКЛ\n";
+                $out .= "[ Ответ: А2Б1В3Г4 ]\n\n---\n\n";
+            } else {
+                $numA = 2 * $i + 3;
+                $numB = $i * 5;
+                $out .= "**Задание А1:** Выберите правильный вариант ответа для выражения при k = {$i}:\n";
+                $out .= "1) {$numA}\n2) ".($numA + 4)."\n3) ".($numA - 2)."\n4) ".($numA * 2)."\n\n";
+                $out .= "**Задание Б1:** Найдите числовое значение выражения при начальных условиях x = {$numB} и запишите целое число:\n";
+                $out .= "[ Ответ: {$numB} ]\n\n---\n\n";
+            }
         }
 
         $out .= "## Сводная мастер-таблица правильных ответов для учителя\n\n";
         $out .= "| Вариант | Ответ А1 | Ответ Б1 | Экзаменационная ловушка |\n";
         $out .= "|:---:|:---:|:---:|:---|\n";
         for ($i = 1; $i <= $count; $i++) {
-            $numA = 2 * $i + 3;
-            $numB = $i * 5;
-            $out .= sprintf("| %d | 1 (%d) | %d | Внимание к знакам и ОДЗ |\n", $i, $numA, $numB * 2);
+            if ($subjectType === 'humanities') {
+                $out .= sprintf("| %d | 2 (Грюнвальдская битва) | А2Б1В3Г4 | Различение уний и статусных документов ВКЛ |\n", $i);
+            } else {
+                $numA = 2 * $i + 3;
+                $numB = $i * 5;
+                $out .= sprintf("| %d | 1 (%d) | %d | Внимание к знакам и ОДЗ |\n", $i, $numA, $numB * 2);
+            }
         }
 
         return $out;
