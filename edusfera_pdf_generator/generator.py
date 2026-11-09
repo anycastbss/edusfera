@@ -330,15 +330,15 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
 
     return [
         top_table,
-        Spacer(1, 4),
+        Spacer(1, 3),
         divider,
-        Spacer(1, 5),
+        Spacer(1, 3.5),
         mid_table,
-        Spacer(1, 5),
+        Spacer(1, 3.5),
         pupil_p,
-        Spacer(1, 4),
+        Spacer(1, 3),
         instr_table,
-        Spacer(1, 6),
+        Spacer(1, 4),
     ]
 
 
@@ -523,13 +523,13 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
         ]))
         elements.append(indented_box)
 
-    elements.append(Spacer(1, 3))
+    elements.append(Spacer(1, 2))
     # Subtle task separator
     divider = Table([['']], colWidths=[width], rowHeights=[0.4], style=[
         ('LINEBELOW', (0,0), (-1,-1), 0.45, colors.HexColor("#e2e8f0"))
     ])
     elements.append(divider)
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 2.5))
 
     return KeepTogether(elements)
 
@@ -539,11 +539,11 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
     elements = []
     cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
     elements.append(cut_line)
-    elements.append(Spacer(1, 3))
+    elements.append(Spacer(1, 2))
 
     header_p = Paragraph(f"<b>Бланк ответов ({escape(variant_title)})</b>", STYLES["banner_title"])
     elements.append(header_p)
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 2.5))
 
     # Grid for Part A
     if part_a:
@@ -554,7 +554,7 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
             ["Часть А"] + a_headers,
             ["Ответ"] + ["" for _ in a_headers]
         ]
-        a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[17, 22], hAlign='LEFT')
+        a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[15, 18], hAlign='LEFT')
         a_table.setStyle(TableStyle([
             ('FONTNAME', (0,0), (-1,-1), 'EDU'),
             ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
@@ -567,7 +567,7 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
         elements.append(a_table)
-        elements.append(Spacer(1, 4))
+        elements.append(Spacer(1, 2.5))
 
     # Grid for Part B
     if part_b:
@@ -579,7 +579,7 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
             ["Часть Б"] + b_headers,
             [b_label] + ["" for _ in b_headers]
         ]
-        b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[17, 22], hAlign='LEFT')
+        b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[15, 18], hAlign='LEFT')
         b_table.setStyle(TableStyle([
             ('FONTNAME', (0,0), (-1,-1), 'EDU'),
             ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
@@ -768,8 +768,8 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
         pagesize=A4,
         leftMargin=LEFT,
         rightMargin=RIGHT,
-        topMargin=10 * mm,
-        bottomMargin=14 * mm,
+        topMargin=7 * mm,
+        bottomMargin=8 * mm,
     )
 
     story: list[Flowable] = []
@@ -858,8 +858,8 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
         pagesize=A4,
         leftMargin=LEFT,
         rightMargin=RIGHT,
-        topMargin=10 * mm,
-        bottomMargin=14 * mm,
+        topMargin=7 * mm,
+        bottomMargin=8 * mm,
     )
     story_student: list[Flowable] = []
 

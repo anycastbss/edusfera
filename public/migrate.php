@@ -942,12 +942,14 @@ try {
         $countA = (int) ($_GET['count_a'] ?? 2);
         $countB = (int) ($_GET['count_b'] ?? 1);
 
+        $subject = $_GET['subject'] ?? 'Математика';
+        $topic = $_GET['topic'] ?? 'Иррациональные уравнения (часть Б ЦТ/ЦЭ)';
         $orderNumber = 'TEST-'.strtoupper(\Illuminate\Support\Str::random(6));
         $order = \App\Models\GeneratorOrder::create([
             'order_number' => $orderNumber,
             'email' => 'admin@edusfera.by',
-            'subject' => 'Математика',
-            'topic' => 'Иррациональные уравнения (часть Б ЦТ/ЦЭ)',
+            'subject' => $subject,
+            'topic' => $topic,
             'variant_count' => 3,
             'amount_kopecks' => 500,
             'currency' => 'BYN',
