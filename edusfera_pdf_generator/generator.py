@@ -223,7 +223,9 @@ class SloganFlowable(Flowable):
 # --- 5. COMPONENT BUILDERS ---
 def build_variant_header(variant_title: str, subject: str, subtitle: str, duration: str, 
                          count_a: int, count_b: int, max_score: str, asset_dir: Path, width: float,
-                         custom_instructions: str | None = None) -> list[Flowable]:
+                         custom_instructions: str | None = None,
+                         grade: str | None = None, grade_label: str | None = None,
+                         work_type: str | None = None, work_type_title: str | None = None) -> list[Flowable]:
     """Builds clean, uncollidable header for each test variant."""
     qr_img = _generate_qr_image("https://edusfera.by")
     qr_path = asset_dir / f"header_qr_{uuid.uuid4().hex[:6]}.png"
@@ -255,19 +257,26 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
     ]))
 
     # 2. Main title row: Subject & Variant title (left), Passport card (right)
+    work_disp = work_type_title if work_type_title else "Проверочная работа"
+    if grade_label:
+        subhead = f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(work_disp)} ({escape(grade_label)}) • {escape(variant_title)}</b></font>"
+    else:
+        subhead = f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(work_disp)} • {escape(variant_title)}</b></font>"
+
     title_markup = (
         f"<font name='EDU-Bold' size=22 color='#000000'><b>{escape(subject)}</b></font><br/>"
-        f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(variant_title)}</b></font> &nbsp;•&nbsp; "
+        f"{subhead} &nbsp;•&nbsp; "
         f"<font name='EDU' size=9.5 color='#475569'>{escape(subtitle)}</font>"
     )
     title_p = Paragraph(title_markup, ParagraphStyle("subjh", leading=16))
 
     total_tasks = count_a + count_b
     task_breakdown = f"{total_tasks} (Часть А: {count_a}, Часть Б: {count_b})" if count_b > 0 else f"{count_a}"
+    score_note = " (10-балльная шкала)" if str(max_score) in ["10", "10.0"] else " (шкала ЦТ)"
     passport_markup = (
         f"<b>Время выполнения:</b> {escape(duration)}<br/>"
         f"<b>Количество заданий:</b> {task_breakdown}<br/>"
-        f"<b>Максимальный балл:</b> {escape(str(max_score))}"
+        f"<b>Максимальный балл:</b> {escape(str(max_score))}{score_note}"
     )
     passport_p = Paragraph(passport_markup, ParagraphStyle("passp", fontName="EDU", fontSize=7.8, leading=10.8, textColor=colors.HexColor("#1e293b")))
     
@@ -293,7 +302,13 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
     ]))
 
     # 3. Pupil line
-    pupil_markup = "<b>Учащийся:</b> __________________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> _______ &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________"
+    if grade == "abiturient":
+        grade_str = "Абит."
+    elif grade:
+        grade_str = f"{grade}-____"
+    else:
+        grade_str = "_______"
+    pupil_markup = f"<b>Учащийся:</b> __________________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> {grade_str} &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________"
     pupil_p = Paragraph(pupil_markup, ParagraphStyle("pupil", fontName="EDU", fontSize=8.8, leading=12))
 
     # 4. Instruction box tailored by subject
@@ -534,7 +549,7 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
     return KeepTogether(elements)
 
 
-def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True) -> Flowable:
+def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100") -> Flowable:
     """Builds a tear-off answer sheet tailored for the specific variant."""
     elements = []
     cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
@@ -595,15 +610,25 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
         elements.append(Spacer(1, 4))
 
     # Teacher grading line
-    grade_p = Paragraph("<b>Балл:</b> _____ / 100 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Оценка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
+    if str(max_score) in ["10", "10.0"]:
+        grade_p = Paragraph("<b>Отметка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Балл:</b> _____ / 10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
+    else:
+        grade_p = Paragraph("<b>Балл:</b> _____ / 100 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Оценка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
     elements.append(grade_p)
 
     return KeepTogether(elements)
 
 
-def build_teacher_section(variants: list[dict], master_table_raw: list[dict], asset_dir: Path, width: float) -> list[Flowable]:
+def build_teacher_section(variants: list[dict], master_table_raw: list[dict], asset_dir: Path, width: float, meta: dict | None = None) -> list[Flowable]:
     """Builds the comprehensive teacher keys & analysis section on a dedicated page."""
     elements = [PageBreak()]
+
+    meta = meta or {}
+    work_disp = meta.get("work_type_title") or "Проверочная работа"
+    grade_lbl = meta.get("grade_label") or "Школьная программа"
+    topic_str = meta.get("topic") or ""
+    max_sc = str(meta.get("max_score", "100"))
+    is_ct_ce = meta.get("work_type") == "ct_ce" or max_sc == "100"
 
     # Header Warning Banner
     banner_p = Paragraph("<font color='#b91c1c'><b>КЛЮЧИ И ОТВЕТЫ ДЛЯ ПРЕПОДАВАТЕЛЯ  •  МАТЕРИАЛ ДЛЯ ПРОВЕРКИ (НЕ ВЫДАВАТЬ УЧЕНИКАМ)</b></font>", STYLES["banner_title"])
@@ -619,6 +644,25 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
         ('BOTTOMPADDING', (0,0), (-1,-1), 5),
     ]))
     elements.append(banner_t)
+    elements.append(Spacer(1, 6))
+
+    # Pedagogical passport card
+    passport_box_markup = (
+        f"<b>Методический паспорт:</b> {escape(work_disp)} • {escape(grade_lbl)} • Стандарты образования Беларуси<br/>"
+        f"<b>Контролируемые элементы:</b> владение ключевыми понятиями по теме «{escape(topic_str)}», применение стандартных алгоритмов.<br/>"
+        f"<b>Экспресс-проверка:</b> благодаря единой матрице вариантов проверка стопки тетрадей занимает не более 2 минут."
+    )
+    passport_box_p = Paragraph(passport_box_markup, ParagraphStyle("tpass", fontName="EDU", fontSize=7.8, leading=10.5, textColor=colors.HexColor("#1e293b")))
+    t_pass_table = Table([[passport_box_p]], colWidths=[width])
+    t_pass_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+    ]))
+    elements.append(t_pass_table)
     elements.append(Spacer(1, 8))
 
     elements.append(Paragraph("Сводная мастер-таблица правильных ответов", STYLES["teacher_title"]))
@@ -689,14 +733,47 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     elements.append(matrix_t)
     elements.append(Spacer(1, 8))
 
-    # Belarusian 10-point conversion scale table
-    elements.append(Paragraph("Шкала перевода первичных баллов в 10-балльную отметку (ГОСТ / Минобр РБ)", STYLES["teacher_title"]))
-    scale_rows = [
-        ["Отметка (1–10)", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-        ["Первичные баллы", "1–9", "10–19", "20–34", "35–49", "50–64", "65–74", "75–84", "85–92", "93–98", "99–100"],
-    ]
-    scale_col_w = (width - 90) / 10
-    scale_t = Table(scale_rows, colWidths=[90] + [scale_col_w] * 10)
+    # Grading Scale
+    if is_ct_ce:
+        elements.append(Paragraph("Шкала перевода первичных баллов в 10-балльную отметку (ГОСТ / Минобр РБ / ЦТ 2026)", STYLES["teacher_title"]))
+        scale_rows = [
+            ["Отметка (1–10)", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            ["Первичные баллы", "1–9", "10–19", "20–34", "35–49", "50–64", "65–74", "75–84", "85–92", "93–98", "99–100"],
+        ]
+        scale_col_w = (width - 90) / 10
+        scale_t = Table(scale_rows, colWidths=[90] + [scale_col_w] * 10)
+    else:
+        elements.append(Paragraph(f"Критерии оценивания и 10-балльная шкала ({escape(grade_lbl)}, нормы Минобр РБ)", STYLES["teacher_title"]))
+        scale_rows = [
+            [
+                Paragraph("<b>Отметка (1–10)</b>", ParagraphStyle("sh1", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+                Paragraph("<b>1–2</b>", ParagraphStyle("sh2", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+                Paragraph("<b>3–4</b>", ParagraphStyle("sh2", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+                Paragraph("<b>5–6</b>", ParagraphStyle("sh2", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+                Paragraph("<b>7–8</b>", ParagraphStyle("sh2", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+                Paragraph("<b>9–10</b>", ParagraphStyle("sh2", fontName="EDU-Bold", fontSize=7.5, alignment=1)),
+            ],
+            [
+                Paragraph("<b>Уровень</b>", ParagraphStyle("sh1", fontName="EDU-Bold", fontSize=7.0, alignment=1)),
+                Paragraph("Начальный", ParagraphStyle("sb", fontName="EDU", fontSize=7.0, alignment=1)),
+                Paragraph("Удовлетворит.", ParagraphStyle("sb", fontName="EDU", fontSize=7.0, alignment=1)),
+                Paragraph("Достаточный", ParagraphStyle("sb", fontName="EDU", fontSize=7.0, alignment=1)),
+                Paragraph("Хороший", ParagraphStyle("sb", fontName="EDU", fontSize=7.0, alignment=1)),
+                Paragraph("Высокий", ParagraphStyle("sb", fontName="EDU", fontSize=7.0, alignment=1)),
+            ],
+            [
+                Paragraph("<b>Критерий</b>", ParagraphStyle("sh1", fontName="EDU-Bold", fontSize=7.0, alignment=1)),
+                Paragraph("10–29% (узнавание)", ParagraphStyle("sb", fontName="EDU", fontSize=6.5, leading=8.5, alignment=1)),
+                Paragraph("30–49% (типовые)", ParagraphStyle("sb", fontName="EDU", fontSize=6.5, leading=8.5, alignment=1)),
+                Paragraph("50–69% (по образцу)", ParagraphStyle("sb", fontName="EDU", fontSize=6.5, leading=8.5, alignment=1)),
+                Paragraph("70–89% (самостоятельно)", ParagraphStyle("sb", fontName="EDU", fontSize=6.5, leading=8.5, alignment=1)),
+                Paragraph("90–100% (без ошибок)", ParagraphStyle("sb", fontName="EDU", fontSize=6.5, leading=8.5, alignment=1)),
+            ],
+        ]
+        col0_w = 64
+        scale_col_w = (width - col0_w) / 5
+        scale_t = Table(scale_rows, colWidths=[col0_w] + [scale_col_w] * 5)
+
     scale_t.setStyle(TableStyle([
         ('FONTNAME', (0,0), (-1,-1), 'EDU'),
         ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
@@ -808,7 +885,11 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             max_score=max_score,
             asset_dir=asset_dir,
             width=CONTENT_W,
-            custom_instructions=data.get("instructions")
+            custom_instructions=data.get("instructions"),
+            grade=data.get("grade"),
+            grade_label=data.get("grade_label"),
+            work_type=data.get("work_type"),
+            work_type_title=data.get("work_type_title")
         )
         story.extend(header_blocks)
 
@@ -837,11 +918,11 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
 
         # Answer sheet for this variant
         story.append(Spacer(1, 5))
-        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact))
+        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
 
     # Teacher master section at the end
     master_table_raw = data.get("master_table", [])
-    teacher_blocks = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W)
+    teacher_blocks = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W, meta=data)
     story.extend(teacher_blocks)
 
     doc.build(story, canvasmaker=NumberedCanvas)
@@ -895,7 +976,11 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
             max_score=max_score,
             asset_dir=asset_dir,
             width=CONTENT_W,
-            custom_instructions=data.get("instructions")
+            custom_instructions=data.get("instructions"),
+            grade=data.get("grade"),
+            grade_label=data.get("grade_label"),
+            work_type=data.get("work_type"),
+            work_type_title=data.get("work_type_title")
         )
         story_student.extend(header_blocks)
 
@@ -917,7 +1002,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                 story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         story_student.append(Spacer(1, 5))
-        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact))
+        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
 
     doc_student.build(story_student, canvasmaker=NumberedCanvas)
 
@@ -931,7 +1016,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
         bottomMargin=14 * mm,
     )
     master_table_raw = data.get("master_table", [])
-    story_key = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W)
+    story_key = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W, meta=data)
     # Remove initial PageBreak for standalone key doc
     if story_key and isinstance(story_key[0], PageBreak):
         story_key.pop(0)

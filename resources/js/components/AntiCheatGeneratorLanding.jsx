@@ -39,7 +39,10 @@ import {
     Maximize2,
     Eye,
     Tag,
-    Percent
+    Percent,
+    SlidersHorizontal,
+    Layers,
+    Award
 } from 'lucide-react';
 
 import PainSolutionSection from './generator/PainSolutionSection';
@@ -63,6 +66,220 @@ const SUBJECTS = [
     { id: 'social', name: 'Обществоведение', icon: Scale },
     { id: 'it', name: 'Информатика', icon: Binary }
 ];
+
+export const GRADES = [
+    { id: '5', label: '5 класс', stage: 'basic' },
+    { id: '6', label: '6 класс', stage: 'basic' },
+    { id: '7', label: '7 класс', stage: 'basic' },
+    { id: '8', label: '8 класс', stage: 'basic' },
+    { id: '9', label: '9 класс', stage: 'basic_exam' },
+    { id: '10', label: '10 класс', stage: 'senior' },
+    { id: '11', label: '11 класс', stage: 'senior_exam' },
+    { id: 'abiturient', label: 'Абитуриент', stage: 'entrant' },
+];
+
+export const WORK_TYPES = [
+    { 
+        id: 'independent', 
+        name: 'Самостоятельная работа', 
+        shortLabel: 'Самостоятельная',
+        icon: FileText, 
+        duration: '15–20 мин',
+        desc: 'Отработка и первичное закрепление алгоритма темы',
+        minGrade: 5,
+        defaultScore: 10
+    },
+    { 
+        id: 'control', 
+        name: 'Контрольная работа', 
+        shortLabel: 'Контрольная',
+        icon: CheckCircle2, 
+        duration: '45 мин (1 урок)',
+        desc: 'Тематический контроль усвоения раздела программы РБ',
+        minGrade: 5,
+        defaultScore: 10
+    },
+    { 
+        id: 'diagnostic', 
+        name: 'Диагностический срез', 
+        shortLabel: 'Диагностика',
+        icon: AlertCircle, 
+        duration: '30–45 мин',
+        desc: 'Входной/рубежный срез, карта пробелов ученика',
+        minGrade: 5,
+        defaultScore: 10
+    },
+    { 
+        id: 'test', 
+        name: 'Проверочный экспресс-тест', 
+        shortLabel: 'Экспресс-тест',
+        icon: Tag, 
+        duration: '10–15 мин',
+        desc: 'Оперативный опрос базовых понятий с выбором ответа',
+        minGrade: 5,
+        defaultScore: 10
+    },
+    { 
+        id: 'ct_ce', 
+        name: 'Пробный экзамен ЦЭ / ЦТ', 
+        shortLabel: 'ЦЭ / ЦТ',
+        icon: GraduationCap, 
+        duration: '90–180 мин',
+        desc: 'Спецификации экзамена 2026, бланк ответов и 100-балльная шкала',
+        minGrade: 10,
+        defaultScore: 100
+    },
+    { 
+        id: 'olympiad', 
+        name: 'Олимпиадные задания', 
+        shortLabel: 'Олимпиада',
+        icon: Sparkles, 
+        duration: '45–60 мин',
+        desc: 'Углубленный уровень и нестандартная логика для гимназий',
+        minGrade: 5,
+        defaultScore: 10
+    },
+];
+
+export const DIFFICULTY_LEVELS = [
+    { id: 'base', label: 'Базовый', desc: 'Стандарт школы (5–7 баллов)' },
+    { id: 'advanced', label: 'Повышенный', desc: 'Гимназия и профиль (8–10 баллов)' },
+    { id: 'olympiad', label: 'Олимпиадный', desc: 'Нестандартные задачи (9–10+)' },
+];
+
+export const GRADE_PRESETS = {
+    '5': {
+        math: [
+            'Сложение и вычитание десятичных дробей',
+            'Периметр и площадь прямоугольника',
+            'Простые уравнения с натуральными числами'
+        ],
+        russian: [
+            'Правописание безударных гласных в корне слова',
+            'Члены предложения: главные и второстепенные',
+            'Мягкий знак после шипящих на конце слов'
+        ],
+        history: [
+            'Первые поселения на территории Беларуси',
+            'Полоцкое княжество и князь Всеслав Чародей',
+            'Жизнь и культура восточных славян'
+        ]
+    },
+    '6': {
+        math: [
+            'Действия с обыкновенными дробями и смешанными числами',
+            'Пропорции, масштаб и проценты',
+            'Положительные и отрицательные числа: координатная прямая'
+        ],
+        biology: [
+            'Строение растительной клетки и ткани растений',
+            'Корень и побег: строение и функции',
+            'Цветок и плод: размножение цветковых растений'
+        ]
+    },
+    '7': {
+        math: [
+            'Линейные уравнения с одной переменной',
+            'Формулы сокращенного умножения (квадрат суммы и разности)',
+            'Признаки равенства треугольников и параллельные прямые'
+        ],
+        physics: [
+            'Плотность вещества и расчет массы тела',
+            'Сила тяжести, сила упругости и закон Гука',
+            'Давление твердых тел, жидкостей и газов'
+        ],
+        history: [
+            'Образование Великого Княжества Литовского (князь Миндовг)',
+            'Кревская уния 1385 г. и ее исторические последствия',
+            'Грюнвальдская битва 1410 г. и разгром Тевтонского ордена'
+        ],
+        belarusian: [
+            'Правапіс прыстаўных і ўстаўных галосных',
+            'Правапіс вялікай і малой літар',
+            'Словазлучэнне: віды сувязі'
+        ]
+    },
+    '8': {
+        math: [
+            'Квадратные корни и арифметический квадратный корень',
+            'Теорема Пифагора и метрические соотношения в треугольнике',
+            'Неполные и полные квадратные уравнения'
+        ],
+        chemistry: [
+            'Периодический закон и строение атома',
+            'Типы химических связей: ковалентная и ионная',
+            'Расчеты по химическим уравнениям (количество вещества)'
+        ],
+        physics: [
+            'Тепловые явления: удельная теплоемкость и уравнение теплового баланса',
+            'Закон Ома для участка цепи и расчет электрического сопротивления',
+            'Параллельное и последовательное соединение проводников'
+        ]
+    },
+    '9': {
+        math: [
+            'Квадратичная функция и ее график (парабола)',
+            'Теорема Виета и разложение квадратного трехчлена на множители',
+            'Арифметическая и геометрическая прогрессии'
+        ],
+        physics: [
+            'Законы Ньютона и прямолинейное равноускоренное движение',
+            'Закон всемирного тяготения и свободное падение',
+            'Импульс тела и закон сохранения импульса'
+        ],
+        history: [
+            'Белорусские земли в составе Российской империи (конец XVIII — XIX в.)',
+            'Восстание 1863–1864 гг. и Кастусь Калиновский',
+            'Отмена крепостного права 1861 г. в Беларуси'
+        ]
+    },
+    '10': {
+        math: [
+            'Тригонометрические формулы и простейшие уравнения',
+            'Степени с действительным показателем и логарифмы',
+            'Взаимное расположение прямых и плоскостей в пространстве'
+        ],
+        chemistry: [
+            'Углеводороды: алканы, алкены, алкины и их свойства',
+            'Окислительно-восстановительные реакции (электронный баланс)',
+            'Скорость химических реакций и химическое равновесие'
+        ]
+    },
+    '11': {
+        math: [
+            'Иррациональные уравнения (часть Б ЦТ/ЦЭ)',
+            'Тригонометрический отбор корней на окружности',
+            'Стереометрия: углы и расстояния в пирамидах'
+        ],
+        physics: [
+            'Законы постоянного тока и расчет смешанных цепей',
+            'Закон сохранения импульса и механической энергии',
+            'Идеальный газ: изопроцессы и уравнение Клапейрона'
+        ],
+        history: [
+            'Важнейшие битвы и договоры ВКЛ (Грюнвальд, Статуты)',
+            'Полоцкое и Туровское княжества: политический строй',
+            'Освобождение Беларуси в 1944 г. (операция Багратион)'
+        ]
+    },
+    'abiturient': {
+        math: [
+            'Иррациональные уравнения (часть Б ЦТ/ЦЭ)',
+            'Тригонометрический отбор корней на окружности',
+            'Стереометрия: углы и расстояния в пирамидах'
+        ],
+        physics: [
+            'Законы постоянного тока и расчет смешанных цепей',
+            'Закон сохранения импульса и механической энергии',
+            'Идеальный газ: изопроцессы и уравнение Клапейрона'
+        ],
+        history: [
+            'Важнейшие битвы и договоры ВКЛ (Грюнвальд, Статуты)',
+            'Полоцкое и Туровское княжества: политический строй',
+            'Освобождение Беларуси в 1944 г. (операция Багратион)'
+        ]
+    }
+};
 
 const PRESETS = {
     math: [
@@ -388,10 +605,14 @@ export default function AntiCheatGeneratorLanding() {
     const csrfToken = typeof window !== 'undefined' ? window.EDUSFERA_CSRF_TOKEN : '';
 
     const [selectedSubject, setSelectedSubject] = useState('math');
-    const [topic, setTopic] = useState('Иррациональные уравнения (часть Б ЦТ/ЦЭ)');
+    const [topic, setTopic] = useState('Линейные уравнения с одной переменной');
     const [variantCount, setVariantCount] = useState(15);
     const [tasksCountA, setTasksCountA] = useState(2);
     const [tasksCountB, setTasksCountB] = useState(1);
+    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+    const [selectedGrade, setSelectedGrade] = useState('7');
+    const [selectedWorkType, setSelectedWorkType] = useState('independent');
+    const [selectedDifficulty, setSelectedDifficulty] = useState('base');
     const [email, setEmail] = useState(user?.email || '');
     const [showPayModal, setShowPayModal] = useState(false);
     const [isQuarterPass, setIsQuarterPass] = useState(false);
@@ -498,9 +719,38 @@ export default function AntiCheatGeneratorLanding() {
 
     const handleSubjectChange = (subId) => {
         setSelectedSubject(subId);
-        if (PRESETS[subId] && PRESETS[subId][0]) {
+        const gradeTopic = GRADE_PRESETS[selectedGrade]?.[subId]?.[0];
+        if (gradeTopic) {
+            setTopic(gradeTopic);
+        } else if (PRESETS[subId] && PRESETS[subId][0]) {
             setTopic(PRESETS[subId][0]);
         }
+    };
+
+    const handleGradeChange = (gradeId) => {
+        setSelectedGrade(gradeId);
+        const gradeNum = parseInt(gradeId, 10);
+        // Pedagogical auto-adaptation: grades 5-9 cannot take CT/CE
+        if (gradeNum < 10 && selectedWorkType === 'ct_ce') {
+            setSelectedWorkType('independent');
+        }
+        const gradeTopic = GRADE_PRESETS[gradeId]?.[selectedSubject]?.[0];
+        if (gradeTopic) {
+            setTopic(gradeTopic);
+        }
+    };
+
+    const handleWorkTypeChange = (typeId) => {
+        const gradeNum = parseInt(selectedGrade, 10);
+        // If CT/CE is picked for middle school, switch grade to 11
+        if (typeId === 'ct_ce' && gradeNum < 10) {
+            setSelectedGrade('11');
+            const gradeTopic = GRADE_PRESETS['11']?.[selectedSubject]?.[0];
+            if (gradeTopic) {
+                setTopic(gradeTopic);
+            }
+        }
+        setSelectedWorkType(typeId);
     };
 
     useEffect(() => {
@@ -553,6 +803,9 @@ export default function AntiCheatGeneratorLanding() {
                     count: variantCount,
                     count_a: tasksCountA,
                     count_b: tasksCountB,
+                    grade: selectedGrade,
+                    work_type: selectedWorkType,
+                    difficulty: selectedDifficulty,
                     plan_type: planType,
                     test_bypass: isAdmin ? 1 : 0,
                 }),
@@ -578,6 +831,9 @@ export default function AntiCheatGeneratorLanding() {
 
     const currentSample = SAMPLE_PREVIEWS[selectedSubject] || SAMPLE_PREVIEWS.math;
     const currentSubjectName = (SUBJECTS.find(s => s.id === selectedSubject) || {}).name || 'Математика';
+    const selectedWorkTypeObj = WORK_TYPES.find(w => w.id === selectedWorkType) || WORK_TYPES[0];
+    const selectedGradeLabel = selectedGrade === 'abiturient' ? 'Абитуриент / Выпускник' : `${selectedGrade} класс`;
+    const selectedDifficultyObj = DIFFICULTY_LEVELS.find(d => d.id === selectedDifficulty) || DIFFICULTY_LEVELS[0];
 
     return (
         <div className="min-h-screen bg-[#0B0B0E] text-white font-sans selection:bg-[#7D39EB] selection:text-white antialiased flex flex-col justify-between relative overflow-x-hidden">
@@ -1125,25 +1381,30 @@ export default function AntiCheatGeneratorLanding() {
                             />
 
                             {/* Clean Text Presets */}
-                            {PRESETS[selectedSubject] && (
-                                <div className="space-y-1 pt-2.5">
-                                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-                                        Темы школьной программы:
+                            {(() => {
+                                const currentPresets = GRADE_PRESETS[selectedGrade]?.[selectedSubject] || PRESETS[selectedSubject];
+                                if (!currentPresets) return null;
+                                return (
+                                    <div className="space-y-1 pt-2.5">
+                                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center justify-between">
+                                            <span>Темы для {selectedGrade === 'abiturient' ? 'абитуриентов' : `${selectedGrade} класса`}:</span>
+                                            <span className="text-[10px] text-[#C6FF33] font-normal">клик для выбора</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            {currentPresets.map((preset, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setTopic(preset)}
+                                                    className="w-full text-left text-xs py-1 px-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors truncate block cursor-pointer font-normal"
+                                                >
+                                                    • {preset}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        {PRESETS[selectedSubject].map((preset, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => setTopic(preset)}
-                                                className="w-full text-left text-xs py-1 px-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors truncate block cursor-pointer font-normal"
-                                            >
-                                                • {preset}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* Step 3: Tasks in Variant (Part A & Part B) */}
@@ -1210,6 +1471,172 @@ export default function AntiCheatGeneratorLanding() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Step 3.5: Advanced Pedagogical Settings */}
+                        <div className="pt-2 border-t border-white/5 space-y-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left cursor-pointer group ${
+                                    showAdvancedSettings
+                                        ? 'bg-[#7D39EB]/15 border-[#7D39EB] shadow-[0_0_20px_rgba(125,57,235,0.2)]'
+                                        : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/10 hover:border-white/20'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 rounded-xl bg-[#7D39EB]/20 border border-[#7D39EB]/40 flex items-center justify-center text-[#C6FF33] shrink-0">
+                                        <SlidersHorizontal className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                                            <span>Расширенные настройки</span>
+                                            <span className="text-[10px] font-mono font-bold text-[#C6FF33] bg-[#C6FF33]/15 px-2 py-0.5 rounded-full border border-[#C6FF33]/30">
+                                                {selectedGrade === 'abiturient' ? 'Абитуриент' : `${selectedGrade} класс`} • {WORK_TYPES.find(w => w.id === selectedWorkType)?.shortLabel || 'Самостоятельная'}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-400 mt-0.5 truncate">
+                                            Класс обучения, формат работы, сложность и шкала
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-slate-400 group-hover:text-white transition-transform shrink-0 ml-2">
+                                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvancedSettings ? 'rotate-180 text-[#C6FF33]' : ''}`} />
+                                </div>
+                            </button>
+
+                            <AnimatePresence>
+                                {showAdvancedSettings && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden space-y-3 pt-1"
+                                    >
+                                        <div className="p-3.5 rounded-2xl bg-[#141418] border border-white/10 space-y-3.5">
+                                            {/* Sub-step A: Grade Selector */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                                                        Класс обучения:
+                                                    </label>
+                                                    <span className="text-[11px] text-slate-400">
+                                                        {selectedGrade === 'abiturient' ? 'Подготовка в вуз' : parseInt(selectedGrade) >= 10 ? 'Старшая школа' : 'Базовая школа'}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 p-1 rounded-xl bg-[#0B0B0E] border border-white/5">
+                                                    {GRADES.map((g) => (
+                                                        <button
+                                                            key={g.id}
+                                                            type="button"
+                                                            onClick={() => handleGradeChange(g.id)}
+                                                            className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                                                                selectedGrade === g.id
+                                                                    ? 'bg-[#7D39EB] text-white shadow-xs'
+                                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                            }`}
+                                                        >
+                                                            {g.label.replace(' класс', ' кл.')}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Sub-step B: Work Type Selector */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                                                        Тип учебной работы:
+                                                    </label>
+                                                    <span className="text-[11px] font-mono text-[#C6FF33]">
+                                                        {WORK_TYPES.find(w => w.id === selectedWorkType)?.duration}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                                    {WORK_TYPES.map((wt) => {
+                                                        const isForbidden = parseInt(selectedGrade) < 10 && wt.id === 'ct_ce';
+                                                        const isSelected = selectedWorkType === wt.id;
+                                                        return (
+                                                            <button
+                                                                key={wt.id}
+                                                                type="button"
+                                                                disabled={isForbidden}
+                                                                onClick={() => handleWorkTypeChange(wt.id)}
+                                                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer relative ${
+                                                                    isSelected
+                                                                        ? 'bg-[#7D39EB]/20 border-[#7D39EB] text-white shadow-xs'
+                                                                        : isForbidden
+                                                                        ? 'bg-white/[0.01] border-white/5 text-slate-600 opacity-40 cursor-not-allowed'
+                                                                        : 'bg-white/[0.03] border-white/10 text-slate-300 hover:border-white/25 hover:text-white'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-1.5 mb-1">
+                                                                    <wt.icon className={`w-3.5 h-3.5 ${isSelected ? 'text-[#C6FF33]' : 'text-slate-400'}`} />
+                                                                    <span className="text-xs font-bold truncate">{wt.name}</span>
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 leading-tight line-clamp-2">
+                                                                    {wt.desc}
+                                                                </div>
+                                                                <div className="mt-1.5 flex items-center gap-1 text-[9px] font-mono text-slate-400">
+                                                                    <Clock className="w-2.5 h-2.5" /> {wt.duration}
+                                                                </div>
+                                                                {isForbidden && (
+                                                                    <span className="absolute top-1 right-1 text-[8px] bg-red-500/20 text-red-300 px-1 py-0.5 rounded font-mono">
+                                                                        10–11 кл
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Sub-step C: Difficulty Level */}
+                                            <div>
+                                                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                                                    Уровень сложности:
+                                                </label>
+                                                <div className="grid grid-cols-3 gap-1.5">
+                                                    {DIFFICULTY_LEVELS.map((diff) => (
+                                                        <button
+                                                            key={diff.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedDifficulty(diff.id)}
+                                                            className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                                                                selectedDifficulty === diff.id
+                                                                    ? 'bg-white text-[#0B0B0E] font-bold shadow-xs'
+                                                                    : 'bg-white/[0.03] border-white/10 text-slate-400 hover:text-white'
+                                                            }`}
+                                                        >
+                                                            <div className="text-xs font-bold">{diff.label}</div>
+                                                            <div className={`text-[10px] ${selectedDifficulty === diff.id ? 'text-slate-700' : 'text-slate-500'}`}>
+                                                                {diff.desc}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Pedagogical Note Banner */}
+                                            <div className="p-2.5 rounded-xl bg-[#7D39EB]/10 border border-[#7D39EB]/25 text-slate-300 text-xs flex items-start gap-2">
+                                                <Sparkles className="w-4 h-4 text-[#C6FF33] shrink-0 mt-0.5" />
+                                                <div className="text-[11px] leading-relaxed">
+                                                    {parseInt(selectedGrade) < 10 ? (
+                                                        <>
+                                                            <span className="font-bold text-white">Педагогическая адаптация ({selectedGrade} класс):</span> Задания, дидактическая цель и формулировки соответствуют действующей учебной программе базовой школы РБ. Оценивание по государственной 10-балльной шкале.
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="font-bold text-white">Экзаменационный стандарт (10–11 класс):</span> Полная спецификация стандартов ЦЭ/ЦТ 2026 с отрывным бланком ответов и переводной шкалой.
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         {/* Step 4: Variant Count (Segmented Control) */}
@@ -1363,13 +1790,13 @@ export default function AntiCheatGeneratorLanding() {
 
                             {/* Header of authentic test */}
                             <div>
-                                <div className="border-b-2 border-slate-900 pb-2 mb-3 flex items-start justify-between font-sans">
+                                <div className="border-b-2 border-slate-900 pb-2 mb-2 flex items-start justify-between font-sans">
                                     <div>
                                         <div className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                                            {currentSample.title}
+                                            {selectedWorkTypeObj.title} • {currentSubjectName}
                                         </div>
                                         <div className="text-[10px] text-slate-500 mt-0.5">
-                                            Экзаменационная программа Беларуси • Стандарты ЦТ и ЦЭ 2026
+                                            Учебная программа Беларуси • {selectedGradeLabel} • {selectedDifficultyObj.title}
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -1380,11 +1807,18 @@ export default function AntiCheatGeneratorLanding() {
                                     </div>
                                 </div>
 
+                                {/* Pedagogical passport bar */}
+                                <div className="flex items-center justify-between text-[10px] font-sans text-slate-600 bg-slate-50 px-2.5 py-1 rounded border border-slate-200 mb-2">
+                                    <span>⏱ Время: <b>{selectedWorkTypeObj.duration}</b></span>
+                                    <span>📊 Заданий: <b>{tasksCountA + tasksCountB}</b></span>
+                                    <span>🎯 Шкала: <b>{selectedWorkType === 'ct_ce' ? '100-балльная (ЦТ)' : '10-балльная (школа)'}</b></span>
+                                </div>
+
                                 {/* Student fields for test sheets */}
                                 {previewTab !== 'keys' && (
-                                    <div className="grid grid-cols-2 gap-2 pb-2.5 mb-2.5 border-b border-dashed border-slate-300 text-xs font-sans text-slate-600">
+                                    <div className="grid grid-cols-2 gap-2 pb-2 mb-2 border-b border-dashed border-slate-300 text-xs font-sans text-slate-600">
                                         <div>Учащийся: ___________________________</div>
-                                        <div className="text-right">Класс: _______ &nbsp; Дата: ____________</div>
+                                        <div className="text-right">Класс: <b>{selectedGrade === 'abiturient' ? 'Абит.' : `${selectedGrade}-____`}</b> &nbsp; Дата: ____________</div>
                                     </div>
                                 )}
 
@@ -1748,10 +2182,10 @@ export default function AntiCheatGeneratorLanding() {
                                         Точный образец печати (формат А4)
                                     </span>
                                     <h3 className="text-lg font-bold text-slate-900 mt-0.5">
-                                        {currentSample.title}
+                                        {selectedWorkTypeObj.title} • {currentSubjectName}
                                     </h3>
                                     <p className="text-xs text-slate-500">
-                                        Стандарты ЦТ/ЦЭ 2026 • Уникальные числа для каждого из {variantCount} вариантов
+                                        Учебная программа Беларуси • {selectedGradeLabel} • {selectedDifficultyObj.title} • {selectedWorkTypeObj.duration}
                                     </p>
                                 </div>
                                 <button
@@ -1771,7 +2205,7 @@ export default function AntiCheatGeneratorLanding() {
                                 
                                 <div className="grid grid-cols-2 gap-2 text-[11px] font-sans text-slate-600 border-b pb-2 border-dashed">
                                     <span>Учащийся: _______________________</span>
-                                    <span className="text-right">Класс: ____ Дата: _________</span>
+                                    <span className="text-right">Класс: <b>{selectedGrade === 'abiturient' ? 'Абит.' : `${selectedGrade}-____`}</b> &nbsp; Дата: _________</span>
                                 </div>
 
                                 <div className="font-sans font-bold text-xs text-slate-900">

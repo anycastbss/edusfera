@@ -65,6 +65,9 @@ class GeneratorCheckoutController extends Controller
             'count_a' => ['nullable', 'integer', 'min:1', 'max:10'],
             'count_b' => ['nullable', 'integer', 'min:0', 'max:10'],
             'plan_type' => ['nullable', 'string', 'in:single,quarter_pass'],
+            'grade' => ['nullable', 'string', 'in:5,6,7,8,9,10,11,abiturient'],
+            'work_type' => ['nullable', 'string', 'in:independent,control,diagnostic,test,ct_ce,olympiad'],
+            'difficulty' => ['nullable', 'string', 'in:base,advanced,olympiad'],
             'test_bypass' => ['nullable'],
         ], [
             'email.required' => 'Укажите адрес электронной почты для получения материалов.',
@@ -80,6 +83,9 @@ class GeneratorCheckoutController extends Controller
         $countA = (int) ($validated['count_a'] ?? 2);
         $countB = (int) ($validated['count_b'] ?? 1);
         $planType = $validated['plan_type'] ?? 'single';
+        $grade = $validated['grade'] ?? '7';
+        $workType = $validated['work_type'] ?? 'independent';
+        $difficulty = $validated['difficulty'] ?? 'base';
 
         $isQuarterPass = ($planType === 'quarter_pass');
         $amountByn = $isQuarterPass ? 19.00 : 5.00;
@@ -103,6 +109,9 @@ class GeneratorCheckoutController extends Controller
                 'credits_total' => $isQuarterPass ? 10 : 1,
                 'count_a' => $countA,
                 'count_b' => $countB,
+                'grade' => $grade,
+                'work_type' => $workType,
+                'difficulty' => $difficulty,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ],

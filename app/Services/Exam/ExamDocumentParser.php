@@ -280,21 +280,47 @@ class ExamDocumentParser
         $countB = count($firstVar['part_b']);
         $totalCount = $countA + $countB;
 
-        $timeMinutes = match (true) {
-            $totalCount >= 20 => 180,
-            $totalCount >= 10 => 90,
-            $totalCount >= 5 => 45,
+        $grade = $order->payload['grade'] ?? '7';
+        $workType = $order->payload['work_type'] ?? 'independent';
+        $difficulty = $order->payload['difficulty'] ?? 'base';
+
+        $gradeLabel = match ($grade) {
+            'abiturient' => 'Абитуриент / Выпускник',
+            default => "{$grade} класс",
+        };
+
+        $workTypeTitle = match ($workType) {
+            'control' => 'Контрольная работа',
+            'diagnostic' => 'Диагностическая работа',
+            'test' => 'Проверочный экспресс-тест',
+            'ct_ce' => 'Пробный экзамен ЦЭ / ЦТ',
+            'olympiad' => 'Олимпиадная работа',
+            default => 'Самостоятельная работа',
+        };
+
+        $timeMinutes = match ($workType) {
+            'independent' => 20,
+            'test' => 15,
+            'control' => 45,
+            'diagnostic' => 45,
+            'olympiad' => 60,
+            'ct_ce' => ($totalCount >= 20 ? 180 : 90),
             default => 30,
         };
 
-        $testTitle = 'Проверочная работа: '.htmlspecialchars($order->topic, ENT_QUOTES, 'UTF-8');
-        if (str_contains(mb_strtolower($order->topic), 'цт') || str_contains(mb_strtolower($order->topic), 'цэ')) {
-            $testTitle = 'Пробный тест в формате стандартов ЦТ и ЦЭ 2026';
-        }
+        $isCtCe = ($workType === 'ct_ce');
+        $maxScore = $isCtCe ? 100 : 10;
 
-        $instructionText = $countB > 0
-            ? 'В тесте представлены задания с выбором одного правильного ответа (Часть А) и задания с кратким числовым ответом (Часть Б). В бланке ответов внизу листа запишите номер задания и соответствующий ответ.'
-            : 'В тесте представлены задания с выбором одного правильного ответа из пяти предложенных. В бланке ответов запишите номер задания и букву, соответствующую выбранному ответу.';
+        $testTitle = $isCtCe
+            ? 'Пробный тест в формате стандартов ЦТ и ЦЭ 2026'
+            : "{$workTypeTitle} ({$gradeLabel}): ".htmlspecialchars($order->topic, ENT_QUOTES, 'UTF-8');
+
+        $instructionText = match (true) {
+            $isCtCe && $countB > 0 => 'В тесте представлены задания с выбором одного правильного ответа (Часть А) и задания с кратким ответом (Часть Б). В бланке ответов внизу листа запишите номер задания и соответствующий ответ.',
+            $isCtCe => 'В тесте представлены задания с выбором одного правильного ответа из предложенных. В бланке ответов запишите номер задания и букву выбранного ответа.',
+            $countB > 0 => "Работа рассчитана на {$timeMinutes} минут. Внимательно прочитайте условия заданий. В Части А выберите один верный ответ, в Части Б запишите краткий ответ в бланк.",
+            default => "Работа рассчитана на {$timeMinutes} минут. Внимательно прочитайте условия заданий и запишите буквы правильных ответов в бланк внизу листа.",
+        };
 
         return [
             'variants' => $variants,
@@ -304,8 +330,13 @@ class ExamDocumentParser
             'testTitle' => $testTitle,
             'timeMinutes' => $timeMinutes,
             'totalTasksCount' => $totalCount,
-            'maxScore' => 100,
+            'maxScore' => $maxScore,
             'instructionText' => $instructionText,
+            'grade' => $grade,
+            'gradeLabel' => $gradeLabel,
+            'workType' => $workType,
+            'workTypeTitle' => $workTypeTitle,
+            'difficulty' => $difficulty,
         ];
     }
 
