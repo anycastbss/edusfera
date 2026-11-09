@@ -626,11 +626,11 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     elements.append(Spacer(1, 5))
 
     num_vars = len(variants)
-    var_cols = [f"Вариант {v.get('number', i+1)}" for i, v in enumerate(variants)]
-    col0_w = 70
+    var_cols = [Paragraph(f"<b>Вариант {v.get('number', i+1)}</b>", ParagraphStyle("vc", fontName="EDU-Bold", fontSize=8, alignment=1)) for i, v in enumerate(variants)]
+    col0_w = 64
     v_col_w = (width - col0_w) / max(1, num_vars)
     
-    matrix_rows = [["№ задания"] + var_cols]
+    matrix_rows = [[Paragraph("<b>№ задания</b>", ParagraphStyle("nh", fontName="EDU-Bold", fontSize=8, alignment=1))] + var_cols]
 
     first_var = variants[0] if variants else {}
     tasks_a = first_var.get("part_a", [])
@@ -638,50 +638,56 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
 
     for i, t in enumerate(tasks_a):
         task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number'])
-        row = [task_label]
+        lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
+        row = [lbl_p]
         for v in variants:
             v_tasks = v.get("part_a", [])
             if i < len(v_tasks):
-                ans = v_tasks[i].get("correct", "—")
-                opts = v_tasks[i].get("options", [])
-                opt_txt = ""
-                if opts and len(ans) == 1 and ans.isalpha():
-                    idx = ord(ans.upper()) - 65
-                    if 0 <= idx < len(opts):
-                        opt_txt = f" ({opts[idx].get('text','')})"
-                row.append(f"{ans}{opt_txt}")
+                ans = str(v_tasks[i].get("correct", "—")).strip().upper()
+                # Clean answer: take only first letter if string or '—'
+                clean_letter = ans[0] if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
+                # Map 1..5 to A..E if numeric
+                if clean_letter in ['1','2','3','4','5']:
+                    clean_letter = chr(64 + int(clean_letter))
+                cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
+                row.append(cell_p)
             else:
-                row.append("—")
+                row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
         matrix_rows.append(row)
 
     for i, t in enumerate(tasks_b):
         task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number'])
-        row = [task_label]
+        lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
+        row = [lbl_p]
         for v in variants:
             v_tasks = v.get("part_b", [])
             if i < len(v_tasks):
-                ans = v_tasks[i].get("correct", "целое число")
-                row.append(str(ans))
+                ans = str(v_tasks[i].get("correct", "—")).strip()
+                if not ans or ans.lower() in ["целое число", "ответ", "—"]:
+                    ans = "—"
+                # If short, display in bold; if longer string, wrap cleanly with small font
+                font_sz = 7.0 if len(ans) > 8 else 8.0
+                lead_sz = 8.5 if len(ans) > 8 else 9.5
+                cell_p = Paragraph(f"<b>{escape(ans)}</b>", ParagraphStyle("bc", fontName="EDU-Bold", fontSize=font_sz, leading=lead_sz, alignment=1, textColor=colors.HexColor("#0f172a")))
+                row.append(cell_p)
             else:
-                row.append("—")
+                row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
         matrix_rows.append(row)
 
     matrix_t = Table(matrix_rows, colWidths=[col0_w] + [v_col_w] * num_vars)
     matrix_t.setStyle(TableStyle([
-        ('FONTNAME', (0,0), (-1,-1), 'EDU'),
-        ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
-        ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 8),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f8fafc")]),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 2),
+        ('RIGHTPADDING', (0,0), (-1,-1), 2),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     elements.append(matrix_t)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
     # Belarusian 10-point conversion scale table
     elements.append(Paragraph("Шкала перевода первичных баллов в 10-балльную отметку (ГОСТ / Минобр РБ)", STYLES["teacher_title"]))

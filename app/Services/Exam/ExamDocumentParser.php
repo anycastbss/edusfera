@@ -151,10 +151,30 @@ class ExamDocumentParser
                     $conditionText = 'Выберите правильный ответ из предложенных вариантов:';
                 }
 
+                // Extract correct answer and explanation if present in prompt or task body
+                $correct = null;
+                $explanation = null;
+                if (preg_match('/(?:(?:\*{0,2}(?:Правильный ответ|Ответ)\*{0,2}\s*:\s*\[?\s*([1-5]|[А-Да-дA-Ea-e])(?:\s*[\(\:]([^\)\n\]]+)[\)]?)?\s*\]?))/ui', $tChunk, $ansM)) {
+                    $raw = $ansM[1];
+                    $correct = match ($raw) {
+                        '1', 'А', 'а', 'A', 'a' => 'A',
+                        '2', 'Б', 'б', 'B', 'b' => 'B',
+                        '3', 'В', 'в', 'C', 'c' => 'C',
+                        '4', 'Г', 'г', 'D', 'd' => 'D',
+                        '5', 'Д', 'д', 'E', 'e' => 'E',
+                        default => strtoupper($raw),
+                    };
+                }
+                if (preg_match('/(?:\*{0,2}(?:Пояснение|Объяснение|Ловушка|Решение)\*{0,2}\s*:\s*([^\n\r]+))/ui', $tChunk, $expM)) {
+                    $explanation = trim($expM[1]);
+                }
+
                 $taskItem = [
                     'num' => $tNum,
                     'condition_html' => nl2br(htmlspecialchars($conditionText, ENT_QUOTES, 'UTF-8')),
                     'options' => $options,
+                    'correct' => $correct,
+                    'explanation' => $explanation,
                 ];
 
                 // Detect and generate vector diagram if geometry or graph is present
@@ -190,12 +210,28 @@ class ExamDocumentParser
 
                 $conditionText = trim(implode(' ', array_filter($condLines)));
                 if (empty($conditionText)) {
-                    $conditionText = 'Решите задачу и запишите полученное целое число:';
+                    $conditionText = 'Решите задачу и запишите полученный ответ:';
+                }
+
+                // Extract correct answer and explanation if present in task body
+                $correct = null;
+                $explanation = null;
+                if (preg_match('/(?:(?:\*{0,2}(?:Правильный ответ|Ответ)\*{0,2}\s*:\s*\[?\s*([^\n\]\r]+)\s*\]?))/ui', $tChunk, $ansM)) {
+                    $rawAns = trim($ansM[1]);
+                    // Ignore placeholders like "_________" or "А_Б_В_Г_" or "[       ]"
+                    if (! preg_match('/^[_ \t\.\-\–]+$/u', $rawAns) && ! str_contains($rawAns, '____') && ! str_contains($rawAns, '&nbsp;')) {
+                        $correct = $rawAns;
+                    }
+                }
+                if (preg_match('/(?:\*{0,2}(?:Пояснение|Объяснение|Ловушка|Решение)\*{0,2}\s*:\s*([^\n\r]+))/ui', $tChunk, $expM)) {
+                    $explanation = trim($expM[1]);
                 }
 
                 $variantData['part_b'][] = [
                     'num' => $tNum,
                     'condition_html' => nl2br(htmlspecialchars($conditionText, ENT_QUOTES, 'UTF-8')),
+                    'correct' => $correct,
+                    'explanation' => $explanation,
                 ];
             }
 
