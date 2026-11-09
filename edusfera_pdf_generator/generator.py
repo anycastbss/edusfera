@@ -13,52 +13,54 @@ from xml.sax.saxutils import escape
 
 import qrcode
 import matplotlib
+from matplotlib.mathtext import math_to_image
+from matplotlib.font_manager import FontProperties
+from PIL import Image as PILImage
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 from reportlab.platypus import (
-    BaseDocTemplate, Flowable, Frame, Image, KeepTogether, PageBreak, NextPageTemplate,
-    PageTemplate, Paragraph, Spacer, Table, TableStyle
+    SimpleDocTemplate, Flowable, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, Image
 )
 
 ROOT = Path(__file__).resolve().parent
 PAGE_W, PAGE_H = A4
-LEFT = 14 * mm
-RIGHT = 14 * mm
+LEFT = 13 * mm
+RIGHT = 13 * mm
 CONTENT_W = PAGE_W - LEFT - RIGHT
 
-
-def _find_font(candidates: list[str]) -> str:
-    for candidate in candidates:
-        if Path(candidate).exists():
-            return candidate
-    raise FileNotFoundError("Не найден шрифт DejaVu Sans. Установите пакет fonts-dejavu-core.")
-
-
+# --- 1. FONTS CONFIGURATION ---
 MPL_FONTS = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
+
+
+def _find_font(candidates: list[str | Path]) -> str:
+    for candidate in candidates:
+        p = Path(candidate)
+        if p.exists():
+            return str(p)
+    raise FileNotFoundError("Шрифт не найден. Проверьте наличие DejaVuSans.")
+
+
 FONT_REGULAR = _find_font([
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     "/usr/local/share/fonts/DejaVuSans.ttf",
-    "/System/Library/Fonts/Supplemental/Arial.ttf",
-    str(MPL_FONTS / "DejaVuSans.ttf"),
+    MPL_FONTS / "DejaVuSans.ttf",
 ])
 FONT_BOLD = _find_font([
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
-    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    str(MPL_FONTS / "DejaVuSans-Bold.ttf"),
+    MPL_FONTS / "DejaVuSans-Bold.ttf",
 ])
 FONT_ITALIC = _find_font([
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
     "/usr/local/share/fonts/DejaVuSans-Oblique.ttf",
-    "/System/Library/Fonts/Supplemental/Arial Italic.ttf",
-    str(MPL_FONTS / "DejaVuSans-Oblique.ttf"),
-    str(MPL_FONTS / "DejaVuSans.ttf"),
+    MPL_FONTS / "DejaVuSans-Oblique.ttf",
+    MPL_FONTS / "DejaVuSans.ttf",
 ])
 
 if "EDU" not in pdfmetrics.getRegisteredFontNames():
@@ -68,29 +70,54 @@ if "EDU" not in pdfmetrics.getRegisteredFontNames():
 
 
 STYLES = {
-    "body": ParagraphStyle("body", fontName="EDU", fontSize=9.2, leading=13.2,
-                            textColor=colors.black, spaceAfter=0, allowWidows=0, allowOrphans=0),
-    "body_small": ParagraphStyle("body_small", fontName="EDU", fontSize=8, leading=10.5,
-                                  textColor=colors.black),
-    "question": ParagraphStyle("question", fontName="EDU", fontSize=9.5, leading=13.5,
-                                textColor=colors.black, spaceAfter=0),
-    "answer": ParagraphStyle("answer", fontName="EDU", fontSize=8.7, leading=12,
-                             textColor=colors.black),
-    "key_title": ParagraphStyle("key_title", fontName="EDU-Bold", fontSize=16, leading=20,
-                                 textColor=colors.black, spaceAfter=8),
-    "section": ParagraphStyle("section", fontName="EDU-Bold", fontSize=9.4, leading=12,
-                               textColor=colors.black),
+    "body": ParagraphStyle("body", fontName="EDU", fontSize=8.8, leading=12.5, textColor=colors.black),
+    "body_bold": ParagraphStyle("body_bold", fontName="EDU-Bold", fontSize=8.8, leading=12.5, textColor=colors.black),
+    "body_small": ParagraphStyle("body_small", fontName="EDU", fontSize=7.8, leading=10.5, textColor=colors.black),
+    "question": ParagraphStyle("question", fontName="EDU", fontSize=9.5, leading=14.5, textColor=colors.black),
+    "option": ParagraphStyle("option", fontName="EDU", fontSize=8.8, leading=12.5, textColor=colors.black),
+    "banner_title": ParagraphStyle("banner_title", fontName="EDU-Bold", fontSize=9, leading=11, textColor=colors.HexColor("#0f172a")),
+    "teacher_title": ParagraphStyle("teacher_title", fontName="EDU-Bold", fontSize=12, leading=15, textColor=colors.HexColor("#0f172a")),
 }
 
 
-def _safe_formula_markup(text: str, asset_dir: Path) -> str:
-    """Convert $math$ spans to tiny local PNGs for crisp inline maths in ReportLab."""
-    try:
-        from matplotlib.mathtext import math_to_image
-        from matplotlib.font_manager import FontProperties
-    except Exception:
-        return escape(text).replace("\n", "<br/>")
+# --- 2. RUNNING FOOTER WITH TWO-PASS PAGE NUMBERS ---
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
 
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.draw_page_decorations(num_pages)
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
+
+    def draw_page_decorations(self, total_pages):
+        self.saveState()
+        # Bottom footer separator
+        self.setLineWidth(0.5)
+        self.setStrokeColor(colors.HexColor("#cbd5e1"))
+        self.line(LEFT, 11 * mm, PAGE_W - RIGHT, 11 * mm)
+
+        # Branding
+        self.setFont("EDU", 7.5)
+        self.setFillColor(colors.HexColor("#64748b"))
+        self.drawString(LEFT, 7.2 * mm, "EDUSFERA  •  Платформа для репетиторов  •  edusfera.by")
+
+        # Page count
+        self.drawRightString(PAGE_W - RIGHT, 7.2 * mm, f"Страница {self._pageNumber} из {total_pages}")
+        self.restoreState()
+
+
+# --- 3. MATHEMATICAL FORMULAS RENDERER ---
+def _safe_formula_markup(text: str, asset_dir: Path) -> str:
+    """Safely convert $math$ spans into clean inline images and preserve unicode formulas."""
     pieces = re.split(r"(\$[^$]+\$)", str(text))
     output: list[str] = []
     counter = 0
@@ -100,540 +127,808 @@ def _safe_formula_markup(text: str, asset_dir: Path) -> str:
             counter += 1
             file_path = asset_dir / f"math_{counter}_{uuid.uuid4().hex[:6]}.png"
             try:
-                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=11), dpi=180,
-                              format="png", color="black")
-                from PIL import Image as PILImage
+                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=10.5), dpi=180, format="png", color="black")
                 with PILImage.open(file_path) as im:
                     w_px, h_px = im.size
-                # Inline formula height is controlled by its rendered pixel size.
-                height = max(9, min(25, h_px * 0.34))
-                width = max(10, w_px * (height / h_px))
-                output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="middle"/>')
+                height = max(8.5, min(14.0, h_px * 0.28))
+                width = max(8.0, w_px * (height / h_px))
+                output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="baseline"/>')
             except Exception:
-                # Keep the original formula visible even if a particular MathText command is unsupported.
                 output.append(escape(piece))
         else:
             output.append(escape(piece).replace("\n", "<br/>"))
     return "".join(output)
 
 
-class QuestionHeader(Flowable):
-    def __init__(self, number: str, prompt: Paragraph, width: float):
+def _generate_qr_image(url: str) -> PILImage.Image:
+    qr = qrcode.QRCode(box_size=3, border=1)
+    qr.add_data(url or "https://edusfera.by")
+    qr.make(fit=True)
+    return qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+
+# --- 4. GEOMETRIC BRANDING FLOWABLES ---
+class EdusferaLogoFlowable(Flowable):
+    """Draws the official black diamond EDUSFERA logo."""
+    def __init__(self, size: float = 30):
         super().__init__()
-        self.number = number
-        self.prompt = prompt
-        self.width = width
-        self.label_w = 39
-        self.gap = 10
+        self.size = size
+        self.width = size + 105
+        self.height = size
 
     def wrap(self, availWidth, availHeight):
-        self.width = min(self.width, availWidth)
-        text_w = self.width - self.label_w - self.gap
-        _, text_h = self.prompt.wrap(text_w, availHeight)
-        self.height = max(24, text_h) + 2
-        return self.width, self.height
-
-    def draw(self):
-        y = (self.height - 22) / 2
-        self.canv.setLineWidth(0.8)
-        self.canv.roundRect(0, y, self.label_w - 2, 22, 4, stroke=1, fill=0)
-        self.canv.setFont("EDU-Bold", 11)
-        self.canv.drawCentredString((self.label_w - 2) / 2, y + 6.1, self.number)
-        self.prompt.drawOn(self.canv, self.label_w + self.gap, (self.height - self.prompt.height) / 2)
-
-
-class ChoicesFlowable(Flowable):
-    def __init__(self, options: list[dict[str, Any]], width: float, asset_dir: Path, font_size: float = 8.8):
-        super().__init__()
-        self.options = options
-        self.width = width
-        self.asset_dir = asset_dir
-        self.font_size = font_size
-        self.cells: list[tuple[Paragraph, float, float]] = []
-
-    def wrap(self, availWidth, availHeight):
-        self.width = min(self.width, availWidth)
-        n = max(1, len(self.options))
-        col_w = self.width / n
-        self.cells = []
-        max_h = 18
-        for opt in self.options:
-            text = str(opt.get("text", ""))
-            para = Paragraph(_safe_formula_markup(text, self.asset_dir), ParagraphStyle(
-                f"choice_{len(self.cells)}", fontName="EDU", fontSize=self.font_size,
-                leading=self.font_size + 2.1, textColor=colors.black))
-            _, ph = para.wrap(col_w - 24, availHeight)
-            cell_h = max(18, ph + 1)
-            max_h = max(max_h, cell_h)
-            self.cells.append((para, col_w, cell_h))
-        self.height = max_h + 7
-        return self.width, self.height
-
-    def draw(self):
-        n = max(1, len(self.options))
-        col_w = self.width / n
-        y_base = 3
-        for idx, (para, _, cell_h) in enumerate(self.cells):
-            x = idx * col_w + 2
-            tag_y = y_base + (self.height - 7 - 17) / 2
-            self.canv.setLineWidth(0.65)
-            self.canv.roundRect(x, tag_y, 17, 17, 3, stroke=1, fill=0)
-            self.canv.setFont("EDU-Bold", 8.8)
-            self.canv.drawCentredString(x + 8.5, tag_y + 5.2, chr(65 + idx))
-            para_w = col_w - 25
-            _, ph = para.wrap(para_w, self.height)
-            para.drawOn(self.canv, x + 22, y_base + (self.height - 7 - ph) / 2)
-
-
-class PartBAnswerFlowable(Flowable):
-    def __init__(self, width: float):
-        super().__init__()
-        self.width = width
-        self.height = 24
-
-    def wrap(self, availWidth, availHeight):
-        self.width = min(self.width, availWidth)
         return self.width, self.height
 
     def draw(self):
         c = self.canv
         c.saveState()
-        c.setFont("EDU-Bold", 8.8)
+        s = self.size
+        # Outer black diamond
         c.setFillColor(colors.black)
-        c.drawString(0, 6, "Ответ:")
-
-        # Sign cell
-        c.setFillColor(colors.HexColor("#f0f0f0"))
-        c.setLineWidth(0.65)
-        c.roundRect(40, 2, 17, 18, 2, stroke=1, fill=1)
-        c.setFillColor(colors.HexColor("#555555"))
-        c.setFont("EDU-Bold", 8.5)
-        c.drawCentredString(40 + 8.5, 6, "±")
-
-        # 4 digit cells
-        c.setFillColor(colors.white)
-        for i in range(4):
-            x = 40 + 20 + i * 19
-            c.roundRect(x, 2, 17, 18, 2, stroke=1, fill=0)
-
-        c.setFillColor(colors.HexColor("#777777"))
-        c.setFont("EDU", 7.2)
-        c.drawString(40 + 20 + 4 * 19 + 8, 6, "(в бланк ответов запишите полученное целое число)")
+        c.roundRect(0, 0, s, s, 6, stroke=0, fill=1)
+        # Inner diamond lines
+        c.setStrokeColor(colors.white)
+        c.setLineWidth(2.0)
+        cx, cy = s / 2, s / 2
+        d1 = s * 0.31
+        c.line(cx, cy + d1, cx + d1, cy)
+        c.line(cx + d1, cy, cx, cy - d1)
+        c.line(cx, cy - d1, cx - d1, cy)
+        c.line(cx - d1, cy, cx, cy + d1)
+        d2 = s * 0.16
+        c.setLineWidth(1.4)
+        c.line(cx, cy + d2, cx + d2, cy)
+        c.line(cx + d2, cy, cx, cy - d2)
+        c.line(cx, cy - d2, cx - d2, cy)
+        c.line(cx - d2, cy, cx, cy + d2)
+        # Logotype
+        c.setFillColor(colors.black)
+        c.setFont("EDU-Bold", 16)
+        c.drawString(s + 8, s * 0.44, "EDUSFERA")
+        c.setFont("EDU", 7.0)
+        c.setFillColor(colors.HexColor("#475569"))
+        c.drawString(s + 8.5, s * 0.12, "Платформа для репетиторов")
         c.restoreState()
 
 
-class SectionBanner(Flowable):
-    def __init__(self, text: str, width: float):
+class SloganFlowable(Flowable):
+    """Center header with slogan and underline."""
+    def __init__(self, width: float = 140, height: float = 30):
         super().__init__()
-        self.text, self.width, self.height = text, width, 25
+        self.width = width
+        self.height = height
 
     def wrap(self, availWidth, availHeight):
-        self.width = min(self.width, availWidth)
         return self.width, self.height
 
     def draw(self):
-        self.canv.setFillColor(colors.HexColor("#eeeeee"))
-        self.canv.roundRect(0, 0, self.width, self.height, 5, stroke=0, fill=1)
-        self.canv.setFillColor(colors.black)
-        self.canv.setFont("EDU-Bold", 9.2)
-        self.canv.drawString(10, 8.2, self.text)
-
-
-class ExamDocTemplate(BaseDocTemplate):
-    def __init__(self, filename: str, meta: dict[str, Any], doc_kind: str = "student", **kwargs):
-        self.meta = meta
-        self.doc_kind = doc_kind
-        super().__init__(filename, pagesize=A4, leftMargin=LEFT, rightMargin=RIGHT,
-                         topMargin=18 * mm, bottomMargin=15 * mm, **kwargs)
-        first_height = 214 * mm if doc_kind == "key" else 195 * mm
-        first_frame = Frame(LEFT, 15 * mm, CONTENT_W, first_height,
-                            leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0, id="first")
-        later_frame = Frame(LEFT, 15 * mm, CONTENT_W, PAGE_H - 35 * mm - 15 * mm,
-                            leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0, id="later")
-        self.addPageTemplates([
-            PageTemplate(id="First", frames=[first_frame], onPage=self._draw_first_header),
-            PageTemplate(id="Later", frames=[later_frame], onPage=self._draw_later_header),
-        ])
-
-    def _draw_logo(self, canvas, x: float, y: float, compact: bool = False):
-        size = 29 if compact else 33
-        canvas.saveState()
-        canvas.setFillColor(colors.black)
-        canvas.roundRect(x, y, size, size, 7, stroke=0, fill=1)
-        canvas.setStrokeColor(colors.white)
-        canvas.setLineWidth(2.3)
-        cx, cy = x + size / 2, y + size / 2
-        d = size * 0.31
-        canvas.line(cx, cy + d, cx + d, cy)
-        canvas.line(cx + d, cy, cx, cy - d)
-        canvas.line(cx, cy - d, cx - d, cy)
-        canvas.line(cx - d, cy, cx, cy + d)
-        d2 = size * 0.16
-        canvas.setLineWidth(1.7)
-        canvas.line(cx, cy + d2, cx + d2, cy)
-        canvas.line(cx + d2, cy, cx, cy - d2)
-        canvas.line(cx, cy - d2, cx - d2, cy)
-        canvas.line(cx - d2, cy, cx, cy + d2)
-        canvas.setFillColor(colors.black)
-        canvas.setFont("EDU-Bold", 15 if compact else 18)
-        canvas.drawString(x + size + 8, y + (8 if compact else 9), "EDUSFERA")
-        canvas.restoreState()
-
-    def _qr(self):
-        url = self.meta.get("website_url") or "https://edusfera.by"
-        qr = qrcode.QRCode(box_size=4, border=1)
-        qr.add_data(url)
-        qr.make(fit=True)
-        return qr.make_image(fill_color="black", back_color="white").convert("RGB")
-
-    def _draw_first_header(self, canvas, doc):
-        canvas.saveState()
-        self._draw_logo(canvas, LEFT, PAGE_H - 51)
-        canvas.setFont("EDU-Italic", 10.5)
-        canvas.drawCentredString(PAGE_W / 2 + 4, PAGE_H - 31, "Не зубри. Знай.")
-        canvas.setLineWidth(0.9)
-        canvas.line(PAGE_W / 2 - 42, PAGE_H - 39, PAGE_W / 2 + 42, PAGE_H - 39)
-
-        qr_img = self._qr()
-        from reportlab.lib.utils import ImageReader
-        canvas.drawImage(ImageReader(qr_img), PAGE_W - RIGHT - 44, PAGE_H - 56, width=42, height=42,
-                         preserveAspectRatio=True, mask="auto")
-        canvas.setFont("EDU", 6.7)
-        canvas.drawRightString(PAGE_W - RIGHT - 49, PAGE_H - 27, "Больше тестов")
-        canvas.drawRightString(PAGE_W - RIGHT - 49, PAGE_H - 36, "на edusfera.by")
-
-        subject = str(self.meta.get("subject", "Предмет"))
-        title = str(self.meta.get("title", "Пробный тест"))
-        canvas.setFont("EDU-Bold", 22)
-        canvas.drawString(LEFT, PAGE_H - 91, subject)
-        canvas.setFont("EDU-Bold", 12.5)
-        canvas.drawString(LEFT, PAGE_H - 112, title[:70])
-
-        card_x, card_y, card_w, card_h = PAGE_W - RIGHT - 190, PAGE_H - 131, 190, 57
-        canvas.setFillColor(colors.HexColor("#eeeeee"))
-        canvas.roundRect(card_x, card_y, card_w, card_h, 7, stroke=0, fill=1)
-        canvas.setFillColor(colors.black)
-        canvas.setFont("EDU", 8.3)
-        duration = str(self.meta.get("duration", "90 минут"))
-        max_score = str(self.meta.get("max_score", "100"))
-        count = len(self.meta.get("questions", []))
-        canvas.drawString(card_x + 12, card_y + 37, f"Время выполнения: {duration}")
-        canvas.drawString(card_x + 12, card_y + 24, f"Количество заданий: {count}")
-        canvas.drawString(card_x + 12, card_y + 11, f"Максимальный балл: {max_score}")
-        canvas.setStrokeColor(colors.black)
-        canvas.setLineWidth(0.7)
-        canvas.line(LEFT, PAGE_H - 143, PAGE_W - RIGHT, PAGE_H - 143)
-
-        if self.doc_kind == "key":
-            canvas.setFillColor(colors.HexColor("#e9e9e9"))
-            canvas.roundRect(LEFT, PAGE_H - 180, CONTENT_W, 25, 5, stroke=0, fill=1)
-            canvas.setFillColor(colors.black)
-            canvas.setFont("EDU-Bold", 9.1)
-            canvas.drawString(LEFT + 10, PAGE_H - 172, "КЛЮЧ ПРЕПОДАВАТЕЛЯ  •  НЕ ВЫДАВАТЬ УЧЕНИКУ")
-            canvas.restoreState()
-            return
-
-        instruction = str(self.meta.get("instructions") or
-                          "В заданиях с выбором ответа отметьте один правильный вариант. Ответы перенесите в бланк в конце теста.")
-        box_y, box_h = PAGE_H - 204, 49
-        canvas.roundRect(LEFT, box_y, CONTENT_W, box_h, 6, stroke=1, fill=0)
-        canvas.setFont("EDU-Bold", 10)
-        canvas.drawString(LEFT + 12, box_y + 32, "Инструкция")
-        p = Paragraph(escape(instruction).replace("\n", "<br/>"), ParagraphStyle(
-            "instruction", fontName="EDU", fontSize=8.1, leading=10.3))
-        _, ph = p.wrap(CONTENT_W - 24, 24)
-        p.drawOn(canvas, LEFT + 12, box_y + 7)
-
-        canvas.setFillColor(colors.HexColor("#e9e9e9"))
-        canvas.roundRect(LEFT, PAGE_H - 238, CONTENT_W, 25, 5, stroke=0, fill=1)
-        canvas.setFillColor(colors.black)
-        canvas.setFont("EDU-Bold", 9.1)
-        section_name = str(self.meta.get("section_title", "Часть A. Задания с выбором одного правильного ответа"))
-        canvas.drawString(LEFT + 10, PAGE_H - 230, section_name[:100])
-        canvas.restoreState()
-
-    def _draw_later_header(self, canvas, doc):
-        canvas.saveState()
-        self._draw_logo(canvas, LEFT, PAGE_H - 42, compact=True)
-        canvas.setFont("EDU", 7.5)
-        canvas.drawRightString(PAGE_W - RIGHT, PAGE_H - 27,
-                               f"{self.meta.get('subject', '')}  |  {self.meta.get('title', '')[:40]}")
-        canvas.setLineWidth(0.55)
-        canvas.line(LEFT, PAGE_H - 49, PAGE_W - RIGHT, PAGE_H - 49)
-        canvas.restoreState()
-
-    def afterPage(self):
         c = self.canv
         c.saveState()
-        c.setFont("EDU", 7)
-        c.setFillColor(colors.HexColor("#555555"))
-        c.drawCentredString(PAGE_W / 2, 7 * mm, f"EDUSFERA  •  {self.page}")
+        c.setFont("EDU-Italic", 11)
+        c.setFillColor(colors.black)
+        cx = self.width / 2
+        cy = self.height / 2 + 2
+        c.drawCentredString(cx, cy, "Не зубри. Знай.")
+        c.setLineWidth(0.8)
+        c.setStrokeColor(colors.black)
+        c.line(cx - 36, cy - 6, cx + 36, cy - 6)
         c.restoreState()
 
 
-def _question_flowables(q: dict[str, Any], asset_dir: Path, width: float) -> list[Flowable]:
-    number = str(q.get("number") or q.get("id") or "")
-    prompt_markup = _safe_formula_markup(str(q.get("prompt", "")), asset_dir)
-    prompt = Paragraph(prompt_markup, STYLES["question"])
-    parts: list[Flowable] = [QuestionHeader(number, prompt, width), Spacer(1, 4)]
+# --- 5. COMPONENT BUILDERS ---
+def build_variant_header(variant_title: str, subject: str, subtitle: str, duration: str, 
+                         count_a: int, count_b: int, max_score: str, asset_dir: Path, width: float) -> list[Flowable]:
+    """Builds clean, uncollidable header for each test variant."""
+    qr_img = _generate_qr_image("https://edusfera.by")
+    qr_path = asset_dir / f"header_qr_{uuid.uuid4().hex[:6]}.png"
+    qr_img.save(qr_path)
+    
+    # 1. Top row: Logo (left), Slogan (center), QR (right)
+    qr_flow = Image(str(qr_path), width=36, height=36)
+    qr_caption = Paragraph("<font size=6.5 color='#475569'>Больше тестов<br/>на <b>edusfera.by</b></font>", ParagraphStyle("qrcap", fontName="EDU", alignment=2, leading=8.5))
+    qr_table = Table([[qr_caption, qr_flow]], colWidths=[65, 40])
+    qr_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
 
-    diagram_path = q.get("diagram_path")
+    top_table = Table([
+        [EdusferaLogoFlowable(size=30), SloganFlowable(width=160), qr_table]
+    ], colWidths=[150, width - 260, 110])
+    top_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN', (1,0), (1,0), 'CENTER'),
+        ('ALIGN', (2,0), (2,0), 'RIGHT'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    # 2. Main title row: Subject & Variant title (left), Passport card (right)
+    title_markup = (
+        f"<font name='EDU-Bold' size=22 color='#000000'><b>{escape(subject)}</b></font><br/>"
+        f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(variant_title)}</b></font> &nbsp;•&nbsp; "
+        f"<font name='EDU' size=9.5 color='#475569'>{escape(subtitle)}</font>"
+    )
+    title_p = Paragraph(title_markup, ParagraphStyle("subjh", leading=16))
+
+    total_tasks = count_a + count_b
+    task_breakdown = f"{total_tasks} (Часть А: {count_a}, Часть Б: {count_b})" if count_b > 0 else f"{count_a}"
+    passport_markup = (
+        f"<b>Время выполнения:</b> {escape(duration)}<br/>"
+        f"<b>Количество заданий:</b> {task_breakdown}<br/>"
+        f"<b>Максимальный балл:</b> {escape(str(max_score))}"
+    )
+    passport_p = Paragraph(passport_markup, ParagraphStyle("passp", fontName="EDU", fontSize=7.8, leading=10.8, textColor=colors.HexColor("#1e293b")))
+    
+    passport_table = Table([[passport_p]], colWidths=[185])
+    passport_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+    ]))
+
+    mid_table = Table([
+        [title_p, passport_table]
+    ], colWidths=[width - 195, 195])
+    mid_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    # 3. Pupil line
+    pupil_markup = "<b>Учащийся:</b> __________________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> _______ &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________"
+    pupil_p = Paragraph(pupil_markup, ParagraphStyle("pupil", fontName="EDU", fontSize=8.8, leading=12))
+
+    # 4. Instruction box
+    instr_markup = (
+        "<b>Инструкция:</b> В заданиях Части А выберите один верный вариант ответа. "
+        "В заданиях Части Б запишите полученное целое число. "
+        "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
+    )
+    instr_p = Paragraph(instr_markup, ParagraphStyle("instt", fontName="EDU", fontSize=8.0, leading=10.5, textColor=colors.HexColor("#334155")))
+    instr_table = Table([[instr_p]], colWidths=[width])
+    instr_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.65, colors.HexColor("#94a3b8")),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+    ]))
+
+    divider = Table([['']], colWidths=[width], rowHeights=[0.5], style=[
+        ('LINEBELOW', (0,0), (-1,-1), 0.8, colors.black)
+    ])
+
+    return [
+        top_table,
+        Spacer(1, 4),
+        divider,
+        Spacer(1, 5),
+        mid_table,
+        Spacer(1, 5),
+        pupil_p,
+        Spacer(1, 4),
+        instr_table,
+        Spacer(1, 6),
+    ]
+
+
+def build_section_banner(title: str, width: float) -> Flowable:
+    """Renders a sleek grey banner for Part A or Part B."""
+    p = Paragraph(f"<b>{escape(title)}</b>", STYLES["banner_title"])
+    t = Table([[p]], colWidths=[width])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#e2e8f0")),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+    ]))
+    return t
+
+
+def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float) -> Flowable:
+    """Renders a complete task with badge, prompt, options/answer-box, and divider without any overlapping."""
+    num_str = str(task.get("number", "А1"))
+    prompt_raw = str(task.get("prompt", ""))
+    prompt_html = _safe_formula_markup(prompt_raw, asset_dir)
+    prompt_p = Paragraph(prompt_html, STYLES["question"])
+
+    # Badge Table
+    badge_p = Paragraph(f"<b>{num_str}</b>", ParagraphStyle("bdg", fontName="EDU-Bold", fontSize=9.5, alignment=1, textColor=colors.black))
+    badge_t = Table([[badge_p]], colWidths=[36], rowHeights=[20])
+    badge_t.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 0.8, colors.black),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#ffffff")),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 1),
+        ('RIGHTPADDING', (0,0), (-1,-1), 1),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+    ]))
+
+    # Top Table: [Badge] [Prompt]
+    prompt_w = width - 42
+    top_t = Table([[badge_t, prompt_p]], colWidths=[42, prompt_w])
+    top_t.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+
+    elements: list[Flowable] = [top_t, Spacer(1, 3)]
+
+    # Optional Diagram image
+    diagram_path = task.get("diagram_path")
     if diagram_path and not Path(diagram_path).is_absolute():
         diagram_path = str((ROOT / diagram_path).resolve())
     if diagram_path and Path(diagram_path).exists():
         img = Image(str(diagram_path))
-        max_w = min(width * 0.62, 245)
-        max_h = float(q.get("diagram_height", 105))
+        max_w = min(width * 0.60, 240)
+        max_h = float(task.get("diagram_height", 100))
         scale = min(max_w / img.imageWidth, max_h / img.imageHeight, 1.0)
         img.drawWidth = img.imageWidth * scale
         img.drawHeight = img.imageHeight * scale
         img.hAlign = "CENTER"
-        parts.extend([img, Spacer(1, 3)])
+        elements.extend([img, Spacer(1, 3)])
 
-    options = q.get("options") or []
+    # Options or Part B box
+    options = task.get("options") or []
     if options:
-        parts.append(ChoicesFlowable(options, width, asset_dir))
-    else:
-        parts.append(PartBAnswerFlowable(width))
-    parts.extend([Spacer(1, 2)])
-    # A restrained horizontal divider keeps the sheet structured without wasting toner.
-    parts.append(Table([['']], colWidths=[width], rowHeights=[0.6], style=TableStyle([
-        ("LINEBELOW", (0, 0), (-1, -1), 0.55, colors.HexColor("#777777")),
-    ])))
-    parts.append(Spacer(1, 7))
-    return parts
+        # Determine layout grid based on max option length
+        max_len = max(len(str(o.get("text", ""))) for o in options)
+        opt_cells = []
+        for i, opt in enumerate(options):
+            letter = chr(65 + i)
+            tag_p = Paragraph(f"<b>{letter}</b>", ParagraphStyle("opt_tag", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.black))
+            tag_t = Table([[tag_p]], colWidths=[16], rowHeights=[16])
+            tag_t.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 0.65, colors.black),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 1),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ]))
+            text_html = _safe_formula_markup(str(opt.get("text", "")), asset_dir)
+            text_p = Paragraph(text_html, STYLES["option"])
+            
+            item_t = Table([[tag_t, text_p]], colWidths=[20, None])
+            item_t.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ]))
+            opt_cells.append(item_t)
 
-
-def _answer_sheet(story: list[Flowable], questions: list[dict[str, Any]], width: float):
-    story.append(PageBreak())
-    story.append(Paragraph("Бланк ответов", STYLES["key_title"]))
-    story.append(Paragraph("Заполните ячейки выбранными буквами ответов. Пишите разборчиво.", STYLES["body"]))
-    story.append(Spacer(1, 12))
-    chunk_size = 15
-    for start in range(0, len(questions), chunk_size):
-        subset = questions[start:start + chunk_size]
-        ids = [str(q.get("number") or q.get("id") or f"A{start+i+1}") for i, q in enumerate(subset)]
-        col0 = 58
-        col = (width - col0) / max(1, len(ids))
-        data = [["№ задания"] + ids, ["Ответ"] + ["" for _ in ids]]
-        t = Table(data, colWidths=[col0] + [col] * len(ids), rowHeights=[25, 31])
-        t.setStyle(TableStyle([
-            ("FONTNAME", (0, 0), (-1, -1), "EDU"),
-            ("FONTNAME", (0, 0), (0, -1), "EDU-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 6.8),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ededed")),
-            ("GRID", (0, 0), (-1, -1), 0.65, colors.black),
-            ("LEFTPADDING", (0, 0), (-1, -1), 2),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-        ]))
-        story.append(t)
-        story.append(Spacer(1, 10))
-    story.append(Spacer(1, 13))
-    story.append(Paragraph("ФИО: ________________________________________________________________", STYLES["body"]))
-    story.append(Spacer(1, 8))
-    story.append(Paragraph("Дата: ____________________    Группа: ____________________", STYLES["body"]))
-
-
-def _key_story(data: dict[str, Any], asset_dir: Path) -> list[Flowable]:
-    story: list[Flowable] = [NextPageTemplate("Later")]
-    story.append(Paragraph("Ключ ответов и пояснения", STYLES["key_title"]))
-    story.append(Paragraph(f"{escape(str(data.get('subject', 'Предмет')))} — {escape(str(data.get('title', 'Тест')))}", STYLES["body"]))
-    story.append(Spacer(1, 12))
-    rows = [["Задание", "Ответ", "Правильный вариант"]]
-    for q in data["questions"]:
-        ans = str(q.get("correct", "A")).upper()
-        opts = q.get("options", [])
-        if opts:
-            text = next((str(o.get("text", "")) for i, o in enumerate(opts) if chr(65 + i) == ans), "")
+        if max_len <= 14:
+            # 1 row
+            n = len(opt_cells)
+            c_w = (width - 42) / n
+            grid_t = Table([opt_cells], colWidths=[c_w] * n)
+        elif max_len <= 35:
+            # 2x2 grid
+            row1 = opt_cells[:2]
+            row2 = opt_cells[2:4]
+            c_w = (width - 42) / 2
+            grid_t = Table([row1, row2], colWidths=[c_w, c_w])
         else:
-            text = str(q.get("correct", ""))
-        rows.append([str(q.get("number") or q.get("id")), ans if opts else "—", Paragraph(_safe_formula_markup(text, asset_dir), STYLES["body_small"])])
-    table = Table(rows, colWidths=[72, 52, CONTENT_W - 124], repeatRows=1)
-    table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, 0), "EDU-Bold"),
-        ("FONTNAME", (0, 1), (-1, -1), "EDU"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("LEADING", (0, 0), (-1, -1), 10),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e9e9e9")),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#666666")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            # 1 column stack
+            grid_t = Table([[c] for c in opt_cells], colWidths=[width - 42])
+
+        grid_t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (-1,-1), 2),
+            ('RIGHTPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+        ]))
+
+        indented_opts = Table([['', grid_t]], colWidths=[42, width - 42])
+        indented_opts.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        elements.append(indented_opts)
+    else:
+        # Part B answer box
+        ans_label = Paragraph("<b>Ответ:</b>", STYLES["body_bold"])
+        sign_box = Paragraph("<b>±</b>", ParagraphStyle("sign", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#475569")))
+        sign_t = Table([[sign_box]], colWidths=[16], rowHeights=[16])
+        sign_t.setStyle(TableStyle([
+            ('BOX', (0,0), (-1,-1), 0.65, colors.HexColor("#64748b")),
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+
+        digit_boxes = []
+        for _ in range(4):
+            dt = Table([['']], colWidths=[16], rowHeights=[16])
+            dt.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 0.65, colors.black),
+                ('BACKGROUND', (0,0), (-1,-1), colors.white),
+            ]))
+            digit_boxes.append(dt)
+
+        hint_p = Paragraph("<font size=7.5 color='#64748b'>(в бланк ответов запишите полученное целое число)</font>", STYLES["body_small"])
+
+        row = [ans_label, sign_t] + digit_boxes + [hint_p]
+        col_w = [40, 18, 18, 18, 18, 18, width - 42 - 130]
+        box_table = Table([row], colWidths=col_w)
+        box_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (-1,-1), 1),
+            ('RIGHTPADDING', (0,0), (-1,-1), 1),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+
+        indented_box = Table([['', box_table]], colWidths=[42, width - 42])
+        indented_box.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        elements.append(indented_box)
+
+    elements.append(Spacer(1, 3))
+    # Subtle task separator
+    divider = Table([['']], colWidths=[width], rowHeights=[0.4], style=[
+        ('LINEBELOW', (0,0), (-1,-1), 0.45, colors.HexColor("#e2e8f0"))
+    ])
+    elements.append(divider)
+    elements.append(Spacer(1, 4))
+
+    return KeepTogether(elements)
+
+
+def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float) -> Flowable:
+    """Builds a tear-off answer sheet tailored for the specific variant."""
+    elements = []
+    cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
+    elements.append(cut_line)
+    elements.append(Spacer(1, 3))
+
+    header_p = Paragraph(f"<b>Бланк ответов ({escape(variant_title)})</b>", STYLES["banner_title"])
+    elements.append(header_p)
+    elements.append(Spacer(1, 4))
+
+    # Grid for Part A
+    if part_a:
+        a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number']) for i, t in enumerate(part_a)]
+        col0_w = 90
+        cell_w = min(32, (width - col0_w) / max(1, len(a_headers)))
+        a_data = [
+            ["Часть А"] + a_headers,
+            ["Ответ"] + ["" for _ in a_headers]
+        ]
+        a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[17, 22], hAlign='LEFT')
+        a_table.setStyle(TableStyle([
+            ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+            ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), 7.5),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+            ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+            ('LEFTPADDING', (0,0), (-1,-1), 2),
+            ('RIGHTPADDING', (0,0), (-1,-1), 2),
+        ]))
+        elements.append(a_table)
+        elements.append(Spacer(1, 4))
+
+    # Grid for Part B
+    if part_b:
+        b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number']) for i, t in enumerate(part_b)]
+        col0_w = 90
+        cell_w = min(48, (width - col0_w) / max(1, len(b_headers)))
+        b_data = [
+            ["Часть Б"] + b_headers,
+            ["Ответ (число)"] + ["" for _ in b_headers]
+        ]
+        b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[17, 22], hAlign='LEFT')
+        b_table.setStyle(TableStyle([
+            ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+            ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+            ('FONTSIZE', (0,0), (-1,-1), 7.5),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+            ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+            ('LEFTPADDING', (0,0), (-1,-1), 2),
+            ('RIGHTPADDING', (0,0), (-1,-1), 2),
+        ]))
+        elements.append(b_table)
+        elements.append(Spacer(1, 4))
+
+    # Teacher grading line
+    grade_p = Paragraph("<b>Балл:</b> _____ / 100 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Оценка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
+    elements.append(grade_p)
+
+    return KeepTogether(elements)
+
+
+def build_teacher_section(variants: list[dict], master_table_raw: list[dict], asset_dir: Path, width: float) -> list[Flowable]:
+    """Builds the comprehensive teacher keys & analysis section on a dedicated page."""
+    elements = [PageBreak()]
+
+    # Header Warning Banner
+    banner_p = Paragraph("<font color='#b91c1c'><b>КЛЮЧИ И ОТВЕТЫ ДЛЯ ПРЕПОДАВАТЕЛЯ  •  МАТЕРИАЛ ДЛЯ ПРОВЕРКИ (НЕ ВЫДАВАТЬ УЧЕНИКАМ)</b></font>", STYLES["banner_title"])
+    banner_t = Table([[banner_p]], colWidths=[width])
+    banner_t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fee2e2")),
+        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor("#ef4444")),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
     ]))
-    story.append(table)
-    story.append(Spacer(1, 14))
-    for q in data["questions"]:
-        number = escape(str(q.get("number") or q.get("id")))
-        ans = str(q.get("correct", "A")).upper()
-        options = q.get("options", [])
-        answer_text = next((str(o.get("text", "")) for i, o in enumerate(options) if chr(65+i) == ans), "")
-        heading = Paragraph(f"<b>{number}. Ответ: {ans}</b> — {_safe_formula_markup(answer_text, asset_dir)}", STYLES["answer"])
-        explanation = str(q.get("explanation", "")).strip()
-        bits: list[Flowable] = [heading]
-        if explanation:
-            bits.append(Paragraph(_safe_formula_markup(explanation, asset_dir), STYLES["body_small"]))
-        bits.append(Spacer(1, 7))
-        story.append(KeepTogether(bits))
-    return story
+    elements.append(banner_t)
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph("Сводная мастер-таблица правильных ответов", STYLES["teacher_title"]))
+    elements.append(Paragraph("Ниже приведена матрица для быстрой сверки результатов по всем вариантам:", STYLES["body"]))
+    elements.append(Spacer(1, 5))
+
+    num_vars = len(variants)
+    var_cols = [f"Вариант {v.get('number', i+1)}" for i, v in enumerate(variants)]
+    col0_w = 70
+    v_col_w = (width - col0_w) / max(1, num_vars)
+    
+    matrix_rows = [["№ задания"] + var_cols]
+
+    first_var = variants[0] if variants else {}
+    tasks_a = first_var.get("part_a", [])
+    tasks_b = first_var.get("part_b", [])
+
+    for i, t in enumerate(tasks_a):
+        task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number'])
+        row = [task_label]
+        for v in variants:
+            v_tasks = v.get("part_a", [])
+            if i < len(v_tasks):
+                ans = v_tasks[i].get("correct", "—")
+                opts = v_tasks[i].get("options", [])
+                opt_txt = ""
+                if opts and len(ans) == 1 and ans.isalpha():
+                    idx = ord(ans.upper()) - 65
+                    if 0 <= idx < len(opts):
+                        opt_txt = f" ({opts[idx].get('text','')})"
+                row.append(f"{ans}{opt_txt}")
+            else:
+                row.append("—")
+        matrix_rows.append(row)
+
+    for i, t in enumerate(tasks_b):
+        task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number'])
+        row = [task_label]
+        for v in variants:
+            v_tasks = v.get("part_b", [])
+            if i < len(v_tasks):
+                ans = v_tasks[i].get("correct", "целое число")
+                row.append(str(ans))
+            else:
+                row.append("—")
+        matrix_rows.append(row)
+
+    matrix_t = Table(matrix_rows, colWidths=[col0_w] + [v_col_w] * num_vars)
+    matrix_t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+        ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
+        ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f8fafc")]),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(matrix_t)
+    elements.append(Spacer(1, 10))
+
+    # Belarusian 10-point conversion scale table
+    elements.append(Paragraph("Шкала перевода первичных баллов в 10-балльную отметку (ГОСТ / Минобр РБ)", STYLES["teacher_title"]))
+    scale_rows = [
+        ["Отметка (1–10)", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+        ["Первичные баллы", "1–9", "10–19", "20–34", "35–49", "50–64", "65–74", "75–84", "85–92", "93–98", "99–100"],
+    ]
+    scale_col_w = (width - 90) / 10
+    scale_t = Table(scale_rows, colWidths=[90] + [scale_col_w] * 10)
+    scale_t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+        ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+        ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 7.5),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    elements.append(scale_t)
+    elements.append(Spacer(1, 10))
+
+    # Detailed Explanations
+    elements.append(Paragraph("Методический разбор заданий и анализ ловушек", STYLES["teacher_title"]))
+    elements.append(Spacer(1, 4))
+
+    for v_idx, v in enumerate(variants):
+        var_num = v.get("number", v_idx + 1)
+        elements.append(Paragraph(f"<b>Вариант {var_num}</b>", STYLES["banner_title"]))
+        elements.append(Spacer(1, 3))
+
+        for t in (v.get("part_a", []) + v.get("part_b", [])):
+            t_num = t.get("number", "")
+            ans = t.get("correct", "")
+            expl = t.get("explanation", "").strip()
+            item_text = f"<b>{t_num}. Ответ: {ans}</b>"
+            if expl:
+                item_text += f" — {_safe_formula_markup(expl, asset_dir)}"
+            p = Paragraph(item_text, STYLES["body"])
+            elements.append(p)
+            elements.append(Spacer(1, 2))
+        elements.append(Spacer(1, 5))
+
+    return elements
 
 
-def validate_data(data: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(data, dict):
-        raise ValueError("Ожидается объект с настройками теста и списком заданий.")
-    questions = data.get("questions")
-    if not isinstance(questions, list) or not questions:
-        raise ValueError("Добавьте хотя бы одно задание.")
+def normalize_input_data(data: dict[str, Any]) -> dict[str, Any]:
+    """Ensures input data conforms to multi-variant structure with backward compatibility."""
     normalized = dict(data)
     normalized.setdefault("subject", "Математика")
-    normalized.setdefault("title", "Пробный тест в формате ЦТ")
+    normalized.setdefault("title", "Пробный тест в формате стандартов ЦТ и ЦЭ 2026")
     normalized.setdefault("duration", "90 минут")
     normalized.setdefault("max_score", "100")
     normalized.setdefault("website_url", "https://edusfera.by")
-    normalized.setdefault("instructions", "В заданиях с выбором ответа отметьте один правильный вариант. Ответы перенесите в бланк в конце теста.")
-    out_questions = []
-    seen = set()
-    for i, raw in enumerate(questions, 1):
-        if not isinstance(raw, dict):
-            raise ValueError(f"Задание {i}: неверный формат.")
-        q = dict(raw)
-        q.setdefault("number", f"A{i}")
-        if q["number"] in seen:
-            raise ValueError(f"Повторяется номер задания {q['number']}.")
-        seen.add(q["number"])
-        if not str(q.get("prompt", "")).strip():
-            raise ValueError(f"{q['number']}: заполните условие задания.")
-        opts = q.get("options") or []
-        if opts:
-            if len(opts) not in (4, 5):
-                raise ValueError(f"{q['number']}: для формата с выбором ответа добавьте 4 или 5 вариантов ответа.")
-            if any(not str(o.get("text", "")).strip() for o in opts):
-                raise ValueError(f"{q['number']}: заполните текст каждого варианта ответа.")
-            correct = str(q.get("correct", "A")).upper()
-            if correct not in [chr(65+j) for j in range(len(opts))]:
-                raise ValueError(f"{q['number']}: правильный ответ должен соответствовать одному из вариантов.")
-            q["correct"] = correct
-        else:
-            q["correct"] = str(q.get("correct", "")).strip()
-        out_questions.append(q)
-    normalized["questions"] = out_questions
+
+    variants = normalized.get("variants") or []
+    if not variants and normalized.get("questions"):
+        # Wrap flat questions list into a single variant
+        questions = normalized["questions"]
+        part_a = [q for q in questions if not str(q.get("number","")).startswith("Б") and q.get("options")]
+        part_b = [q for q in questions if q not in part_a]
+        variants = [{
+            "number": 1,
+            "title": "Вариант 1",
+            "part_a": part_a,
+            "part_b": part_b
+        }]
+    normalized["variants"] = variants
     return normalized
 
 
+def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
+    """Entry point to generate a flawless multi-variant test PDF."""
+    data = normalize_input_data(data)
+    output_pdf = Path(output_pdf)
+    output_pdf.parent.mkdir(parents=True, exist_ok=True)
+    asset_dir = output_pdf.parent / "assets"
+    asset_dir.mkdir(parents=True, exist_ok=True)
+
+    doc = SimpleDocTemplate(
+        str(output_pdf),
+        pagesize=A4,
+        leftMargin=LEFT,
+        rightMargin=RIGHT,
+        topMargin=10 * mm,
+        bottomMargin=14 * mm,
+    )
+
+    story: list[Flowable] = []
+
+    subject = str(data.get("subject", "Математика"))
+    title = str(data.get("title", "Пробный тест"))
+    subtitle = str(data.get("topic") or "Пробный тест в формате стандартов ЦТ и ЦЭ 2026")
+    duration = str(data.get("duration", "90 минут"))
+    max_score = str(data.get("max_score", "100"))
+    variants = data.get("variants") or []
+
+    for v_idx, variant in enumerate(variants):
+        if v_idx > 0:
+            story.append(PageBreak())
+
+        var_num = variant.get("number", v_idx + 1)
+        var_title = f"Вариант {var_num}"
+        part_a = variant.get("part_a", [])
+        part_b = variant.get("part_b", [])
+
+        # Header for this variant
+        header_blocks = build_variant_header(
+            variant_title=var_title,
+            subject=subject,
+            subtitle=subtitle,
+            duration=duration,
+            count_a=len(part_a),
+            count_b=len(part_b),
+            max_score=max_score,
+            asset_dir=asset_dir,
+            width=CONTENT_W
+        )
+        story.extend(header_blocks)
+
+        # Part A section
+        if part_a:
+            first_num = part_a[0].get("number", "А1")
+            last_num = part_a[-1].get("number", f"А{len(part_a)}")
+            banner = build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W)
+            story.append(banner)
+            story.append(Spacer(1, 5))
+
+            for task in part_a:
+                story.append(build_task_flowable(task, asset_dir, CONTENT_W))
+
+        # Part B section
+        if part_b:
+            first_num = part_b[0].get("number", "Б1")
+            last_num = part_b[-1].get("number", f"Б{len(part_b)}")
+            banner = build_section_banner(f"Часть Б. Задания с кратким числовым ответом ({first_num}–{last_num})", CONTENT_W)
+            story.append(banner)
+            story.append(Spacer(1, 5))
+
+            for task in part_b:
+                story.append(build_task_flowable(task, asset_dir, CONTENT_W))
+
+        # Answer sheet for this variant
+        story.append(Spacer(1, 5))
+        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W))
+
+    # Teacher master section at the end
+    master_table_raw = data.get("master_table", [])
+    teacher_blocks = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W)
+    story.extend(teacher_blocks)
+
+    doc.build(story, canvasmaker=NumberedCanvas)
+
+
 def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path]:
-    data = validate_data(data)
+    """Generates student test PDF and teacher key PDF for the web UI and CLI."""
+    data = normalize_input_data(data)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    assets = out_dir / "assets"
-    assets.mkdir(parents=True, exist_ok=True)
-
-    # Decode optional data-URL images from the browser editor.
-    for i, q in enumerate(data["questions"], 1):
-        if q.get("diagram_data"):
-            raw = str(q.pop("diagram_data"))
-            if "," in raw:
-                raw = raw.split(",", 1)[1]
-            try:
-                decoded = base64.b64decode(raw, validate=True)
-                target = assets / f"diagram_{i}.png"
-                target.write_bytes(decoded)
-                q["diagram_path"] = str(target)
-            except Exception as exc:
-                raise ValueError(f"{q['number']}: не удалось прочитать изображение схемы.") from exc
+    asset_dir = out_dir / "assets"
+    asset_dir.mkdir(parents=True, exist_ok=True)
 
     student_pdf = out_dir / "edusfera_test_student.pdf"
     key_pdf = out_dir / "edusfera_test_teacher_key.pdf"
 
-    student_doc = ExamDocTemplate(str(student_pdf), data, doc_kind="student")
-    story: list[Flowable] = [NextPageTemplate("Later"), Spacer(1, 7)]
-    for q in data["questions"]:
-        blocks = _question_flowables(q, assets, CONTENT_W)
-        # Keep each regular-sized task together so its prompt and choices are not split over pages.
-        story.append(KeepTogether(blocks))
-    if data.get("include_answer_sheet", True):
-        _answer_sheet(story, data["questions"], CONTENT_W)
-    student_doc.build(story)
+    # 1. Student PDF
+    doc_student = SimpleDocTemplate(
+        str(student_pdf),
+        pagesize=A4,
+        leftMargin=LEFT,
+        rightMargin=RIGHT,
+        topMargin=10 * mm,
+        bottomMargin=14 * mm,
+    )
+    story_student: list[Flowable] = []
 
-    key_doc = ExamDocTemplate(str(key_pdf), data, doc_kind="key")
-    key_doc.build(_key_story(data, assets))
+    subject = str(data.get("subject", "Математика"))
+    subtitle = str(data.get("topic") or "Пробный тест в формате стандартов ЦТ и ЦЭ 2026")
+    duration = str(data.get("duration", "90 минут"))
+    max_score = str(data.get("max_score", "100"))
+    variants = data.get("variants") or []
+
+    for v_idx, variant in enumerate(variants):
+        if v_idx > 0:
+            story_student.append(PageBreak())
+
+        var_num = variant.get("number", v_idx + 1)
+        var_title = f"Вариант {var_num}"
+        part_a = variant.get("part_a", [])
+        part_b = variant.get("part_b", [])
+
+        header_blocks = build_variant_header(
+            variant_title=var_title,
+            subject=subject,
+            subtitle=subtitle,
+            duration=duration,
+            count_a=len(part_a),
+            count_b=len(part_b),
+            max_score=max_score,
+            asset_dir=asset_dir,
+            width=CONTENT_W
+        )
+        story_student.extend(header_blocks)
+
+        if part_a:
+            first_num = part_a[0].get("number", "А1")
+            last_num = part_a[-1].get("number", f"А{len(part_a)}")
+            story_student.append(build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W))
+            story_student.append(Spacer(1, 5))
+            for task in part_a:
+                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W))
+
+        if part_b:
+            first_num = part_b[0].get("number", "Б1")
+            last_num = part_b[-1].get("number", f"Б{len(part_b)}")
+            story_student.append(build_section_banner(f"Часть Б. Задания с кратким числовым ответом ({first_num}–{last_num})", CONTENT_W))
+            story_student.append(Spacer(1, 5))
+            for task in part_b:
+                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W))
+
+        story_student.append(Spacer(1, 5))
+        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W))
+
+    doc_student.build(story_student, canvasmaker=NumberedCanvas)
+
+    # 2. Key PDF
+    doc_key = SimpleDocTemplate(
+        str(key_pdf),
+        pagesize=A4,
+        leftMargin=LEFT,
+        rightMargin=RIGHT,
+        topMargin=10 * mm,
+        bottomMargin=14 * mm,
+    )
+    master_table_raw = data.get("master_table", [])
+    story_key = build_teacher_section(variants, master_table_raw, asset_dir, CONTENT_W)
+    # Remove initial PageBreak for standalone key doc
+    if story_key and isinstance(story_key[0], PageBreak):
+        story_key.pop(0)
+    doc_key.build(story_key, canvasmaker=NumberedCanvas)
+
     return student_pdf, key_pdf
 
 
-def make_graph_diagram(path: Path):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import numpy as np
-    fig, ax = plt.subplots(figsize=(3.2, 1.9), dpi=180)
-    x = np.linspace(-2.3, 3.2, 300)
-    y = x*x - x - 2
-    ax.plot(x, y, color="black", linewidth=1.5)
-    ax.axhline(0, color="black", linewidth=0.8)
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.set_xlim(-2.3, 3.1); ax.set_ylim(-3.0, 4.5)
-    ax.set_xticks([-2, -1, 0, 1, 2, 3]); ax.set_yticks([-2, 0, 2, 4])
-    ax.grid(True, color="#c8c8c8", linewidth=0.5)
-    ax.tick_params(labelsize=7, length=2)
-    ax.spines['top'].set_visible(False); ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_position(('data', 0)); ax.spines['bottom'].set_position(('data', 0))
-    fig.tight_layout(pad=0.35)
-    fig.savefig(path, dpi=180, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-
-
-def make_triangle_diagram(path: Path):
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Polygon
-    fig, ax = plt.subplots(figsize=(2.5, 1.55), dpi=180)
-    A=(2.5,0); B=(0,2.4); C=(0,0)
-    ax.add_patch(Polygon([A,B,C], fill=False, closed=True, linewidth=1.5, edgecolor="black"))
-    ax.plot([0,0.22,0.22],[0.22,0.22,0],color="black",lw=1)
-    ax.text(-0.18,2.35,"B",fontsize=10,fontstyle="italic")
-    ax.text(-0.18,-0.2,"C",fontsize=10,fontstyle="italic")
-    ax.text(2.55,-0.2,"A",fontsize=10,fontstyle="italic")
-    ax.text(-0.22,1.1,"8",fontsize=9)
-    ax.text(1.2,-0.28,"6",fontsize=9)
-    ax.set_xlim(-0.45,3.0); ax.set_ylim(-0.45,2.8); ax.axis("off")
-    fig.tight_layout(pad=0)
-    fig.savefig(path, dpi=180, bbox_inches="tight", pad_inches=0.02, facecolor="white")
-    plt.close(fig)
-
-
 def example_data(asset_dir: Path | None = None) -> dict[str, Any]:
-    asset_dir = asset_dir or ROOT / "assets"
-    asset_dir.mkdir(parents=True, exist_ok=True)
-    graph = asset_dir / "sample_parabola.png"
-    triangle = asset_dir / "sample_triangle.png"
-    make_graph_diagram(graph)
-    make_triangle_diagram(triangle)
     return {
         "subject": "Математика",
-        "title": "Пробный тест в формате ЦТ",
-        "duration": "180 минут",
+        "title": "Пробный тест в формате стандартов ЦТ и ЦЭ 2026",
+        "topic": "Иррациональные уравнения",
+        "duration": "90 минут",
         "max_score": "100",
         "website_url": "https://edusfera.by",
-        "instructions": "В каждом задании выберите один правильный ответ из пяти предложенных. Запишите букву ответа в бланк в конце теста.",
-        "section_title": "Часть A. Задания с выбором одного правильного ответа",
-        "include_answer_sheet": True,
-        "questions": [
-            {"number":"A1","prompt":"Вычислите значение выражения $2^3 \\cdot 5 - 4^2$.","options":[{"text":"4"},{"text":"8"},{"text":"9"},{"text":"16"},{"text":"24"}],"correct":"E","explanation":"Сначала выполняем возведение в степень: $2^3=8$, $4^2=16$. Затем $8\\cdot5-16=40-16=24$."},
-            {"number":"A2","prompt":"Решите уравнение $(x-3)(x+1)=0$.","options":[{"text":"−3"},{"text":"−1"},{"text":"3"},{"text":"−3 и 1"},{"text":"−1 и 3"}],"correct":"E","explanation":"Произведение равно нулю, когда хотя бы один множитель равен нулю: $x-3=0$ или $x+1=0$. Поэтому $x=3$ или $x=-1$."},
-            {"number":"A3","prompt":"Упростите выражение $\\frac{x^2-9}{x-3}$ при $x\\ne3$.","options":[{"text":"$x-3$"},{"text":"$x+3$"},{"text":"$x^2+3$"},{"text":"$x$"},{"text":"$x^2-3$"}],"correct":"B","explanation":"Разложим числитель: $x^2-9=(x-3)(x+3)$. При $x\\ne3$ сокращаем общий множитель и получаем $x+3$."},
-            {"number":"A4","prompt":"На рисунке изображён график функции $y=f(x)$. Укажите множество её нулей.","diagram_path":str(graph.relative_to(ROOT)),"options":[{"text":"{−1}"},{"text":"{2}"},{"text":"{−1; 2}"},{"text":"(−1; 2)"},{"text":"Пустое множество"}],"correct":"C","explanation":"Нули функции — значения $x$, при которых график пересекает ось $Ox$. На рисунке пересечения происходят при $x=-1$ и $x=2$."},
-            {"number":"A5","diagram_height":78,"prompt":"В треугольнике $ABC$ угол $C$ равен $90^\\circ$, $AC=6$, $BC=8$. Найдите длину гипотенузы $AB$.","diagram_path":str(triangle.relative_to(ROOT)),"options":[{"text":"10"},{"text":"12"},{"text":"14"},{"text":"$\\sqrt{52}$"},{"text":"$5\\sqrt{2}$"}],"correct":"A","explanation":"По теореме Пифагора $AB^2=AC^2+BC^2=6^2+8^2=36+64=100$. Так как длина положительна, $AB=10$."},
+        "variants": [
+            {
+                "number": 1,
+                "title": "Вариант 1",
+                "part_a": [
+                    {"number":"А1","prompt":"Вычислите значение выражения $2^3 \\cdot 5 - 4^2$.","options":[{"text":"4"},{"text":"8"},{"text":"9"},{"text":"16"},{"text":"24"}],"correct":"E","explanation":"$2^3=8, 4^2=16. 8\\cdot5-16=40-16=24$."},
+                    {"number":"А2","prompt":"Решите уравнение $(x-3)(x+1)=0$.","options":[{"text":"−3"},{"text":"−1"},{"text":"3"},{"text":"−3 и 1"},{"text":"−1 и 3"}],"correct":"E","explanation":"$x=3$ или $x=-1$."},
+                    {"number":"А3","prompt":"Упростите выражение $\\frac{x^2-9}{x-3}$ при $x\\ne3$.","options":[{"text":"$x-3$"},{"text":"$x+3$"},{"text":"$x^2+3$"},{"text":"$x$"}],"correct":"B","explanation":"$x^2-9=(x-3)(x+3)$."},
+                    {"number":"А4","prompt":"Найдите корни уравнения $\\sqrt{x+4}=3$.","options":[{"text":"5"},{"text":"-5"},{"text":"9"},{"text":"нет корней"}],"correct":"A","explanation":"$x+4=9 \\Rightarrow x=5$."},
+                ],
+                "part_b": [
+                    {"number":"Б1","prompt":"Найдите корень уравнения $\\sqrt{2x^2-3x-5}=x-1$.","correct":"3","explanation":"ОДЗ $x\\ge1$. Корень $x=3$."},
+                    {"number":"Б2","prompt":"Найдите сумму корней уравнения $\\sqrt{x+7}-\\sqrt{3x-2}=1$.","correct":"2","explanation":"Корень $x=2$."}
+                ]
+            }
         ]
     }
-
-
-def write_example_files():
-    data = example_data(ROOT / "assets")
-    (ROOT / "examples" / "example_test.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    return generate_pdfs(data, ROOT / "output")
 
 
 def main():
@@ -649,22 +944,20 @@ def main():
         json_path = Path(args.json)
         data = json.loads(json_path.read_text(encoding="utf-8"))
         out_dir = Path(args.out_dir)
-        student, key = generate_pdfs(data, out_dir)
-        print(f"STUDENT_PDF:{student.resolve()}")
-        print(f"KEY_PDF:{key.resolve()}")
+        target_merged = Path(args.out_merged) if args.out_merged else (out_dir / "edusfera_test_complete.pdf")
 
         if args.merge or args.out_merged:
-            from pypdf import PdfWriter
-            writer = PdfWriter()
-            writer.append(str(student))
-            writer.append(str(key))
-            target_merged = Path(args.out_merged) if args.out_merged else (out_dir / "edusfera_test_complete.pdf")
-            target_merged.parent.mkdir(parents=True, exist_ok=True)
-            with open(target_merged, "wb") as f:
-                writer.write(f)
+            # Generate the unified multivariant document directly with running page count
+            generate_multivariant_pdf(data, target_merged)
             print(f"MERGED_PDF:{target_merged.resolve()}")
+        else:
+            student, key = generate_pdfs(data, out_dir)
+            print(f"STUDENT_PDF:{student.resolve()}")
+            print(f"KEY_PDF:{key.resolve()}")
     else:
-        student, key = write_example_files()
+        out_dir = ROOT / "output"
+        data = example_data()
+        student, key = generate_pdfs(data, out_dir)
         print(f"STUDENT_PDF:{student.resolve()}")
         print(f"KEY_PDF:{key.resolve()}")
 

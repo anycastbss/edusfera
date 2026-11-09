@@ -72,56 +72,64 @@ class PythonExamGeneratorService
         }
 
         try {
-            // Prepare questions list from all variants or first variant
-            $questions = [];
+            // Prepare structured variants payload
+            $variantsPayload = [];
             $allVariants = $parsedData['variants'] ?? [];
 
             foreach ($allVariants as $variant) {
-                $varNum = $variant['number'] ?? 1;
-                $prefix = (count($allVariants) > 1) ? "В{$varNum}-" : "";
+                $varNum = $variant['number'] ?? (count($variantsPayload) + 1);
+                $partA = [];
+                $partB = [];
 
                 foreach ($variant['part_a'] ?? [] as $t) {
                     $options = [];
                     foreach ($t['options'] ?? [] as $opt) {
-                        $options[] = ['text' => (string)$opt['text']];
+                        $options[] = ['text' => (string)($opt['text'] ?? '')];
                     }
 
-                    $qData = [
-                        'number' => $prefix . 'A' . $t['num'],
+                    $partA[] = [
+                        'number' => 'А' . $t['num'],
                         'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
                         'options' => $options,
-                        'correct' => 'A', // Default or extracted
-                        'explanation' => 'Сверено по экзаменационным спецификациям ЦТ/ЦЭ 2026.',
+                        'correct' => $t['correct'] ?? 'A',
+                        'explanation' => $t['explanation'] ?? 'Сверено по спецификациям ЦТ/ЦЭ 2026.',
                     ];
-                    $questions[] = $qData;
                 }
 
                 foreach ($variant['part_b'] ?? [] as $t) {
-                    $qData = [
-                        'number' => $prefix . 'Б' . $t['num'],
+                    $partB[] = [
+                        'number' => 'Б' . $t['num'],
                         'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
-                        'options' => [],
-                        'correct' => 'целое число',
-                        'explanation' => 'Конечный ответ Части Б записывается целым числом в клеточный бланк.',
+                        'correct' => $t['correct'] ?? 'целое число',
+                        'explanation' => $t['explanation'] ?? 'Ответ записывается целым числом в клеточный бланк.',
                     ];
-                    $questions[] = $qData;
+                }
+
+                if (! empty($partA) || ! empty($partB)) {
+                    $variantsPayload[] = [
+                        'number' => $varNum,
+                        'title' => "Вариант {$varNum}",
+                        'part_a' => $partA,
+                        'part_b' => $partB,
+                    ];
                 }
             }
 
-            if (empty($questions)) {
+            if (empty($variantsPayload)) {
                 return false;
             }
 
             $payload = [
                 'subject' => $order->subject ?: 'Математика',
                 'title' => $parsedData['testTitle'] ?: ('Проверочная работа: ' . $order->topic),
+                'topic' => $order->topic ?: 'Стандарты ЦТ и ЦЭ 2026',
                 'duration' => ($parsedData['timeMinutes'] ?? 90) . ' минут',
                 'max_score' => (string)($parsedData['maxScore'] ?? 100),
                 'website_url' => 'https://edusfera.by',
-                'instructions' => $parsedData['instructionText'] ?: 'В заданиях с выбором ответа отметьте один правильный вариант. Ответы перенесите в бланк в конце теста.',
-                'section_title' => 'Часть A. Задания с выбором одного правильного ответа',
-                'include_answer_sheet' => true,
-                'questions' => $questions,
+                'instructions' => $parsedData['instructionText'] ?: 'В заданиях Части А выберите один верный вариант ответа. В заданиях Части Б запишите полученное целое число. Ответы переносите в бланк внизу листа аккуратно и разборчиво.',
+                'variants' => $variantsPayload,
+                'master_table' => $parsedData['masterTable'] ?? [],
+                'grading_scale' => $parsedData['gradingScale'] ?? [],
             ];
 
             $jsonFile = $tmpDir . '/input.json';
