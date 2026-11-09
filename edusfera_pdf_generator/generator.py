@@ -148,6 +148,11 @@ def _generate_qr_image(url: str) -> PILImage.Image:
 
 
 # --- 4. GEOMETRIC BRANDING FLOWABLES ---
+def _is_exact_science(subject: str) -> bool:
+    s = str(subject).lower()
+    return any(kw in s for kw in ['математ', 'физик', 'алгебр', 'геометр', 'астроном'])
+
+
 class EdusferaLogoFlowable(Flowable):
     """Draws the official black diamond EDUSFERA logo."""
     def __init__(self, size: float = 30):
@@ -217,7 +222,8 @@ class SloganFlowable(Flowable):
 
 # --- 5. COMPONENT BUILDERS ---
 def build_variant_header(variant_title: str, subject: str, subtitle: str, duration: str, 
-                         count_a: int, count_b: int, max_score: str, asset_dir: Path, width: float) -> list[Flowable]:
+                         count_a: int, count_b: int, max_score: str, asset_dir: Path, width: float,
+                         custom_instructions: str | None = None) -> list[Flowable]:
     """Builds clean, uncollidable header for each test variant."""
     qr_img = _generate_qr_image("https://edusfera.by")
     qr_path = asset_dir / f"header_qr_{uuid.uuid4().hex[:6]}.png"
@@ -290,12 +296,23 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
     pupil_markup = "<b>Учащийся:</b> __________________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> _______ &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________"
     pupil_p = Paragraph(pupil_markup, ParagraphStyle("pupil", fontName="EDU", fontSize=8.8, leading=12))
 
-    # 4. Instruction box
-    instr_markup = (
-        "<b>Инструкция:</b> В заданиях Части А выберите один верный вариант ответа. "
-        "В заданиях Части Б запишите полученное целое число. "
-        "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
-    )
+    # 4. Instruction box tailored by subject
+    is_exact = _is_exact_science(subject)
+    if custom_instructions and len(custom_instructions.strip()) > 10:
+        raw_instr = custom_instructions
+    elif is_exact:
+        raw_instr = (
+            "В заданиях Части А выберите один верный вариант ответа. "
+            "В заданиях Части Б запишите полученное целое число. "
+            "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
+        )
+    else:
+        raw_instr = (
+            "В заданиях Части А выберите один верный вариант ответа. "
+            "В заданиях Части Б запишите краткий ответ (буквенно-цифровой код соответствия А1Б2..., комбинацию цифр или термин/фамилию). "
+            "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
+        )
+    instr_markup = f"<b>Инструкция:</b> {escape(raw_instr)}"
     instr_p = Paragraph(instr_markup, ParagraphStyle("instt", fontName="EDU", fontSize=8.0, leading=10.5, textColor=colors.HexColor("#334155")))
     instr_table = Table([[instr_p]], colWidths=[width])
     instr_table.setStyle(TableStyle([
@@ -340,7 +357,7 @@ def build_section_banner(title: str, width: float) -> Flowable:
     return t
 
 
-def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float) -> Flowable:
+def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_exact: bool = True) -> Flowable:
     """Renders a complete task with badge, prompt, options/answer-box, and divider without any overlapping."""
     num_str = str(task.get("number", "А1"))
     prompt_raw = str(task.get("prompt", ""))
@@ -455,32 +472,38 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float) -> 
     else:
         # Part B answer box
         ans_label = Paragraph("<b>Ответ:</b>", STYLES["body_bold"])
-        sign_box = Paragraph("<b>±</b>", ParagraphStyle("sign", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#475569")))
-        sign_t = Table([[sign_box]], colWidths=[16], rowHeights=[16])
-        sign_t.setStyle(TableStyle([
-            ('BOX', (0,0), (-1,-1), 0.65, colors.HexColor("#64748b")),
-            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('LEFTPADDING', (0,0), (-1,-1), 0),
-            ('RIGHTPADDING', (0,0), (-1,-1), 0),
-            ('TOPPADDING', (0,0), (-1,-1), 1),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ]))
-
-        digit_boxes = []
-        for _ in range(4):
-            dt = Table([['']], colWidths=[16], rowHeights=[16])
-            dt.setStyle(TableStyle([
-                ('BOX', (0,0), (-1,-1), 0.65, colors.black),
-                ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        if is_exact:
+            sign_box = Paragraph("<b>±</b>", ParagraphStyle("sign", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#475569")))
+            sign_t = Table([[sign_box]], colWidths=[16], rowHeights=[16])
+            sign_t.setStyle(TableStyle([
+                ('BOX', (0,0), (-1,-1), 0.65, colors.HexColor("#64748b")),
+                ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 1),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
             ]))
-            digit_boxes.append(dt)
 
-        hint_p = Paragraph("<font size=7.5 color='#64748b'>(в бланк ответов запишите полученное целое число)</font>", STYLES["body_small"])
+            digit_boxes = []
+            for _ in range(4):
+                dt = Table([['']], colWidths=[16], rowHeights=[16])
+                dt.setStyle(TableStyle([
+                    ('BOX', (0,0), (-1,-1), 0.65, colors.black),
+                    ('BACKGROUND', (0,0), (-1,-1), colors.white),
+                ]))
+                digit_boxes.append(dt)
 
-        row = [ans_label, sign_t] + digit_boxes + [hint_p]
-        col_w = [40, 18, 18, 18, 18, 18, width - 42 - 130]
+            hint_p = Paragraph("<font size=7.5 color='#64748b'>(в бланк ответов запишите полученное целое число)</font>", STYLES["body_small"])
+
+            row = [ans_label, sign_t] + digit_boxes + [hint_p]
+            col_w = [40, 18, 18, 18, 18, 18, width - 42 - 130]
+        else:
+            line_p = Paragraph("<font color='#64748b'>_________________________________________ &nbsp;</font><font size=7.2 color='#64748b'>(запишите код соответствия А_Б_В_Г_, цифры или термин)</font>", STYLES["body_small"])
+            row = [ans_label, line_p]
+            col_w = [40, width - 42 - 40]
+
         box_table = Table([row], colWidths=col_w)
         box_table.setStyle(TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -511,7 +534,7 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float) -> 
     return KeepTogether(elements)
 
 
-def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float) -> Flowable:
+def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True) -> Flowable:
     """Builds a tear-off answer sheet tailored for the specific variant."""
     elements = []
     cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
@@ -550,10 +573,11 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
     if part_b:
         b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number']) for i, t in enumerate(part_b)]
         col0_w = 90
-        cell_w = min(48, (width - col0_w) / max(1, len(b_headers)))
+        cell_w = min(48 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
+        b_label = "Ответ (число)" if is_exact else "Ответ (кратко)"
         b_data = [
             ["Часть Б"] + b_headers,
-            ["Ответ (число)"] + ["" for _ in b_headers]
+            [b_label] + ["" for _ in b_headers]
         ]
         b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[17, 22], hAlign='LEFT')
         b_table.setStyle(TableStyle([
@@ -756,6 +780,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
     duration = str(data.get("duration", "90 минут"))
     max_score = str(data.get("max_score", "100"))
     variants = data.get("variants") or []
+    is_exact = _is_exact_science(subject)
 
     for v_idx, variant in enumerate(variants):
         if v_idx > 0:
@@ -776,7 +801,8 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             count_b=len(part_b),
             max_score=max_score,
             asset_dir=asset_dir,
-            width=CONTENT_W
+            width=CONTENT_W,
+            custom_instructions=data.get("instructions")
         )
         story.extend(header_blocks)
 
@@ -789,22 +815,23 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             story.append(Spacer(1, 5))
 
             for task in part_a:
-                story.append(build_task_flowable(task, asset_dir, CONTENT_W))
+                story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         # Part B section
         if part_b:
             first_num = part_b[0].get("number", "Б1")
             last_num = part_b[-1].get("number", f"Б{len(part_b)}")
-            banner = build_section_banner(f"Часть Б. Задания с кратким числовым ответом ({first_num}–{last_num})", CONTENT_W)
+            part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
+            banner = build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W)
             story.append(banner)
             story.append(Spacer(1, 5))
 
             for task in part_b:
-                story.append(build_task_flowable(task, asset_dir, CONTENT_W))
+                story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         # Answer sheet for this variant
         story.append(Spacer(1, 5))
-        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W))
+        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact))
 
     # Teacher master section at the end
     master_table_raw = data.get("master_table", [])
@@ -841,6 +868,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
     duration = str(data.get("duration", "90 минут"))
     max_score = str(data.get("max_score", "100"))
     variants = data.get("variants") or []
+    is_exact = _is_exact_science(subject)
 
     for v_idx, variant in enumerate(variants):
         if v_idx > 0:
@@ -860,7 +888,8 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
             count_b=len(part_b),
             max_score=max_score,
             asset_dir=asset_dir,
-            width=CONTENT_W
+            width=CONTENT_W,
+            custom_instructions=data.get("instructions")
         )
         story_student.extend(header_blocks)
 
@@ -870,18 +899,19 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
             story_student.append(build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W))
             story_student.append(Spacer(1, 5))
             for task in part_a:
-                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W))
+                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         if part_b:
             first_num = part_b[0].get("number", "Б1")
             last_num = part_b[-1].get("number", f"Б{len(part_b)}")
-            story_student.append(build_section_banner(f"Часть Б. Задания с кратким числовым ответом ({first_num}–{last_num})", CONTENT_W))
+            part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
+            story_student.append(build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W))
             story_student.append(Spacer(1, 5))
             for task in part_b:
-                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W))
+                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         story_student.append(Spacer(1, 5))
-        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W))
+        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact))
 
     doc_student.build(story_student, canvasmaker=NumberedCanvas)
 
