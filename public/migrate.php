@@ -948,12 +948,13 @@ try {
         $subject = $_GET['subject'] ?? 'Математика';
         $topic = $_GET['topic'] ?? 'Линейные уравнения с одной переменной';
         $orderNumber = 'TEST-'.strtoupper(\Illuminate\Support\Str::random(6));
+        $variantsCount = (int) ($_GET['variants'] ?? $_GET['variant_count'] ?? 3);
         $order = \App\Models\GeneratorOrder::create([
             'order_number' => $orderNumber,
             'email' => 'admin@edusfera.by',
             'subject' => $subject,
             'topic' => $topic,
-            'variant_count' => 3,
+            'variant_count' => $variantsCount,
             'amount_kopecks' => 500,
             'currency' => 'BYN',
             'status' => 'generating',

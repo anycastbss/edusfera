@@ -298,7 +298,7 @@ class ExamDocumentParser
             'control' => 'Контрольная работа',
             'diagnostic' => 'Диагностическая работа',
             'test' => 'Проверочный экспресс-тест',
-            'ct_ce' => 'Пробный экзамен ЦЭ / ЦТ',
+            'ct_ce', 'exam' => 'Пробный экзамен ЦЭ / ЦТ',
             'olympiad' => 'Олимпиадная работа',
             default => 'Самостоятельная работа',
         };
@@ -309,11 +309,11 @@ class ExamDocumentParser
             'control' => 45,
             'diagnostic' => 45,
             'olympiad' => 60,
-            'ct_ce' => ($totalCount >= 20 ? 180 : 90),
+            'ct_ce', 'exam' => ($totalCount >= 20 ? 180 : 90),
             default => 30,
         };
 
-        $isCtCe = ($workType === 'ct_ce');
+        $isCtCe = ($workType === 'ct_ce' || $workType === 'exam');
         $maxScore = $isCtCe ? 100 : 10;
 
         $testTitle = $isCtCe
