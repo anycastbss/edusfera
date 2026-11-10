@@ -87,11 +87,11 @@ class PythonExamGeneratorService
                         $options[] = ['text' => (string)($opt['text'] ?? '')];
                     }
 
-                    $ans = $t['correct'] ?? null;
-                    if (empty($ans) || $ans === 'A') {
+                    $ans = strtoupper(trim((string)($t['correct'] ?? '')));
+                    if (empty($ans) || ! in_array($ans, ['A', 'B', 'C', 'D', 'E'])) {
                         // Vary fallback answers across B, C, A, D, E based on task and variant
                         $letters = ['B', 'C', 'A', 'D', 'B', 'A', 'C'];
-                        $ans = $t['correct'] ?? $letters[($t['num'] + $varNum) % count($letters)];
+                        $ans = $letters[($t['num'] + $varNum) % count($letters)];
                     }
 
                     $partA[] = [

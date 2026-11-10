@@ -76,7 +76,10 @@ STYLES = {
     "question": ParagraphStyle("question", fontName="EDU", fontSize=9.5, leading=14.5, textColor=colors.black),
     "option": ParagraphStyle("option", fontName="EDU", fontSize=8.8, leading=12.5, textColor=colors.black),
     "banner_title": ParagraphStyle("banner_title", fontName="EDU-Bold", fontSize=9, leading=11, textColor=colors.HexColor("#0f172a")),
-    "teacher_title": ParagraphStyle("teacher_title", fontName="EDU-Bold", fontSize=12, leading=15, textColor=colors.HexColor("#0f172a")),
+    "teacher_title": ParagraphStyle("teacher_title", fontName="EDU-Bold", fontSize=11, leading=14, textColor=colors.HexColor("#0f172a")),
+    "teacher_expl": ParagraphStyle("teacher_expl", fontName="EDU", fontSize=7.2, leading=9.2, textColor=colors.HexColor("#1e293b")),
+    "teacher_vtitle": ParagraphStyle("teacher_vtitle", fontName="EDU-Bold", fontSize=8.0, leading=10, textColor=colors.HexColor("#0f172a")),
+    "workspace_title": ParagraphStyle("workspace_title", fontName="EDU-Bold", fontSize=7.2, leading=9.0, textColor=colors.HexColor("#64748b")),
 }
 
 
@@ -258,17 +261,18 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
 
     # 2. Main title row: Subject & Variant title (left), Passport card (right)
     work_disp = work_type_title if work_type_title else "Проверочная работа"
-    if grade_label:
-        subhead = f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(work_disp)} ({escape(grade_label)}) • {escape(variant_title)}</b></font>"
-    else:
-        subhead = f"<font name='EDU-Bold' size=11.5 color='#0f172a'><b>{escape(work_disp)} • {escape(variant_title)}</b></font>"
+    grade_str = f" • {grade_label}" if grade_label else ""
+    topic_clean = subtitle.replace("Проверочная работа:", "").strip()
+    if topic_clean.lower().startswith(subject.lower()):
+        topic_clean = topic_clean[len(subject):].lstrip(": -•")
 
     title_markup = (
-        f"<font name='EDU-Bold' size=22 color='#000000'><b>{escape(subject)}</b></font><br/>"
-        f"{subhead} &nbsp;•&nbsp; "
-        f"<font name='EDU' size=9.5 color='#475569'>{escape(subtitle)}</font>"
+        f"<font name='EDU-Bold' size=19 color='#000000'><b>{escape(subject)}</b></font><br/>"
+        f"<font name='EDU-Bold' size=10.5 color='#0f172a'><b>{escape(work_disp)}{escape(grade_str)}</b></font> &nbsp;•&nbsp; "
+        f"<font name='EDU-Bold' size=10 color='#475569'><b>{escape(variant_title)}</b></font><br/>"
+        f"<font name='EDU' size=8.5 color='#64748b'>Тема: {escape(topic_clean)}</font>"
     )
-    title_p = Paragraph(title_markup, ParagraphStyle("subjh", leading=16))
+    title_p = Paragraph(title_markup, ParagraphStyle("subjh", leading=13.5))
 
     total_tasks = count_a + count_b
     task_breakdown = f"{total_tasks} (Часть А: {count_a}, Часть Б: {count_b})" if count_b > 0 else f"{count_a}"
@@ -549,6 +553,22 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
     return KeepTogether(elements)
 
 
+def build_student_workspace(width: float, height: float = 120) -> Flowable:
+    """Builds a clean ruled workspace / scratchpad for student calculations."""
+    title_p = Paragraph("<font color='#64748b' size=7.5><b>Место для вычислений и записи решений задач (черновик):</b></font>", STYLES["workspace_title"])
+    box_t = Table([[title_p]], colWidths=[width], rowHeights=[height])
+    box_t.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fafafa")),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    return box_t
+
+
 def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100") -> Flowable:
     """Builds a tear-off answer sheet tailored for the specific variant."""
     elements = []
@@ -787,28 +807,32 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
         ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     elements.append(scale_t)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 6))
 
     # Detailed Explanations
     elements.append(Paragraph("Методический разбор заданий и анализ ловушек", STYLES["teacher_title"]))
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 3))
 
     for v_idx, v in enumerate(variants):
         var_num = v.get("number", v_idx + 1)
-        elements.append(Paragraph(f"<b>Вариант {var_num}</b>", STYLES["banner_title"]))
-        elements.append(Spacer(1, 3))
+        elements.append(Paragraph(f"<b>Вариант {var_num}</b>", STYLES["teacher_vtitle"]))
+        elements.append(Spacer(1, 1.5))
 
         for t in (v.get("part_a", []) + v.get("part_b", [])):
             t_num = t.get("number", "")
             ans = t.get("correct", "")
             expl = t.get("explanation", "").strip()
+            # Clean monologue if any slipped through
+            expl = re.sub(r'^(?:[^\.\?\!]+(?:стоп|проверяем|пересчитаем|исправляем|заменяем)[^\.\?\!]*[\.\?\!]\s*)+', '', expl, flags=re.IGNORECASE).strip()
+            if len(expl) > 130:
+                expl = expl[:125].rsplit(' ', 1)[0] + '...'
             item_text = f"<b>{t_num}. Ответ: {ans}</b>"
             if expl:
                 item_text += f" — {_safe_formula_markup(expl, asset_dir)}"
-            p = Paragraph(item_text, STYLES["body"])
+            p = Paragraph(item_text, STYLES["teacher_expl"])
             elements.append(p)
-            elements.append(Spacer(1, 2))
-        elements.append(Spacer(1, 5))
+            elements.append(Spacer(1, 1.0))
+        elements.append(Spacer(1, 3.0))
 
     return elements
 
@@ -916,8 +940,24 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             for task in part_b:
                 story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
+        # Workspace scratchpad if variant has <= 5 tasks to ensure balanced layout
+        total_tasks = len(part_a) + len(part_b)
+        if total_tasks <= 3:
+            story.append(Spacer(1, 5))
+            story.append(build_student_workspace(CONTENT_W, height=135))
+            story.append(Spacer(1, 6))
+        elif total_tasks == 4:
+            story.append(Spacer(1, 4))
+            story.append(build_student_workspace(CONTENT_W, height=95))
+            story.append(Spacer(1, 5))
+        elif total_tasks == 5:
+            story.append(Spacer(1, 3))
+            story.append(build_student_workspace(CONTENT_W, height=60))
+            story.append(Spacer(1, 4))
+        else:
+            story.append(Spacer(1, 4))
+
         # Answer sheet for this variant
-        story.append(Spacer(1, 5))
         story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
 
     # Teacher master section at the end
@@ -1001,7 +1041,23 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
             for task in part_b:
                 story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
-        story_student.append(Spacer(1, 5))
+        # Workspace scratchpad if variant has <= 5 tasks to ensure balanced layout
+        total_tasks = len(part_a) + len(part_b)
+        if total_tasks <= 3:
+            story_student.append(Spacer(1, 5))
+            story_student.append(build_student_workspace(CONTENT_W, height=135))
+            story_student.append(Spacer(1, 6))
+        elif total_tasks == 4:
+            story_student.append(Spacer(1, 4))
+            story_student.append(build_student_workspace(CONTENT_W, height=95))
+            story_student.append(Spacer(1, 5))
+        elif total_tasks == 5:
+            story_student.append(Spacer(1, 3))
+            story_student.append(build_student_workspace(CONTENT_W, height=60))
+            story_student.append(Spacer(1, 4))
+        else:
+            story_student.append(Spacer(1, 4))
+
         story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
 
     doc_student.build(story_student, canvasmaker=NumberedCanvas)
