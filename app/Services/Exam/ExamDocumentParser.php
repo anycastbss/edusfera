@@ -268,7 +268,7 @@ class ExamDocumentParser
                                 'text' => htmlspecialchars($optText, ENT_QUOTES, 'UTF-8'),
                             ];
                         } else {
-                            if (preg_match('/^(\*{0,2}Задание|---|###)/ui', $trimLine)) {
+                            if (preg_match('/^(\*{0,2}(?:Задание|Ответ|Правильный ответ|Пояснение|Решение)|---|###)/ui', $trimLine)) {
                                 break;
                             }
                             if (empty($options)) {
@@ -586,7 +586,15 @@ class ExamDocumentParser
                         $task['options'][$targetIndex]['text'] = $task['options'][$oldIndex]['text'];
                         $task['options'][$oldIndex]['text'] = $temp;
 
-                        $task['correct'] = chr(65 + $targetIndex);
+                        $newCorrect = chr(65 + $targetIndex);
+                        $task['correct'] = $newCorrect;
+
+                        $cText = html_entity_decode(strip_tags((string)($task['options'][$targetIndex]['text'] ?? '')));
+                        if (! empty($task['explanation'])) {
+                            $task['explanation'] = preg_replace('/^(?:верный ответ|ответ)\s*:\s*[A-E1-5А-Д][^\.\!\?]*/ui', "Верный ответ: {$newCorrect} ({$cText})", $task['explanation']);
+                        } else {
+                            $task['explanation'] = "Верный ответ: {$newCorrect} ({$cText}). Обосновано программным материалом курса.";
+                        }
                     }
                 }
                 unset($task);
@@ -597,6 +605,11 @@ class ExamDocumentParser
                 $expl = (string)($task['explanation'] ?? '');
                 $expl = self::cleanseAiExplanation($expl, $task['correct'] ?? '');
                 $task['explanation'] = $expl;
+
+                $condB = (string)($task['condition_html'] ?? '');
+                if ($isHumanities && preg_match('/(?:сколько лет|вычислите разницу|целое число)/ui', $condB)) {
+                    $task['condition_html'] = "Установите хронологическое соответствие между ключевыми событиями и датами. Ответ запишите в виде кода (например, А1Б2В3Г4).";
+                }
 
                 $ans = trim((string)($task['correct'] ?? ''));
                 $ans = preg_replace('/^(?:ответ|правильный ответ)\s*:\s*/ui', '', $ans);

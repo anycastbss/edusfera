@@ -572,9 +572,12 @@ class GeneratorCheckoutController extends Controller
             if (! empty($result)) {
                 $cleanedResult = self::cleanMathFormulasForPrint($result);
 
+                // Запуск отдельного алгоритма верификации решений и ответов в бланках
+                $verifiedResult = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($cleanedResult, $order, $gemini);
+
                 $order->update([
                     'status' => 'completed',
-                    'generated_content' => $cleanedResult,
+                    'generated_content' => $verifiedResult,
                 ]);
 
                 // Pre-generate and cache PDF immediately
@@ -588,9 +591,10 @@ class GeneratorCheckoutController extends Controller
 
         // Graceful fallback with valid structure if AI temporary unavailable
         $fallbackContent = $this->buildFallbackContent($order, (int) ($order->variant_count ?: 5));
+        $verifiedFallback = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($fallbackContent, $order, null);
         $order->update([
             'status' => 'completed',
-            'generated_content' => self::cleanMathFormulasForPrint($fallbackContent),
+            'generated_content' => self::cleanMathFormulasForPrint($verifiedFallback),
         ]);
         $this->ensurePdfExists($order, force: true);
     }

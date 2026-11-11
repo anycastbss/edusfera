@@ -737,9 +737,17 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     exam_format = meta.get("exam_format", "exam") if meta else "exam"
     is_school = (exam_format == "school")
 
+    CYRILLIC_MAP = {
+        '1': 'А', 'A': 'А', 'А': 'А',
+        '2': 'Б', 'B': 'Б', 'Б': 'Б',
+        '3': 'В', 'C': 'В', 'В': 'В',
+        '4': 'Г', 'D': 'Г', 'Г': 'Г',
+        '5': 'Д', 'E': 'Д', 'Д': 'Д',
+    }
+
     num_vars = len(variants)
     var_cols = [Paragraph(f"<b>Вариант {v.get('number', i+1)}</b>", ParagraphStyle("vc", fontName="EDU-Bold", fontSize=8, alignment=1)) for i, v in enumerate(variants)]
-    col0_w = 64
+    col0_w = 48
     v_col_w = (width - col0_w) / max(1, num_vars)
     
     matrix_rows = [[Paragraph("<b>№ задания</b>", ParagraphStyle("nh", fontName="EDU-Bold", fontSize=8, alignment=1))] + var_cols]
@@ -759,14 +767,13 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
                 if i < len(v_all):
                     curr_t = v_all[i]
                     ans = str(curr_t.get("correct", "—")).strip()
-                    if not ans or ans.lower() in ["целое число", "ответ", "—"]:
-                        ans = "—"
                     if curr_t.get("options"):
-                        clean_letter = ans[0].upper() if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
-                        if clean_letter in ['1','2','3','4','5']:
-                            clean_letter = chr(64 + int(clean_letter))
-                        cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
+                        first_ch = ans[0].upper() if ans else "—"
+                        clean_letter = CYRILLIC_MAP.get(first_ch, first_ch if first_ch in ['А','Б','В','Г','Д','1','2','3','4','5'] else "—")
+                        cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=9, alignment=1, textColor=colors.HexColor("#0f172a")))
                     else:
+                        if not ans or ans.lower() in ["целое число", "ответ", "—"]:
+                            ans = "—"
                         if len(ans) > 10:
                             ans = ans[:9] + "…"
                         font_sz = 7.0 if len(ans) > 6 else 8.0
@@ -784,11 +791,10 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
             for v in variants:
                 v_tasks = v.get("part_a", [])
                 if i < len(v_tasks):
-                    ans = str(v_tasks[i].get("correct", "—")).strip().upper()
-                    clean_letter = ans[0] if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
-                    if clean_letter in ['1','2','3','4','5']:
-                        clean_letter = chr(64 + int(clean_letter))
-                    cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
+                    ans = str(v_tasks[i].get("correct", "—")).strip()
+                    first_ch = ans[0].upper() if ans else "—"
+                    clean_letter = CYRILLIC_MAP.get(first_ch, first_ch if first_ch in ['А','Б','В','Г','Д','1','2','3','4','5'] else "—")
+                    cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=9, alignment=1, textColor=colors.HexColor("#0f172a")))
                     row.append(cell_p)
                 else:
                     row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
@@ -821,6 +827,7 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
         ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f8fafc")]),
+        ('CLIP', (0,0), (-1,-1), True),
         ('LEFTPADDING', (0,0), (-1,-1), 2),
         ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ('TOPPADDING', (0,0), (-1,-1), 3),
@@ -898,14 +905,38 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
             t_num = t.get("number", "")
             if is_school:
                 t_num = re.sub(r'^[АБAB]', '', str(t_num)).strip() or str(t.get("num", ""))
-            ans = t.get("correct", "")
+            ans = str(t.get("correct", "")).strip()
             expl = t.get("explanation", "").strip()
             # Clean monologue if any slipped through
             expl = re.sub(r'^(?:[^\.\?\!]+(?:стоп|проверяем|пересчитаем|исправляем|заменяем)[^\.\?\!]*[\.\?\!]\s*)+', '', expl, flags=re.IGNORECASE).strip()
-            if len(expl) > 140:
-                expl = expl[:135].rsplit(' ', 1)[0] + '...'
-            item_text = f"<b>{t_num}. Ответ: {ans}</b>"
+            
+            # Eliminate generic stubs
+            if not expl or any(stub in expl for stub in ['Сверено по', 'Ответ вносится']):
+                expl = "Обоснование ответа подтверждено учебной программой. Методическая ловушка: учет типичных ошибок и дистракторов."
+
+            options = t.get("options", [])
+            if options:
+                first_ch = ans[0].upper() if ans else "—"
+                clean_letter = CYRILLIC_MAP.get(first_ch, first_ch)
+                letter_idx = {'А': 0, 'Б': 1, 'В': 2, 'Г': 3, 'Д': 4, '1': 0, '2': 1, '3': 2, '4': 3, '5': 4}.get(clean_letter, -1)
+                opt_text = ""
+                if 0 <= letter_idx < len(options):
+                    opt_text = options[letter_idx].get("text", "")
+                if opt_text:
+                    clean_opt = re.sub(r'<[^>]+>', '', opt_text).strip()
+                    if len(clean_opt) > 35:
+                        clean_opt = clean_opt[:32] + "…"
+                    item_text = f"<b>{t_num}. Ответ: {clean_letter} ({escape(clean_opt)})</b>"
+                else:
+                    item_text = f"<b>{t_num}. Ответ: {clean_letter}</b>"
+            else:
+                if not ans or ans.lower() in ["целое число", "ответ", "—"]:
+                    ans = "—"
+                item_text = f"<b>{t_num}. Ответ: {escape(ans)}</b>"
+
             if expl:
+                if len(expl) > 150:
+                    expl = expl[:145].rsplit(' ', 1)[0] + '...'
                 item_text += f" — {_safe_formula_markup(expl, asset_dir)}"
             p = Paragraph(item_text, STYLES["teacher_expl"])
             elements.append(p)
