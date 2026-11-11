@@ -67,14 +67,52 @@
                 <span>Скачать PDF файл с вариантами</span>
             </a>
 
+            <div class="grid grid-cols-2 gap-2.5">
+                <a 
+                    href="{{ route('generator.board', ['order' => $order->order_number]) }}"
+                    class="py-3 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] text-white font-bold text-xs tracking-tight border border-white/15 hover:border-[#38BDF8]/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                    <svg class="w-4 h-4 text-[#38BDF8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>Доска для проектора</span>
+                </a>
+
+                <a 
+                    href="{{ route('generator.share', ['order' => $order->order_number]) }}"
+                    target="_blank"
+                    class="py-3 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] text-white font-bold text-xs tracking-tight border border-white/15 hover:border-emerald-400/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    <span>Поделиться с коллегой</span>
+                </a>
+            </div>
+
+            {{-- Prominent Teacher Studio Card --}}
             <a 
-                href="{{ route('generator.my') }}"
-                class="w-full py-3.5 px-4 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] text-white font-bold text-xs tracking-tight border border-white/15 hover:border-[#C6FF33]/40 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                href="{{ route('generator.teacher', ['email' => $order->email, 'token' => \App\Http\Controllers\GeneratorCheckoutController::generateMagicToken($order->email)]) }}"
+                class="group block p-4 sm:p-4.5 rounded-2xl bg-gradient-to-r from-[#7D39EB]/25 via-white/[0.04] to-[#C6FF33]/20 border border-[#C6FF33]/40 hover:border-[#C6FF33] transition-all shadow-[0_0_25px_rgba(198,255,51,0.15)] text-left cursor-pointer"
             >
-                <svg class="w-4 h-4 text-[#C6FF33]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                </svg>
-                <span>Архив моих тестов в личном кабинете →</span>
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-black/70 border border-[#C6FF33]/40 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                            🎒
+                        </div>
+                        <div class="space-y-0.5">
+                            <div class="text-[10px] font-mono font-bold uppercase tracking-wider text-[#C6FF33]">
+                                Учительская Edusfera
+                            </div>
+                            <div class="text-xs sm:text-sm font-extrabold text-white group-hover:text-[#C6FF33] transition-colors leading-snug">
+                                Материалы сохранены в вашей Учительской. Открыть архив вариантов →
+                            </div>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-[#C6FF33] group-hover:translate-x-1 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
             </a>
 
             {{-- UPSELL CARD TO PLATFORM (B2B SaaS Conversion) --}}

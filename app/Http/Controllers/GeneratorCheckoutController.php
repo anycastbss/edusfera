@@ -363,6 +363,87 @@ class GeneratorCheckoutController extends Controller
     }
 
     /**
+     * Generate cryptographically secure magic token for instant teacher cabinet access
+     */
+    public static function generateMagicToken(string $email): string
+    {
+        $secret = (string) (config('app.key') ?: 'edusfera_magic_teacher_key');
+
+        return substr(hash_hmac('sha256', 'teacher_cabinet_'.strtolower(trim($email)), $secret), 0, 32);
+    }
+
+    /**
+     * Build authenticated Magic Link URL for instant cabinet access
+     */
+    public static function makeMagicCabinetUrl(string $email): string
+    {
+        $email = strtolower(trim($email));
+
+        return route('generator.teacher', [
+            'email' => $email,
+            'token' => self::generateMagicToken($email),
+        ]);
+    }
+
+    /**
+     * Interactive Classroom Whiteboard / Projector Mode for answer matrix & lesson timer
+     */
+    public function board(Request $request, GeneratorOrder|string $order): View|RedirectResponse
+    {
+        if (is_string($order)) {
+            $order = GeneratorOrder::where('order_number', $order)
+                ->orWhere('id', is_numeric($order) ? (int) $order : 0)
+                ->firstOrFail();
+        }
+
+        if (empty($order->generated_content)) {
+            $gemini = app(GeminiService::class);
+            $this->generateContentAndPdf($order, $gemini);
+            $order->refresh();
+        }
+
+        $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
+        $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
+
+        return view('generator.board', array_merge([
+            'order' => $order,
+            'boardUrl' => route('generator.board', ['order' => $order->order_number]),
+            'shareUrl' => route('generator.share', ['order' => $order->order_number]),
+            'downloadUrl' => route('generator.download', ['order' => $order->order_number]),
+            'cabinetUrl' => self::makeMagicCabinetUrl($order->email),
+        ], $parsedData));
+    }
+
+    /**
+     * Public lightweight test card for sharing with teacher colleagues (no login required)
+     */
+    public function share(Request $request, GeneratorOrder|string $order): View
+    {
+        if (is_string($order)) {
+            $order = GeneratorOrder::where('order_number', $order)
+                ->orWhere('id', is_numeric($order) ? (int) $order : 0)
+                ->firstOrFail();
+        }
+
+        if (empty($order->generated_content)) {
+            $gemini = app(GeminiService::class);
+            $this->generateContentAndPdf($order, $gemini);
+            $order->refresh();
+        }
+
+        $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
+        $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
+
+        return view('generator.share', array_merge([
+            'order' => $order,
+            'boardUrl' => route('generator.board', ['order' => $order->order_number]),
+            'downloadUrl' => route('generator.download', ['order' => $order->order_number]),
+            'shareUrl' => route('generator.share', ['order' => $order->order_number]),
+            'cabinetUrl' => self::makeMagicCabinetUrl($order->email),
+        ], $parsedData));
+    }
+
+    /**
      * Teacher Workspace / Personal Cabinet (History of Generations)
      */
     public function cabinet(Request $request): View
@@ -370,22 +451,40 @@ class GeneratorCheckoutController extends Controller
         $user = auth()->user();
         $email = null;
 
-        if ($user && ! empty($user->email)) {
-            $email = strtolower(trim((string) $user->email));
-        } else {
-            $rawEmail = $request->query('email')
-                ?: session('generator_email')
-                ?: $request->cookie('generator_email');
+        // Magic link authentication (Instant token check for 1-click zero-friction access)
+        if ($request->filled('email') && $request->filled('token')) {
+            $candidateEmail = strtolower(trim((string) $request->query('email')));
+            $candidateToken = (string) $request->query('token');
+            if (filter_var($candidateEmail, FILTER_VALIDATE_EMAIL)) {
+                $expectedToken = self::generateMagicToken($candidateEmail);
+                if (hash_equals($expectedToken, $candidateToken)) {
+                    $email = $candidateEmail;
+                    session(['generator_email' => $email]);
+                    Cookie::queue('generator_email', $email, 60 * 24 * 365);
+                }
+            }
+        }
 
-            if ($rawEmail && filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
-                $email = strtolower(trim((string) $rawEmail));
+        if (! $email) {
+            if ($user && ! empty($user->email)) {
+                $email = strtolower(trim((string) $user->email));
+            } else {
+                $rawEmail = $request->query('email')
+                    ?: session('generator_email')
+                    ?: $request->cookie('generator_email');
+
+                if ($rawEmail && filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
+                    $email = strtolower(trim((string) $rawEmail));
+                }
             }
         }
 
         $orders = collect();
+        $magicLink = null;
         if ($email) {
             session(['generator_email' => $email]);
             Cookie::queue('generator_email', $email, 60 * 24 * 365);
+            $magicLink = self::makeMagicCabinetUrl($email);
 
             $orders = GeneratorOrder::query()
                 ->where(function ($q) use ($email, $user) {
@@ -415,6 +514,8 @@ class GeneratorCheckoutController extends Controller
             'totalOrders' => $totalOrders,
             'savedHours' => $savedHours,
             'distinctSubjects' => $distinctSubjects,
+            'magicLink' => $magicLink,
+            'isTeacherStudio' => $request->routeIs('generator.teacher', 'generator.uchitelskaya') || $request->has('teacher'),
         ]);
     }
 
@@ -431,8 +532,12 @@ class GeneratorCheckoutController extends Controller
         session(['generator_email' => $email]);
         Cookie::queue('generator_email', $email, 60 * 24 * 365);
 
-        return redirect()->route('generator.my', ['email' => $email])
-            ->with('status', "Материалы для {$email} успешно загружены.");
+        $targetRoute = $request->routeIs('generator.teacher', 'generator.uchitelskaya') ? 'generator.teacher' : 'generator.my';
+
+        return redirect()->route($targetRoute, [
+            'email' => $email,
+            'token' => self::generateMagicToken($email),
+        ])->with('status', "Материалы для {$email} успешно загружены.");
     }
 
     /**
@@ -821,25 +926,38 @@ class GeneratorCheckoutController extends Controller
     {
         try {
             $downloadUrl = route('generator.download', ['order' => $order->order_number]);
-            $subject = "Ваш комплект заданий ЦТ/ЦЭ ({$order->subject}) — Заказ {$order->order_number}";
+            $boardUrl = route('generator.board', ['order' => $order->order_number]);
+            $magicCabinetUrl = self::makeMagicCabinetUrl($order->email);
+            $subject = "Ваш комплект заданий ({$order->subject}) — Заказ {$order->order_number}";
 
-            Mail::send([], [], function ($message) use ($order, $downloadUrl, $subject) {
+            Mail::send([], [], function ($message) use ($order, $downloadUrl, $boardUrl, $magicCabinetUrl, $subject) {
                 $message->to($order->email)
                     ->subject($subject)
                     ->html(
-                        '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #111827;">'.
-                        '<h2 style="color: #4f46e5; margin-bottom: 8px;">Комплект заданий ЦТ/ЦЭ готов!</h2>'.
-                        '<p style="font-size: 15px; line-height: 1.5;">Здравствуйте! Ваш заказ проверочной работы по стандартам Республики Беларусь успешно сформирован.</p>'.
-                        '<div style="background-color: #f3f4f6; border-radius: 12px; padding: 16px; margin: 20px 0;">'.
-                        '<p style="margin: 4px 0;"><strong>Номер заказа:</strong> '.$order->order_number.'</p>'.
-                        '<p style="margin: 4px 0;"><strong>Предмет:</strong> '.$order->subject.'</p>'.
-                        '<p style="margin: 4px 0;"><strong>Тема:</strong> '.$order->topic.'</p>'.
-                        '<p style="margin: 4px 0;"><strong>Количество вариантов:</strong> '.$order->variant_count.' шт. + мастер-таблица ответов</p>'.
+                        '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111827; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">'.
+                        '<div style="margin-bottom: 20px;">'.
+                        '<span style="background-color: #f3f4f6; color: #4f46e5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; border-radius: 6px;">Учительская Edusfera</span>'.
                         '</div>'.
-                        '<p style="margin: 25px 0;">'.
-                        '<a href="'.$downloadUrl.'" style="display: inline-block; background-color: #C6FF33; color: #000000; font-weight: bold; text-decoration: none; padding: 14px 24px; border-radius: 10px; font-size: 15px;">Скачать PDF с вариантами</a>'.
+                        '<h2 style="color: #0f172a; margin-top: 8px; margin-bottom: 12px; font-size: 22px;">Комплект проверочной работы готов!</h2>'.
+                        '<p style="font-size: 15px; line-height: 1.5; color: #475569;">Здравствуйте! Ваш заказ проверочной работы по стандартам 2026 года успешно сформирован.</p>'.
+                        '<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">'.
+                        '<p style="margin: 4px 0; font-size: 14px;"><strong>Номер заказа:</strong> '.$order->order_number.'</p>'.
+                        '<p style="margin: 4px 0; font-size: 14px;"><strong>Предмет:</strong> '.$order->subject.'</p>'.
+                        '<p style="margin: 4px 0; font-size: 14px;"><strong>Тема:</strong> '.$order->topic.'</p>'.
+                        '<p style="margin: 4px 0; font-size: 14px;"><strong>Количество вариантов:</strong> '.$order->variant_count.' шт. + мастер-таблица ответов</p>'.
+                        '</div>'.
+                        '<div style="margin: 25px 0;">'.
+                        '<p style="margin: 0 0 14px 0;">'.
+                        '<a href="'.$downloadUrl.'" style="display: inline-block; background-color: #C6FF33; color: #000000; font-weight: 800; text-decoration: none; padding: 14px 26px; border-radius: 12px; font-size: 15px;">Скачать PDF с вариантами</a>'.
                         '</p>'.
-                        '<p style="font-size: 12px; color: #6b7280; margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 15px;">Образовательная платформа Edusfera.by • Минск, Беларусь</p>'.
+                        '<p style="margin: 0 0 10px 0; font-size: 14px;">'.
+                        '<a href="'.$boardUrl.'" style="color: #2563eb; font-weight: 600; text-decoration: underline;">🖥️ Открыть матрицу ключей для проектора (Интерактивная доска) →</a>'.
+                        '</p>'.
+                        '<p style="margin: 0; font-size: 14px;">'.
+                        '<a href="'.$magicCabinetUrl.'" style="color: #4f46e5; font-weight: 600; text-decoration: underline;">📁 Архив моих материалов в Учительской (вход без пароля) →</a>'.
+                        '</p>'.
+                        '</div>'.
+                        '<p style="font-size: 12px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px;">Образовательная платформа Edusfera.by • Учительская студия • Минск, Беларусь</p>'.
                         '</div>'
                     );
 

@@ -75,6 +75,23 @@ Route::get('/generator/cabinet', [\App\Http\Controllers\GeneratorCheckoutControl
     ->middleware(['web'])
     ->name('generator.cabinet');
 
+// Teacher Studio / Учительская Edusfera routes
+Route::get('/teacher', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
+    ->middleware(['web'])
+    ->name('generator.teacher');
+
+Route::get('/uchitelskaya', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
+    ->middleware(['web'])
+    ->name('generator.uchitelskaya');
+
+Route::get('/teacher/board/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'board'])
+    ->middleware(['web', 'throttle:60,1'])
+    ->name('generator.board');
+
+Route::get('/teacher/share/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'share'])
+    ->middleware(['web', 'throttle:60,1'])
+    ->name('generator.share');
+
 Route::post('/generator/cabinet/access', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinetAccess'])
     ->middleware(['web', 'throttle:15,1'])
     ->name('generator.cabinet.access');

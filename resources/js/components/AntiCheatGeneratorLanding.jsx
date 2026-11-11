@@ -621,6 +621,13 @@ export default function AntiCheatGeneratorLanding() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showZoomModal, setShowZoomModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            return window.EDUSFERA_PAYMENT_STATUS === 'success' || urlParams.get('payment') === 'success';
+        }
+        return false;
+    });
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -894,12 +901,12 @@ export default function AntiCheatGeneratorLanding() {
 
                     <div className="flex items-center gap-2">
                         <a
-                            href="/generator/my"
-                            className="rounded-full px-3.5 py-1.5 text-xs font-bold text-white/90 hover:text-white bg-white/10 hover:bg-white/15 border border-white/15 transition-all flex items-center gap-1.5 shadow-sm"
-                            title="Архив сгенерированных контрольных и тестов"
+                            href="/teacher"
+                            className="rounded-full px-4 py-1.5 text-xs font-extrabold text-black bg-[#C6FF33] hover:bg-[#d4ff59] shadow-[0_0_20px_rgba(198,255,51,0.35)] hover:shadow-[0_0_25px_rgba(198,255,51,0.5)] transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                            title="Учительская Edusfera: архив проверочных работ, ключи и интерактивная доска"
                         >
-                            <span className="text-[#C6FF33]">📂</span>
-                            <span>Мои материалы</span>
+                            <span>🎒</span>
+                            <span>Учительская</span>
                         </a>
 
                         {user ? (
@@ -1038,11 +1045,11 @@ export default function AntiCheatGeneratorLanding() {
                                         </a>
 
                                         <a
-                                            href="/generator/my"
+                                            href="/teacher"
                                             className="flex items-center gap-2.5 px-3 py-2 text-sm font-bold text-[#C6FF33] hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                                         >
-                                            <FileText className="w-4 h-4 text-[#C6FF33]" />
-                                            <span>Мои материалы (Тесты)</span>
+                                            <span className="text-base">🎒</span>
+                                            <span>Учительская (Архив тестов)</span>
                                         </a>
                                     </div>
 
@@ -1160,10 +1167,10 @@ export default function AntiCheatGeneratorLanding() {
                             </div>
 
                             <a
-                                href="/generator/my"
-                                className="flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 px-4 py-2.5 text-sm font-bold text-[#C6FF33]"
+                                href="/teacher"
+                                className="flex items-center justify-center gap-2 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black px-4 py-2.5 text-sm font-extrabold shadow-[0_0_20px_rgba(198,255,51,0.3)] transition-all"
                             >
-                                <span>📂 Мои материалы (Тесты)</span>
+                                <span>🎒 Учительская</span>
                             </a>
 
                             <a
@@ -1262,10 +1269,10 @@ export default function AntiCheatGeneratorLanding() {
                     ) : (
                         <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                             <a
-                                href="/generator/my"
-                                className="block text-center rounded-xl bg-white/15 hover:bg-white/20 px-4 py-3 text-sm font-bold text-[#C6FF33] border border-white/15"
+                                href="/teacher"
+                                className="block text-center rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black px-4 py-3 text-sm font-extrabold shadow-[0_0_20px_rgba(198,255,51,0.3)] transition-all"
                             >
-                                📂 Мои материалы (Архив тестов)
+                                🎒 Учительская (Рабочее пространство)
                             </a>
                             <a
                                 href="/login"
@@ -2334,6 +2341,95 @@ export default function AntiCheatGeneratorLanding() {
                                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                                 >
                                     Сформировать комплект (5.00 BYN) →
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ─── 3.2 SUCCESS MODAL (TEACHER STUDIO CONFIRMATION) ─── */}
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowSuccessModal(false)}
+                            className="absolute inset-0 bg-[#040508]/85 backdrop-blur-md"
+                        />
+
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 12 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 12 }}
+                            className="relative w-full max-w-md bg-[#0c101c] border border-white/20 rounded-3xl p-6 sm:p-7 shadow-[0_16px_48px_0_rgba(0,0,0,0.8)] z-10 space-y-5 font-sans text-white text-center"
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={() => setShowSuccessModal(false)}
+                                className="absolute top-5 right-5 text-slate-400 hover:text-white text-sm font-mono cursor-pointer"
+                            >
+                                ✕
+                            </button>
+
+                            {/* Success Icon */}
+                            <div className="w-16 h-16 rounded-2xl bg-[#C6FF33]/15 border border-[#C6FF33]/40 text-[#C6FF33] flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(198,255,51,0.25)]">
+                                <Check className="w-8 h-8 stroke-[2.5]" />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <div className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#C6FF33]">
+                                    Заказ успешно сформирован
+                                </div>
+                                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                                    Ваш комплект проверочной работы готов
+                                </h3>
+                                <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                                    Варианты заданий и единая мастер-таблица ключей сгенерированы по экзаменационным стандартам Беларуси.
+                                </p>
+                            </div>
+
+                            {/* Prominent Teacher Studio Card */}
+                            <a
+                                href="/teacher"
+                                className="group block p-4 sm:p-4.5 rounded-2xl bg-gradient-to-r from-[#7D39EB]/25 via-white/[0.04] to-[#C6FF33]/20 border border-[#C6FF33]/40 hover:border-[#C6FF33] transition-all shadow-[0_0_25px_rgba(198,255,51,0.15)] text-left cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-11 h-11 rounded-xl bg-black/70 border border-[#C6FF33]/40 flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                                            🎒
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#C6FF33]">
+                                                Учительская Edusfera
+                                            </div>
+                                            <div className="text-xs sm:text-sm font-extrabold text-white group-hover:text-[#C6FF33] transition-colors leading-snug">
+                                                Материалы сохранены в вашей Учительской. Открыть архив вариантов →
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ArrowRight className="w-5 h-5 text-[#C6FF33] group-hover:translate-x-1 transition-transform shrink-0" />
+                                </div>
+                            </a>
+
+                            {/* Buttons */}
+                            <div className="space-y-2 pt-1">
+                                <a
+                                    href="/teacher"
+                                    className="w-full py-3.5 px-4 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-xs shadow-[0_0_20px_rgba(198,255,51,0.3)] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <span>Перейти в Учительскую</span>
+                                    <span>→</span>
+                                </a>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSuccessModal(false)}
+                                    className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                                >
+                                    Закрыть окно
                                 </button>
                             </div>
                         </motion.div>
