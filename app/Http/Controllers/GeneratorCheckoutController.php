@@ -336,7 +336,7 @@ class GeneratorCheckoutController extends Controller
     /**
      * Download generated PDF with disk caching
      */
-    public function downloadPdf(GeneratorOrder $order): BinaryFileResponse|Response|RedirectResponse
+    public function downloadPdf(GeneratorOrder $order, Request $request): BinaryFileResponse|Response|RedirectResponse
     {
         if (! $order->isPaid()) {
             return redirect()->route('generator')->with('error', 'Заказ ожидает оплаты.');
@@ -351,7 +351,8 @@ class GeneratorCheckoutController extends Controller
             $order->refresh();
         }
 
-        $pdfPath = $this->ensurePdfExists($order);
+        $force = $request->boolean('force') || $request->has('refresh');
+        $pdfPath = $this->ensurePdfExists($order, force: $force);
 
         $safeSubject = Str::slug($order->subject, '_');
         $filename = "Edusfera_{$safeSubject}_{$order->order_number}.pdf";
@@ -512,8 +513,18 @@ class GeneratorCheckoutController extends Controller
     protected function ensurePdfExists(GeneratorOrder $order, bool $force = false): string
     {
         $relativePath = "generator_orders/{$order->order_number}.pdf";
+        $fullPath = Storage::disk('local')->path($relativePath);
+        $scriptPath = base_path('edusfera_pdf_generator/generator.py');
 
-        if ($force || empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
+        // Automatically invalidate cache if generator script is newer than cached PDF
+        $isOutdated = false;
+        if (file_exists($fullPath) && file_exists($scriptPath)) {
+            if (filemtime($scriptPath) > filemtime($fullPath)) {
+                $isOutdated = true;
+            }
+        }
+
+        if ($force || $isOutdated || empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
             $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
             $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
 
