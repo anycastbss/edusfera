@@ -22,25 +22,42 @@
     @vite(['resources/css/app.css'])
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        html, body {
-            background-color: #040508 !important;
-            background: #040508 !important;
+        @font-face {
+            font-family: 'Rimma Sans';
+            src: url('{{ asset("fonts/Rimma_sans-Bold.ttf") }}') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        .font-rimma {
+            font-family: 'Rimma Sans', 'Inter', system-ui, sans-serif !important;
+        }
+        html:not(.dark), html:not(.dark) body {
+            background-color: #F8FAFC !important;
+            background: #F8FAFC !important;
+            color: #0F172A !important;
+        }
+        html.dark, html.dark body {
+            background-color: #0B0B0E !important;
+            background: #0B0B0E !important;
             color: #ffffff !important;
         }
-        .share-card {
-            background: rgba(14, 18, 27, 0.88) !important;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        }
-        .share-card:hover {
-            border-color: rgba(255, 255, 255, 0.22) !important;
-        }
     </style>
+
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('edusfera_theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
 </head>
 <body class="min-h-screen font-sans selection:bg-[#C6FF33] selection:text-black antialiased relative overflow-x-hidden">
 
@@ -54,20 +71,21 @@
     <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
 
         {{-- Top Brand Navigation --}}
-        <header class="flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl share-card shadow-2xl">
+        <header class="flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 shadow-sm transition-colors">
             <div class="flex items-center gap-3">
-                <a href="{{ route('generator') }}" class="flex items-center gap-3 group">
-                    <div class="w-11 h-11 rounded-xl bg-black border border-white/20 flex items-center justify-center shadow-[0_0_15px_rgba(198,255,51,0.2)] group-hover:border-[#C6FF33] transition-colors">
-                        <svg class="w-6 h-6 text-[#C6FF33]" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2L2 12l10 10 10-10L12 2zm0 4.5l5.5 5.5-5.5 5.5-5.5-5.5L12 6.5z"/>
+                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-[#7D39EB] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                        <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+                            <path d="M32 10L54 32L32 54L10 32L32 10Z" stroke="#C6FF33" stroke-width="6" stroke-linejoin="round" />
+                            <path d="M32 22L42 32L32 42L22 32L32 22Z" fill="#C6FF33" />
                         </svg>
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="font-extrabold text-base tracking-tight text-white font-mono">EDUSFERA</span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#7D39EB]/25 text-[#c084fc] border border-[#7D39EB]/40">Учительская</span>
+                            <span class="font-rimma text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Edusfera</span>
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#7D39EB]/10 dark:bg-[#7D39EB]/20 text-[#7D39EB] dark:text-[#c084fc] border border-[#7D39EB]/20">Учительская</span>
                         </div>
-                        <p class="text-xs text-slate-400 font-medium">Материал методического объединения</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Материал методического объединения</p>
                     </div>
                 </a>
             </div>
@@ -75,12 +93,12 @@
             <div class="flex items-center gap-2 sm:gap-3">
                 <a 
                     href="{{ route('generator') }}"
-                    class="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer"
+                    class="px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#7D39EB] hover:bg-[#6827d6] text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
-                    <svg class="w-4 h-4 text-[#C6FF33]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    <span class="hidden sm:inline">Создать свой тест</span>
+                    <span>+ Создать свой тест</span>
                 </a>
             </div>
         </header>

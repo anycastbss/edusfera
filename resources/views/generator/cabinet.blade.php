@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark" style="background-color: #000000 !important; color-scheme: dark;">
+<html lang="ru" class="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>EDUSFERA • Учительская (Teacher Studio) — Проверочные работы, ключи и интерактивная доска | Edusfera</title>
+    <title>Edusfera • Учительская (Teacher Studio) — Банк проверочных работ и ключей</title>
     <meta name="description" content="Рабочее пространство школьного учителя: проверочные работы, ключи и интерактивная доска для уроков на Edusfera.by.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
@@ -11,148 +11,199 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Force dark obsidian ground to completely neutralize any light mode CSS inheritance */
-        html, body.aurora-body {
-            background-color: #040508 !important;
-            background: #040508 !important;
-            color: #ffffff !important;
+        @font-face {
+            font-family: 'Rimma Sans';
+            src: url('{{ asset("fonts/Rimma_sans-Bold.ttf") }}') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
         }
-        .cabinet-card {
-            background: rgba(14, 18, 27, 0.85) !important;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        .font-rimma {
+            font-family: 'Rimma Sans', 'Inter', system-ui, sans-serif !important;
         }
-        .cabinet-card:hover {
-            border-color: rgba(255, 255, 255, 0.22) !important;
-            background: rgba(18, 23, 35, 0.95) !important;
+
+        /* Default Light Theme styles */
+        html:not(.dark), html:not(.dark) body {
+            background-color: #F8FAFC !important;
+            background: #F8FAFC !important;
+            color: #0F172A !important;
+        }
+
+        /* Dark Theme overrides */
+        html.dark, html.dark body {
+            background-color: #0B0B0E !important;
+            background: #0B0B0E !important;
+            color: #FFFFFF !important;
+        }
+
+        /* Ambient glow in dark mode only */
+        .ambient-glow {
+            display: none;
+        }
+        html.dark .ambient-glow {
+            display: block;
         }
     </style>
+
+    <script>
+        // Init theme immediately before render to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('edusfera_theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        })();
+    </script>
 </head>
-<body class="aurora-body min-h-screen font-sans selection:bg-[#C6FF33] selection:text-black antialiased" style="background-color: #040508 !important; color: #ffffff !important;">
+<body class="min-h-screen font-sans selection:bg-[#C6FF33] selection:text-black antialiased transition-colors duration-200">
     
-    {{-- Glow background aura --}}
-    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-[#7D39EB]/25 via-[#38BDF8]/10 to-transparent blur-[120px] opacity-70"></div>
-        <div class="absolute bottom-10 right-10 w-[600px] h-[350px] bg-gradient-to-t from-[#C6FF33]/15 to-transparent blur-[140px] opacity-50"></div>
-        <div class="absolute top-1/2 left-0 w-[400px] h-[400px] bg-gradient-to-r from-[#7D39EB]/10 to-transparent blur-[100px] opacity-40"></div>
+    {{-- Glow background aura (Visible in Dark mode) --}}
+    <div class="ambient-glow fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-gradient-to-b from-[#7D39EB]/20 via-[#38BDF8]/10 to-transparent blur-[120px] opacity-70"></div>
+        <div class="absolute bottom-10 right-10 w-[500px] h-[300px] bg-gradient-to-t from-[#C6FF33]/15 to-transparent blur-[140px] opacity-50"></div>
     </div>
 
     {{-- Main Container --}}
-    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         
-        {{-- Navigation Header --}}
-        <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl cabinet-card shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]">
+        {{-- Navigation Header (Edusfera Design System) --}}
+        <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 shadow-sm transition-colors">
             <div class="flex items-center gap-3">
-                <a href="{{ route('generator') }}" class="flex items-center gap-3 group">
-                    <div class="w-11 h-11 rounded-xl bg-black border border-white/20 flex items-center justify-center shadow-[0_0_15px_rgba(198,255,51,0.2)] group-hover:border-[#C6FF33] transition-colors shrink-0">
-                        <svg class="w-6 h-6 text-[#C6FF33]" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2L2 12l10 10 10-10L12 2zm0 4.5l5.5 5.5-5.5 5.5-5.5-5.5L12 6.5z"/>
+                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
+                    {{-- Official Edusfera Geometric Rhombus Logo --}}
+                    <div class="w-10 h-10 rounded-xl bg-[#7D39EB] flex items-center justify-center shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                        <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+                            <path d="M32 10L54 32L32 54L10 32L32 10Z" stroke="#C6FF33" stroke-width="6" stroke-linejoin="round" />
+                            <path d="M32 22L42 32L32 42L22 32L32 22Z" fill="#C6FF33" />
                         </svg>
                     </div>
-                    <div class="space-y-0.5">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-extrabold text-base sm:text-lg tracking-tight text-white font-mono">EDUSFERA • Учительская</span>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#7D39EB]/30 to-[#C6FF33]/20 text-[#C6FF33] border border-[#C6FF33]/30 shadow-[0_0_10px_rgba(198,255,51,0.12)]">Teacher Studio</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-rimma text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Edusfera</span>
+                            <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#7D39EB]/10 dark:bg-[#7D39EB]/20 text-[#7D39EB] dark:text-[#c084fc] border border-[#7D39EB]/20">Учительская</span>
                         </div>
-                        <p class="text-xs text-slate-300 font-medium leading-relaxed">Рабочее пространство школьного учителя: проверочные работы, ключи и интерактивная доска</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Банк проверочных работ и ключей ответов</p>
                     </div>
                 </a>
             </div>
 
-            <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                @if($user)
-                    <a 
-                        href="{{ auth()->user()->isTutor() ? (request()->is('m*') ? '/m' : '/admin') : '/' }}"
-                        class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 transition-all shadow-sm"
-                    >
-                        Панель репетитора →
-                    </a>
-                @endif
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                {{-- Theme Switcher Button --}}
+                <button 
+                    type="button" 
+                    onclick="toggleTheme()" 
+                    id="theme-toggle-btn"
+                    class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    title="Переключить тему оформления"
+                >
+                    <span id="theme-toggle-icon">🌙</span>
+                    <span id="theme-toggle-text">Тёмная тема</span>
+                </button>
+
+                {{-- Primary CTA: New Test --}}
                 <a 
                     href="{{ route('generator') }}" 
-                    class="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-[#C6FF33] hover:bg-[#d4ff59] text-black shadow-[0_0_25px_rgba(198,255,51,0.35)] active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                    class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#7D39EB] hover:bg-[#6827d6] text-white shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
-                    <span>Создать новый тест</span>
+                    <span>+ Создать новый тест</span>
                 </a>
             </div>
         </header>
 
         {{-- Flash Status Message --}}
         @if(session('status'))
-            <div class="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+            <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between shadow-sm">
                 <span class="font-medium">{{ session('status') }}</span>
-                <button onclick="this.parentElement.remove()" class="text-emerald-300 hover:text-white text-base leading-none">&times;</button>
+                <button onclick="this.parentElement.remove()" class="text-emerald-700 dark:text-emerald-300 hover:text-black dark:hover:text-white text-base leading-none">&times;</button>
             </div>
         @endif
 
-        {{-- Teacher Metric Cards (KPI) --}}
+        {{-- Teacher Metric Cards (Unified, Airy Stats Bar) --}}
         @if($email && $totalOrders > 0)
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div class="p-5 rounded-2xl cabinet-card space-y-1.5 shadow-lg">
-                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Проверочных работ</span>
-                    <div class="text-3xl font-extrabold text-white font-mono tracking-tight">{{ $totalOrders }}</div>
-                    <span class="text-[11px] text-slate-500 block">сохранено в архиве</span>
-                </div>
-
-                <div class="p-5 rounded-2xl cabinet-card space-y-1.5 shadow-lg border-l-2 border-l-[#C6FF33]/60">
-                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Вариантов заданий</span>
-                    <div class="text-3xl font-extrabold text-[#C6FF33] font-mono tracking-tight">{{ $totalVariants }}</div>
-                    <span class="text-[11px] text-slate-500 block">с готовыми ключами</span>
-                </div>
-
-                <div class="p-5 rounded-2xl cabinet-card space-y-1.5 shadow-lg border-l-2 border-l-[#38BDF8]/60">
-                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Сэкономлено времени</span>
-                    <div class="text-3xl font-extrabold text-[#38BDF8] font-mono tracking-tight">~{{ $savedHours }} ч</div>
-                    <span class="text-[11px] text-slate-500 block">ручного составления</span>
-                </div>
-
-                <div class="p-5 rounded-2xl cabinet-card space-y-1.5 shadow-lg relative">
-                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">Привязан к email</span>
-                    <div class="text-xs font-mono font-bold text-white truncate max-w-[170px]" title="{{ $email }}">
-                        {{ $email }}
+            <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
+                <div class="flex flex-wrap items-center gap-6 sm:gap-8">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-[#7D39EB] dark:text-[#c084fc] flex items-center justify-center font-bold text-lg">
+                            📚
+                        </div>
+                        <div>
+                            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none">
+                                {{ $totalOrders }}
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">работ в архиве</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2 pt-0.5">
-                        @if(! empty($magicLink))
-                            <button 
-                                type="button"
-                                onclick="copyDownloadLink('{{ $magicLink }}')"
-                                class="text-[11px] font-semibold text-sky-400 hover:text-sky-300 hover:underline cursor-pointer"
-                                title="Скопировать Magic Link для мгновенного входа без пароля на любом устройстве"
-                            >
-                                Magic Link 🔗
-                            </button>
-                            <span class="text-slate-600 text-xs">•</span>
-                        @endif
-                        <button 
-                            type="button"
-                            onclick="document.getElementById('switch-email-modal').classList.remove('hidden')"
-                            class="text-[11px] font-medium text-[#C6FF33] hover:underline cursor-pointer"
-                        >
-                            Сменить ↺
-                        </button>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-lime-50 dark:bg-lime-500/10 text-emerald-600 dark:text-[#C6FF33] flex items-center justify-center font-bold text-lg">
+                            📝
+                        </div>
+                        <div>
+                            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none">
+                                {{ $totalVariants }}
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">готовых вариантов</span>
+                        </div>
                     </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-[#38BDF8] flex items-center justify-center font-bold text-lg">
+                            ⏱️
+                        </div>
+                        <div>
+                            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-none">
+                                ~{{ $savedHours }} ч
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">сэкономлено</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Connected Email & Actions --}}
+                <div class="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-white/5 text-xs">
+                    <div class="text-slate-500 dark:text-slate-400">
+                        Привязан к: <b class="text-slate-800 dark:text-slate-200">{{ $email }}</b>
+                    </div>
+                    <button 
+                        type="button" 
+                        onclick="copyMagicLink()" 
+                        class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-300 font-medium transition-all cursor-pointer"
+                        title="Скопировать ссылку быстрого входа без пароля"
+                    >
+                        🔗 Вход в 1 клик
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="document.getElementById('switch-email-modal').classList.remove('hidden')" 
+                        class="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white font-medium hover:underline transition-all cursor-pointer"
+                    >
+                        Сменить ↺
+                    </button>
                 </div>
             </div>
         @endif
 
         {{-- Email Identification Prompt (if no email found) --}}
         @if(! $email)
-            <div class="p-8 sm:p-12 rounded-3xl cabinet-card text-center max-w-xl mx-auto space-y-6 shadow-2xl border border-white/20">
-                <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/15 flex items-center justify-center mx-auto text-[#C6FF33] shadow-[0_0_20px_rgba(198,255,51,0.2)]">
+            <div class="p-8 sm:p-12 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 shadow-sm text-center max-w-xl mx-auto space-y-6">
+                <div class="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-white/5 border border-purple-200 dark:border-white/10 flex items-center justify-center mx-auto text-[#7D39EB] dark:text-[#C6FF33] shadow-sm">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <h2 class="text-2xl font-bold text-white tracking-tight">Открыть архив моих материалов</h2>
-                    <p class="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Открыть архив моих материалов</h2>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
                         Введите email, который вы указывали при составлении тестов. Все сгенерированные PDF и ключи ответов откроются мгновенно без пароля.
                     </p>
                 </div>
@@ -164,11 +215,11 @@
                         name="email" 
                         required 
                         placeholder="teacher@school.by"
-                        class="flex-1 px-4 py-3 rounded-xl bg-black/80 border border-white/25 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C6FF33] transition-colors shadow-inner"
+                        class="flex-1 px-4 py-3 rounded-xl bg-slate-50 dark:bg-black/60 border border-slate-300 dark:border-white/20 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-[#7D39EB] transition-colors"
                     >
                     <button 
                         type="submit" 
-                        class="px-6 py-3 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-sm shadow-[0_0_20px_rgba(198,255,51,0.3)] transition-all cursor-pointer whitespace-nowrap"
+                        class="px-6 py-3 rounded-xl bg-[#7D39EB] hover:bg-[#6827d6] text-white font-bold text-sm shadow-sm transition-all cursor-pointer whitespace-nowrap"
                     >
                         Найти мои тесты →
                     </button>
@@ -176,98 +227,98 @@
             </div>
         @else
 
-            {{-- Controls & Search Bar --}}
-            <div class="space-y-3 pt-2">
-                {{-- Grade & Subject Filters Bar --}}
-                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-                    {{-- Grade / Class Filters --}}
-                    <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-white/[0.04] border border-white/10 overflow-x-auto scrollbar-none shadow-sm">
-                        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 px-2.5 font-bold shrink-0">Классы:</span>
+            {{-- Controls & Filter Bar --}}
+            <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    {{-- Grade Group Filters --}}
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs font-medium">
                         <button 
-                            type="button" 
-                            onclick="filterByGrade('all')" 
-                            id="grade-tab-all"
-                            class="grade-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#C6FF33] text-black shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                            type="button"
+                            onclick="filterByGradeGroup('all')" 
+                            class="grade-tab px-3.5 py-2 rounded-xl font-bold bg-[#7D39EB] text-white shadow-sm transition-all cursor-pointer"
+                            data-target-grade="all"
                         >
                             Все классы
                         </button>
                         <button 
-                            type="button" 
-                            onclick="filterByGrade('5-6')" 
-                            id="grade-tab-5-6"
-                            class="grade-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer whitespace-nowrap"
+                            type="button"
+                            onclick="filterByGradeGroup('5-6')" 
+                            class="grade-tab px-3 py-2 rounded-xl bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap"
+                            data-target-grade="5-6"
                         >
                             5–6 классы
                         </button>
                         <button 
-                            type="button" 
-                            onclick="filterByGrade('7-9')" 
-                            id="grade-tab-7-9"
-                            class="grade-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer whitespace-nowrap"
+                            type="button"
+                            onclick="filterByGradeGroup('7-9')" 
+                            class="grade-tab px-3 py-2 rounded-xl bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap"
+                            data-target-grade="7-9"
                         >
                             7–9 классы
                         </button>
                         <button 
-                            type="button" 
-                            onclick="filterByGrade('10-11')" 
-                            id="grade-tab-10-11"
-                            class="grade-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer whitespace-nowrap"
+                            type="button"
+                            onclick="filterByGradeGroup('10-11')" 
+                            class="grade-tab px-3 py-2 rounded-xl bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap"
+                            data-target-grade="10-11"
                         >
                             10–11 классы
                         </button>
                     </div>
 
                     {{-- Live Search Input --}}
-                    <div class="relative w-full lg:w-72 shrink-0">
+                    <div class="relative w-full sm:w-72">
                         <input 
                             type="text" 
                             id="search-input" 
                             oninput="filterMaterials()" 
-                            placeholder="Поиск по теме, классу..." 
-                            class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/60 border border-white/20 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#C6FF33] transition-colors shadow-inner"
+                            placeholder="Поиск по теме..." 
+                            class="w-full pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/15 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7D39EB] transition-colors shadow-sm"
                         >
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
                     </div>
                 </div>
 
-                {{-- Subject Filters (Chips) --}}
-                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 pr-1 font-bold shrink-0">Предмет:</span>
-                    <button 
-                        type="button"
-                        onclick="filterBySubject('all')" 
-                        id="filter-tab-all"
-                        class="subject-tab px-3 py-1.5 rounded-xl font-bold bg-[#7D39EB]/30 text-white border border-[#7D39EB]/50 cursor-pointer transition-all shadow-sm shrink-0"
-                    >
-                        Все предметы ({{ $orders->count() }})
-                    </button>
-                    @foreach($distinctSubjects as $subj)
+                {{-- Subject Filters --}}
+                @if($distinctSubjects->count() > 1)
+                    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
                         <button 
                             type="button"
-                            onclick="filterBySubject('{{ addslashes($subj) }}')" 
-                            class="subject-tab px-3 py-1.5 rounded-xl font-medium bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 cursor-pointer transition-all whitespace-nowrap shrink-0"
+                            onclick="filterBySubject('all')" 
+                            class="subject-tab px-3 py-1.5 rounded-lg font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition-all cursor-pointer"
+                            data-target-subject="all"
                         >
-                            {{ $subj }}
+                            Все предметы ({{ $orders->count() }})
                         </button>
-                    @endforeach
-                </div>
+                        @foreach($distinctSubjects as $subj)
+                            <button 
+                                type="button"
+                                onclick="filterBySubject('{{ addslashes($subj) }}')" 
+                                class="subject-tab px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap"
+                                data-target-subject="{{ mb_strtolower($subj) }}"
+                            >
+                                {{ $subj }}
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             {{-- Materials Grid --}}
             @if($orders->isEmpty())
-                <div class="p-12 rounded-3xl cabinet-card text-center space-y-4 shadow-xl">
-                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/15 text-slate-400 flex items-center justify-center mx-auto shadow-inner">
+                <div class="p-12 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 text-center space-y-4 shadow-sm">
+                    <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 flex items-center justify-center mx-auto">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </div>
                     <div class="space-y-1">
-                        <p class="text-base text-white font-bold">Для адреса {{ $email }} пока нет сохраненных работ.</p>
-                        <p class="text-xs text-slate-400 max-w-md mx-auto">Сгенерируйте первую контрольную — она моментально появится здесь для повторной печати и копирования ключей.</p>
+                        <p class="text-base text-slate-900 dark:text-white font-bold">Для адреса {{ $email }} пока нет сохраненных работ.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">Сгенерируйте первую контрольную — она моментально появится здесь для печати и вывода ключей на экран.</p>
                     </div>
-                    <a href="{{ route('generator') }}" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-xs shadow-[0_0_20px_rgba(198,255,51,0.3)] transition-all">
+                    <a href="{{ route('generator') }}" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#7D39EB] hover:bg-[#6827d6] text-white font-bold text-xs shadow-sm transition-all">
                         Сгенерировать первую работу →
                     </a>
                 </div>
@@ -281,11 +332,11 @@
                                 'abiturient' => 'Абитуриент',
                                 default => "{$grade} класс"
                             };
-                            $gradeGroup = match($grade) {
-                                '5', '6' => '5-6',
-                                '7', '8', '9' => '7-9',
-                                '10', '11', 'abiturient' => '10-11',
-                                default => 'other'
+                            $numGrade = is_numeric($grade) ? (int)$grade : 11;
+                            $gradeGroup = match(true) {
+                                $numGrade <= 6 => '5-6',
+                                $numGrade <= 9 => '7-9',
+                                default => '10-11',
                             };
                             $workType = $payload['work_type'] ?? 'independent';
                             $workTypeTitle = match($workType) {
@@ -302,163 +353,125 @@
                         @endphp
 
                         <div 
-                            class="material-card p-6 rounded-2xl cabinet-card space-y-4 shadow-xl relative flex flex-col justify-between"
+                            class="material-card p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200/90 dark:border-white/10 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-md hover:border-slate-300 dark:hover:border-white/20 transition-all flex flex-col justify-between space-y-4"
                             data-subject="{{ mb_strtolower($item->subject) }}"
                             data-grade-group="{{ $gradeGroup }}"
                             data-search="{{ mb_strtolower($item->subject . ' ' . $item->topic . ' ' . $gradeLabel . ' ' . $workTypeTitle . ' ' . $grade . ' класс') }}"
                         >
-                            {{-- Card Header: Badges & Variants --}}
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="space-y-2 flex-1 min-w-0">
+                            <div>
+                                {{-- Card Header: Badges & Variant Count --}}
+                                <div class="flex items-start justify-between gap-3">
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#7D39EB]/25 text-[#c084fc] border border-[#7D39EB]/40">
+                                        <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 dark:bg-purple-500/15 text-[#7D39EB] dark:text-[#c084fc] border border-purple-200 dark:border-purple-500/30">
                                             {{ $item->subject }}
                                         </span>
-                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/35">
+                                        <span class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-500/30">
                                             {{ $gradeLabel }}
                                         </span>
-                                        <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-white/10 text-slate-200 border border-white/15">
+                                        <span class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
                                             {{ $workTypeTitle }}
                                         </span>
                                     </div>
-                                    <h3 class="text-lg font-extrabold text-white tracking-tight leading-snug line-clamp-2" title="{{ $item->topic }}">
-                                        {{ $item->topic }}
-                                    </h3>
+
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-[#C6FF33]/30 dark:bg-[#C6FF33]/20 text-slate-900 dark:text-[#C6FF33] border border-[#C6FF33] text-xs font-bold shrink-0">
+                                        {{ $item->variant_count }} вар.
+                                    </span>
                                 </div>
 
-                                {{-- Variant Count Badge --}}
-                                <div class="text-right shrink-0">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-xl bg-[#C6FF33]/15 text-[#C6FF33] border border-[#C6FF33]/30 font-mono text-xs font-extrabold shadow-sm">
-                                        {{ $item->variant_count }} вар.
+                                {{-- Topic Title --}}
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-snug pt-2.5 line-clamp-2" title="{{ $item->topic }}">
+                                    {{ $item->topic }}
+                                </h3>
+
+                                {{-- Task specs & Date --}}
+                                <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-white/5 mt-3">
+                                    <div class="flex items-center gap-3">
+                                        <span>Часть А: <strong class="text-slate-800 dark:text-slate-200">{{ $countA }}</strong></span>
+                                        <span>Часть Б: <strong class="text-slate-800 dark:text-slate-200">{{ $countB }}</strong></span>
+                                        <span>Всего: <strong class="text-[#7D39EB] dark:text-[#c084fc] font-bold">{{ $countA + $countB }} зад.</strong></span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-400">
+                                        {{ $item->created_at->translatedFormat('d M Y') }}
                                     </span>
                                 </div>
                             </div>
 
-                            {{-- Task Details Info --}}
-                            <div class="text-xs text-slate-300 flex items-center justify-between font-mono pt-2 border-t border-white/10">
-                                <div class="flex items-center gap-3 text-xs">
-                                    <span>Часть А: <b class="text-white">{{ $countA }}</b></span>
-                                    <span>Часть Б: <b class="text-white">{{ $countB }}</b></span>
-                                    <span>Всего: <b class="text-[#C6FF33]">{{ $countA + $countB }} зад.</b></span>
-                                </div>
-                                <span class="text-[11px] text-slate-400">
-                                    {{ $item->created_at->translatedFormat('d M Y, H:i') }}
-                                </span>
-                            </div>
-
-                            {{-- Teacher Dedicated Action Buttons (Teacher Studio) --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3 border-t border-white/10">
-                                {{-- 1. Projector / Interactive Whiteboard Matrix --}}
-                                <a 
-                                    href="{{ route('generator.board', $item->order_number) }}" 
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title="Полноэкранная матрица вариантов для проектора и интерактивной доски"
-                                    class="py-2.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 hover:text-white border border-sky-500/30 hover:border-sky-400/50 transition-all flex items-center justify-center gap-2 text-xs font-bold shadow-sm active:scale-[0.98]"
-                                >
-                                    <span class="text-sm">🖥️</span>
-                                    <span>На доску / Проектор</span>
-                                </a>
-
-                                {{-- 2. Share with Teacher Colleague --}}
-                                <button 
-                                    type="button"
-                                    onclick="copyShareLink('{{ route('generator.share', $item->order_number) }}')"
-                                    title="Скопировать ссылку на карточку работы для коллег-учителей"
-                                    class="py-2.5 px-3 rounded-xl bg-[#7D39EB]/20 hover:bg-[#7D39EB]/35 text-[#d8b4fe] hover:text-white border border-[#7D39EB]/35 hover:border-[#a855f7]/60 transition-all flex items-center justify-center gap-2 text-xs font-bold cursor-pointer shadow-sm active:scale-[0.98]"
-                                >
-                                    <span class="text-sm">🔗</span>
-                                    <span>Поделиться с коллегой</span>
-                                </button>
-                            </div>
-
-                            {{-- Actions Bar --}}
-                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                            {{-- Clean Actions: 1 Primary CTA + 3 Utilities (NO DUPLICATES) --}}
+                            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
                                 @if($item->isPaid() && $hasPdf)
                                     <a 
                                         href="{{ route('generator.download', ['order' => $item->order_number]) }}"
-                                        class="flex-1 py-3 px-4 rounded-xl bg-[#C6FF33] hover:bg-[#d4ff59] text-black font-extrabold text-xs tracking-tight shadow-[0_0_20px_rgba(198,255,51,0.25)] flex items-center justify-center gap-2 transition-all cursor-pointer min-w-[130px]"
+                                        class="w-full py-2.5 px-4 rounded-xl bg-[#C6FF33] hover:bg-[#bbf028] text-slate-950 font-bold text-xs tracking-tight shadow-sm hover:shadow flex items-center justify-center gap-2 transition-all cursor-pointer"
                                     >
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                         </svg>
-                                        <span>Скачать PDF</span>
-                                    </a>
-
-                                    {{-- Interactive Board Mode --}}
-                                    <a 
-                                        href="{{ route('generator.board', ['order' => $item->order_number]) }}"
-                                        title="Режим интерактивной доски / проектора"
-                                        class="py-3 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 hover:border-[#38BDF8]/60 transition-all flex items-center justify-center gap-1.5 text-xs font-bold"
-                                    >
-                                        <svg class="w-4 h-4 text-[#38BDF8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                        <span class="hidden sm:inline">Доска</span>
-                                    </a>
-
-                                    {{-- Share Page --}}
-                                    <a 
-                                        href="{{ route('generator.share', ['order' => $item->order_number]) }}"
-                                        title="Страница шеринга для коллег"
-                                        class="py-3 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 hover:border-emerald-400/60 transition-all flex items-center justify-center gap-1.5 text-xs font-bold"
-                                    >
-                                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                        </svg>
-                                        <span class="hidden sm:inline">Шеринг</span>
+                                        <span>Скачать PDF для печати (A4)</span>
                                     </a>
                                 @elseif($item->status === 'generating')
-                                    <div class="flex-1 py-3 px-4 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-amber-500/35">
+                                    <div class="w-full py-2.5 px-4 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-amber-200 dark:border-amber-500/30">
                                         <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        <span>Генерация вариантов...</span>
+                                        <span>Идёт генерация вариантов...</span>
                                     </div>
                                 @else
                                     <a 
                                         href="{{ route('generator.checkout.hosted', ['order' => $item->order_number]) }}"
-                                        class="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                                        class="w-full py-2.5 px-4 rounded-xl bg-[#7D39EB] hover:bg-[#6827d6] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
                                     >
                                         <span>Завершить заказ ({{ number_format($item->amountByn(), 2) }} BYN)</span>
                                     </a>
                                 @endif
 
-                                {{-- Quick repeat / new variants button --}}
-                                <a 
-                                    href="{{ route('generator') }}?subject={{ urlencode($item->subject) }}&topic={{ urlencode($item->topic) }}&grade={{ $grade }}"
-                                    title="Составить еще варианты по этой теме"
-                                    class="p-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 transition-all flex items-center justify-center"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                    </svg>
-                                </a>
+                                {{-- 3 Clean Utility Buttons --}}
+                                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                                    <a 
+                                        href="{{ route('generator.board', $item->order_number) }}" 
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="py-2 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 transition-all flex items-center justify-center gap-1.5 font-medium"
+                                        title="Открыть матрицу ключей на проектор для урока"
+                                    >
+                                        <span>🖥️</span>
+                                        <span>На доску</span>
+                                    </a>
 
-                                {{-- Copy Direct PDF Download Link --}}
-                                <button 
-                                    type="button"
-                                    onclick="copyDownloadLink('{{ route('generator.download', ['order' => $item->order_number]) }}')"
-                                    title="Скопировать прямую ссылку на скачивание PDF"
-                                    class="p-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white border border-white/15 transition-all flex items-center justify-center cursor-pointer"
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-                                    </svg>
-                                </button>
+                                    <button 
+                                        type="button"
+                                        onclick="copyShareLink('{{ route('generator.share', $item->order_number) }}')"
+                                        class="py-2 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 transition-all flex items-center justify-center gap-1.5 font-medium cursor-pointer"
+                                        title="Поделиться тестом с коллегой в чате"
+                                    >
+                                        <span>🔗</span>
+                                        <span>Коллегам</span>
+                                    </button>
+
+                                    <a 
+                                        href="{{ route('generator') }}?subject={{ urlencode($item->subject) }}&topic={{ urlencode($item->topic) }}&grade={{ $grade }}"
+                                        class="py-2 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 transition-all flex items-center justify-center gap-1.5 font-medium"
+                                        title="Составить еще новые варианты по этой теме"
+                                    >
+                                        <span>↺</span>
+                                        <span>Повтор</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     @endforeach
+                </div>
 
-                    {{-- No Filter Results Fallback --}}
-                    <div id="no-filter-results" class="hidden p-10 rounded-2xl cabinet-card text-center space-y-2 col-span-full">
-                        <div class="w-12 h-12 rounded-full bg-white/5 border border-white/15 text-slate-400 flex items-center justify-center mx-auto text-xl">
-                            🔍
-                        </div>
-                        <p class="text-sm font-bold text-white">В выбранной категории материалов не найдено</p>
-                        <p class="text-xs text-slate-400">Попробуйте переключить фильтр классов или очистить строку поиска.</p>
-                    </div>
+                {{-- Empty state for active filters --}}
+                <div id="no-filter-results" class="hidden p-8 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200 dark:border-white/10 text-center space-y-3">
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">По выбранным фильтрам работ не найдено.</p>
+                    <button 
+                        type="button" 
+                        onclick="resetFilters()"
+                        class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-white transition-all cursor-pointer"
+                    >
+                        Сбросить фильтры
+                    </button>
                 </div>
             @endif
 
@@ -467,13 +480,13 @@
     </div>
 
     {{-- Switch Email Modal --}}
-    <div id="switch-email-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="w-full max-w-md p-7 rounded-3xl bg-[#0c101c] border border-white/25 shadow-2xl space-y-4">
+    <div id="switch-email-modal" class="hidden fixed inset-0 z-50 bg-black/60 dark:bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="w-full max-w-md p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#121214] border border-slate-200 dark:border-white/20 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-white">Переключить архив на другой email</h3>
-                <button type="button" onclick="document.getElementById('switch-email-modal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl leading-none cursor-pointer">&times;</button>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Переключить на другой email</h3>
+                <button type="button" onclick="document.getElementById('switch-email-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xl leading-none cursor-pointer">&times;</button>
             </div>
-            <p class="text-xs text-slate-300 leading-relaxed">
+            <p class="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
                 Введите другой адрес электронной почты, чтобы посмотреть привязанные к нему проверочные работы.
             </p>
             <form action="{{ route('generator.cabinet.access') }}" method="POST" class="space-y-3 pt-1">
@@ -483,19 +496,19 @@
                     name="email" 
                     required 
                     placeholder="teacher@school.by"
-                    class="w-full px-4 py-3 rounded-xl bg-black/80 border border-white/25 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C6FF33] shadow-inner"
+                    class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-black/80 border border-slate-300 dark:border-white/25 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-[#7D39EB]"
                 >
                 <div class="flex justify-end gap-2 pt-2">
                     <button 
                         type="button" 
                         onclick="document.getElementById('switch-email-modal').classList.add('hidden')"
-                        class="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white"
+                        class="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                     >
                         Отмена
                     </button>
                     <button 
                         type="submit" 
-                        class="px-5 py-2.5 rounded-xl bg-[#C6FF33] text-black font-extrabold text-xs shadow-md cursor-pointer"
+                        class="px-5 py-2.5 rounded-xl bg-[#7D39EB] hover:bg-[#6827d6] text-white font-bold text-xs shadow-sm cursor-pointer"
                     >
                         Загрузить материалы →
                     </button>
@@ -504,111 +517,160 @@
         </div>
     </div>
 
-    {{-- Quick Toast Feedback --}}
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-5 py-3.5 rounded-2xl bg-black/95 border border-[#C6FF33]/50 text-[#C6FF33] text-xs font-mono shadow-[0_0_30px_rgba(0,0,0,0.8)] flex items-center gap-2.5">
+    {{-- Toast Notification --}}
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-5 py-3 rounded-xl bg-slate-900 dark:bg-black/95 text-white border border-slate-700 dark:border-[#C6FF33]/50 text-xs shadow-xl flex items-center gap-2.5">
         <svg class="w-4 h-4 text-[#C6FF33]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
         </svg>
-        <span id="toast-message" class="font-bold">Ссылка скопирована</span>
+        <span id="toast-message" class="font-medium">Ссылка скопирована</span>
     </div>
 
     <script>
+        // State for filters
         let currentSubject = 'all';
         let currentGradeGroup = 'all';
 
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            if (newTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+                document.getElementById('theme-toggle-icon').textContent = '☀️';
+                document.getElementById('theme-toggle-text').textContent = 'Светлая тема';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                document.getElementById('theme-toggle-icon').textContent = '🌙';
+                document.getElementById('theme-toggle-text').textContent = 'Тёмная тема';
+            }
+            localStorage.setItem('edusfera_theme', newTheme);
+        }
+
+        // Initialize Theme Toggle Button text
+        document.addEventListener('DOMContentLoaded', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const iconEl = document.getElementById('theme-toggle-icon');
+            const textEl = document.getElementById('theme-toggle-text');
+            if (iconEl && textEl) {
+                iconEl.textContent = isDark ? '☀️' : '🌙';
+                textEl.textContent = isDark ? 'Светлая тема' : 'Тёмная тема';
+            }
+        });
+
+        // Grade Group Filter
+        function filterByGradeGroup(group) {
+            currentGradeGroup = group;
+            document.querySelectorAll('.grade-tab').forEach(el => {
+                const target = el.getAttribute('data-target-grade');
+                if (target === group) {
+                    el.className = 'grade-tab px-3.5 py-2 rounded-xl font-bold bg-[#7D39EB] text-white shadow-sm transition-all cursor-pointer';
+                } else {
+                    el.className = 'grade-tab px-3 py-2 rounded-xl bg-white dark:bg-[#121214] text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap';
+                }
+            });
+            applyAllFilters();
+        }
+
+        // Subject Filter
         function filterBySubject(subj) {
             currentSubject = subj.toLowerCase();
             document.querySelectorAll('.subject-tab').forEach(el => {
-                el.classList.remove('bg-[#7D39EB]/30', 'text-white', 'border-[#7D39EB]/50', 'font-bold');
-                el.classList.add('bg-white/5', 'text-slate-300', 'border-white/10', 'font-medium');
+                const target = el.getAttribute('data-target-subject');
+                if (target === currentSubject) {
+                    el.className = 'subject-tab px-3 py-1.5 rounded-lg font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition-all cursor-pointer';
+                } else {
+                    el.className = 'subject-tab px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200/90 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer whitespace-nowrap';
+                }
             });
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.remove('bg-white/5', 'text-slate-300', 'border-white/10', 'font-medium');
-                event.currentTarget.classList.add('bg-[#7D39EB]/30', 'text-white', 'border-[#7D39EB]/50', 'font-bold');
-            }
-            applyFilters();
+            applyAllFilters();
         }
 
-        function filterByGrade(gradeGroup) {
-            currentGradeGroup = gradeGroup;
-            document.querySelectorAll('.grade-tab').forEach(el => {
-                el.classList.remove('bg-[#C6FF33]', 'text-black', 'font-bold', 'shadow-sm');
-                el.classList.add('bg-white/5', 'text-slate-300', 'border-white/10', 'font-semibold');
-            });
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.remove('bg-white/5', 'text-slate-300', 'border-white/10', 'font-semibold');
-                event.currentTarget.classList.add('bg-[#C6FF33]', 'text-black', 'font-bold', 'shadow-sm');
-            }
-            applyFilters();
-        }
-
+        // Search Filter
         function filterMaterials() {
-            applyFilters();
+            applyAllFilters();
         }
 
-        function applyFilters() {
+        // Combined Filter Engine
+        function applyAllFilters() {
             const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const cards = document.querySelectorAll('.material-card');
             let visibleCount = 0;
 
-            document.querySelectorAll('.material-card').forEach(card => {
-                const cardSubj = (card.getAttribute('data-subject') || '').toLowerCase();
+            cards.forEach(card => {
+                const cardSubject = card.getAttribute('data-subject') || '';
                 const cardGradeGroup = card.getAttribute('data-grade-group') || '';
-                const cardSearch = (card.getAttribute('data-search') || '').toLowerCase();
+                const cardSearch = card.getAttribute('data-search') || '';
 
-                const matchSubj = (currentSubject === 'all' || cardSubj === currentSubject);
-                const matchGrade = (currentGradeGroup === 'all' || cardGradeGroup === currentGradeGroup);
-                const matchSearch = (!query || cardSearch.includes(query));
+                const matchesSubject = (currentSubject === 'all' || cardSubject === currentSubject);
+                const matchesGrade = (currentGradeGroup === 'all' || cardGradeGroup === currentGradeGroup);
+                const matchesQuery = (!query || cardSearch.includes(query));
 
-                if (matchSubj && matchGrade && matchSearch) {
-                    card.style.display = '';
+                if (matchesSubject && matchesGrade && matchesQuery) {
+                    card.classList.remove('hidden');
                     visibleCount++;
                 } else {
-                    card.style.display = 'none';
+                    card.classList.add('hidden');
                 }
             });
 
-            const noResults = document.getElementById('no-filter-results');
-            if (noResults) {
-                noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            const noResEl = document.getElementById('no-filter-results');
+            if (noResEl) {
+                if (visibleCount === 0 && cards.length > 0) {
+                    noResEl.classList.remove('hidden');
+                } else {
+                    noResEl.classList.add('hidden');
+                }
             }
         }
 
-        function copyShareLink(url) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(() => {
-                    showToast('Ссылка для коллег скопирована');
-                }).catch(() => {
-                    promptFallback(url, 'Ссылка для коллег скопирована');
-                });
-            } else {
-                promptFallback(url, 'Ссылка для коллег скопирована');
-            }
+        // Reset all filters
+        function resetFilters() {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+            filterByGradeGroup('all');
+            filterBySubject('all');
         }
 
+        // Copy download link
         function copyDownloadLink(url) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(url).then(() => {
-                    showToast('Прямая ссылка на PDF скопирована в буфер');
-                }).catch(() => {
-                    promptFallback(url, 'Ссылка на PDF скопирована');
-                });
-            } else {
-                promptFallback(url, 'Ссылка на PDF скопирована');
-            }
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Прямая ссылка на PDF скопирована в буфер');
+            });
         }
 
-        function promptFallback(url, msg) {
-            window.prompt('Скопируйте ссылку вручную:', url);
-            showToast(msg);
+        // Copy share link
+        function copyShareLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Ссылка для коллег скопирована');
+            });
         }
 
+        // Copy magic link
+        function copyMagicLink() {
+            @if(isset($magicUrl))
+                const magicUrl = '{{ $magicUrl }}';
+            @else
+                const magicUrl = window.location.href;
+            @endif
+            navigator.clipboard.writeText(magicUrl).then(() => {
+                showToast('Ссылка быстрого входа без пароля скопирована');
+            });
+        }
+
+        // Toast feedback
         function showToast(msg) {
-            const t = document.getElementById('toast');
-            if (!t) return;
-            document.getElementById('toast-message').textContent = msg;
-            t.classList.remove('translate-y-20', 'opacity-0');
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            if (!toast || !toastMsg) return;
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
             setTimeout(() => {
-                t.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
             }, 3000);
         }
     </script>
