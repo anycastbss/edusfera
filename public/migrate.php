@@ -944,6 +944,7 @@ try {
         $grade = $_GET['grade'] ?? '7';
         $workType = $_GET['work_type'] ?? 'independent';
         $difficulty = $_GET['difficulty'] ?? 'base';
+        $examFormat = $_GET['exam_format'] ?? (is_numeric($grade) && (int)$grade < 10 && $workType !== 'ct_ce' ? 'school' : 'exam');
 
         $subject = $_GET['subject'] ?? 'Математика';
         $topic = $_GET['topic'] ?? 'Линейные уравнения с одной переменной';
@@ -968,6 +969,7 @@ try {
                 'grade' => $grade,
                 'work_type' => $workType,
                 'difficulty' => $difficulty,
+                'exam_format' => $examFormat,
             ],
         ]);
 

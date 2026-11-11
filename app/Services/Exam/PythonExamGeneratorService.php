@@ -75,6 +75,7 @@ class PythonExamGeneratorService
             // Prepare structured variants payload
             $variantsPayload = [];
             $allVariants = $parsedData['variants'] ?? [];
+            $isSchoolFormat = ($parsedData['examFormat'] ?? '') === 'school';
 
             foreach ($allVariants as $variant) {
                 $varNum = $variant['number'] ?? (count($variantsPayload) + 1);
@@ -94,8 +95,10 @@ class PythonExamGeneratorService
                         $ans = $letters[($t['num'] + $varNum) % count($letters)];
                     }
 
+                    $taskNumLabel = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('А' . $t['num']);
+
                     $partA[] = [
-                        'number' => 'А' . $t['num'],
+                        'number' => $taskNumLabel,
                         'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
                         'options' => $options,
                         'correct' => $ans,
@@ -116,8 +119,10 @@ class PythonExamGeneratorService
                         }
                     }
 
+                    $taskNumLabelB = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('Б' . $t['num']);
+
                     $partB[] = [
-                        'number' => 'Б' . $t['num'],
+                        'number' => $taskNumLabelB,
                         'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
                         'correct' => $ansB,
                         'explanation' => $t['explanation'] ?? 'Ответ вносится в бланк аккуратно и разборчиво.',
@@ -151,6 +156,7 @@ class PythonExamGeneratorService
                 'max_score' => (string)($parsedData['maxScore'] ?? 100),
                 'website_url' => 'https://edusfera.by',
                 'instructions' => $parsedData['instructionText'] ?: 'В заданиях Части А выберите один верный вариант ответа. В заданиях Части Б запишите полученное целое число. Ответы переносите в бланк внизу листа аккуратно и разборчиво.',
+                'exam_format' => $parsedData['examFormat'] ?? ($isSchoolFormat ? 'school' : 'exam'),
                 'variants' => $variantsPayload,
                 'master_table' => $parsedData['masterTable'] ?? [],
                 'grading_scale' => $parsedData['gradingScale'] ?? [],

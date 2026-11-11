@@ -69,6 +69,7 @@ class GeneratorCheckoutController extends Controller
             'grade' => ['nullable', 'string', 'in:5,6,7,8,9,10,11,abiturient'],
             'work_type' => ['nullable', 'string', 'in:independent,control,diagnostic,test,ct_ce,olympiad,exam'],
             'difficulty' => ['nullable', 'string', 'in:base,advanced,olympiad'],
+            'exam_format' => ['nullable', 'string', 'in:school,exam,ct_ce'],
             'test_bypass' => ['nullable'],
         ], [
             'email.required' => 'Укажите адрес электронной почты для получения материалов.',
@@ -87,6 +88,8 @@ class GeneratorCheckoutController extends Controller
         $grade = $validated['grade'] ?? '7';
         $workType = $validated['work_type'] ?? 'independent';
         $difficulty = $validated['difficulty'] ?? 'base';
+        $numGrade = is_numeric($grade) ? (int) $grade : 11;
+        $examFormat = $validated['exam_format'] ?? (($numGrade < 10 && $workType !== 'ct_ce') ? 'school' : 'exam');
 
         $isQuarterPass = ($planType === 'quarter_pass');
         $amountByn = $isQuarterPass ? 19.00 : 5.00;
@@ -113,6 +116,7 @@ class GeneratorCheckoutController extends Controller
                 'grade' => $grade,
                 'work_type' => $workType,
                 'difficulty' => $difficulty,
+                'exam_format' => $examFormat,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ],

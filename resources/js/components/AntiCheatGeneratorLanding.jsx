@@ -613,6 +613,7 @@ export default function AntiCheatGeneratorLanding() {
     const [selectedGrade, setSelectedGrade] = useState('7');
     const [selectedWorkType, setSelectedWorkType] = useState('independent');
     const [selectedDifficulty, setSelectedDifficulty] = useState('base');
+    const [examFormat, setExamFormat] = useState('school'); // 'school' | 'exam'
     const [email, setEmail] = useState(user?.email || '');
     const [showPayModal, setShowPayModal] = useState(false);
     const [isQuarterPass, setIsQuarterPass] = useState(false);
@@ -731,8 +732,13 @@ export default function AntiCheatGeneratorLanding() {
         setSelectedGrade(gradeId);
         const gradeNum = parseInt(gradeId, 10);
         // Pedagogical auto-adaptation: grades 5-9 cannot take CT/CE
-        if (gradeNum < 10 && selectedWorkType === 'ct_ce') {
-            setSelectedWorkType('independent');
+        if (gradeNum < 10) {
+            setExamFormat('school');
+            if (selectedWorkType === 'ct_ce') {
+                setSelectedWorkType('independent');
+            }
+        } else {
+            setExamFormat('exam');
         }
         const gradeTopic = GRADE_PRESETS[gradeId]?.[selectedSubject]?.[0];
         if (gradeTopic) {
@@ -743,12 +749,15 @@ export default function AntiCheatGeneratorLanding() {
     const handleWorkTypeChange = (typeId) => {
         const gradeNum = parseInt(selectedGrade, 10);
         // If CT/CE is picked for middle school, switch grade to 11
-        if (typeId === 'ct_ce' && gradeNum < 10) {
-            setSelectedGrade('11');
-            const gradeTopic = GRADE_PRESETS['11']?.[selectedSubject]?.[0];
-            if (gradeTopic) {
-                setTopic(gradeTopic);
+        if (typeId === 'ct_ce') {
+            if (gradeNum < 10) {
+                setSelectedGrade('11');
+                const gradeTopic = GRADE_PRESETS['11']?.[selectedSubject]?.[0];
+                if (gradeTopic) {
+                    setTopic(gradeTopic);
+                }
             }
+            setExamFormat('exam');
         }
         setSelectedWorkType(typeId);
     };
@@ -806,6 +815,7 @@ export default function AntiCheatGeneratorLanding() {
                     grade: selectedGrade,
                     work_type: selectedWorkType,
                     difficulty: selectedDifficulty,
+                    exam_format: examFormat,
                     plan_type: planType,
                     test_bypass: isAdmin ? 1 : 0,
                 }),
@@ -1407,15 +1417,44 @@ export default function AntiCheatGeneratorLanding() {
                             })()}
                         </div>
 
-                        {/* Step 3: Tasks in Variant (Part A & Part B) */}
+                        {/* Step 3: Tasks in Variant (Part A & Part B or School format) */}
                         <div className="pt-2 border-t border-white/5 space-y-2">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    3. ЗАДАНИЙ В ОДНОМ ВАРИАНТЕ
+                                    3. ФОРМАТ И КОЛИЧЕСТВО ЗАДАНИЙ
                                 </label>
                                 <span className="text-[10px] font-mono font-bold text-[#C6FF33] bg-[#C6FF33]/10 px-2 py-0.5 rounded-full border border-[#C6FF33]/25">
-                                    Итого: {tasksCountA + tasksCountB} зад. (A1{tasksCountA > 1 ? `..A${tasksCountA}` : ''}{tasksCountB > 0 ? `, Б1${tasksCountB > 1 ? `..Б${tasksCountB}` : ''}` : ''})
+                                    {examFormat === 'school' 
+                                        ? `Итого: ${tasksCountA + tasksCountB} зад. (№ 1..${tasksCountA + tasksCountB})`
+                                        : `Итого: ${tasksCountA + tasksCountB} зад. (A1${tasksCountA > 1 ? `..A${tasksCountA}` : ''}${tasksCountB > 0 ? `, Б1${tasksCountB > 1 ? `..Б${tasksCountB}` : ''}` : ''})`
+                                    }
                                 </span>
+                            </div>
+
+                            {/* Format Switcher: School vs CT/CE */}
+                            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#0B0B0E] border border-white/10 text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setExamFormat('school')}
+                                    className={`py-1.5 px-2 rounded-lg font-semibold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        examFormat === 'school'
+                                            ? 'bg-[#7D39EB] text-white shadow-xs'
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span>🏫 Школьный (№ 1–N)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setExamFormat('exam')}
+                                    className={`py-1.5 px-2 rounded-lg font-semibold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        examFormat === 'exam'
+                                            ? 'bg-[#7D39EB] text-white shadow-xs'
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <span>🎓 Экзамен (ЦТ / ЦЭ)</span>
+                                </button>
                             </div>
 
                             <div className="grid grid-cols-2 gap-2">
@@ -1423,7 +1462,7 @@ export default function AntiCheatGeneratorLanding() {
                                 <div className="p-2.5 rounded-xl bg-[#141418] border border-white/10 space-y-1.5">
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="font-semibold text-slate-300">
-                                            Часть А <span className="text-[10px] text-slate-500 font-normal">(тест)</span>
+                                            {examFormat === 'school' ? 'С выбором' : 'Часть А'} <span className="text-[10px] text-slate-500 font-normal">(тест)</span>
                                         </span>
                                         <span className="font-bold text-[#C6FF33] font-mono text-[11px]">{tasksCountA} зад.</span>
                                     </div>
@@ -1449,12 +1488,12 @@ export default function AntiCheatGeneratorLanding() {
                                 <div className="p-2.5 rounded-xl bg-[#141418] border border-white/10 space-y-1.5">
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="font-semibold text-slate-300">
-                                            Часть Б <span className="text-[10px] text-slate-500 font-normal">(число)</span>
+                                            {examFormat === 'school' ? 'Открытые' : 'Часть Б'} <span className="text-[10px] text-slate-500 font-normal">({selectedSubject === 'math' || selectedSubject === 'physics' ? 'число' : 'ответ'})</span>
                                         </span>
                                         <span className="font-bold text-[#C6FF33] font-mono text-[11px]">{tasksCountB} зад.</span>
                                     </div>
                                     <div className="grid grid-cols-5 gap-1 p-0.5 rounded-lg bg-[#0B0B0E]">
-                                        {[1, 2, 3, 4, 5].map((cnt) => (
+                                        {[0, 1, 2, 3, 4].map((cnt) => (
                                             <button
                                                 key={cnt}
                                                 type="button"

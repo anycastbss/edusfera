@@ -228,7 +228,8 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
                          count_a: int, count_b: int, max_score: str, asset_dir: Path, width: float,
                          custom_instructions: str | None = None,
                          grade: str | None = None, grade_label: str | None = None,
-                         work_type: str | None = None, work_type_title: str | None = None) -> list[Flowable]:
+                         work_type: str | None = None, work_type_title: str | None = None,
+                         exam_format: str = "exam") -> list[Flowable]:
     """Builds clean, uncollidable header for each test variant."""
     qr_img = _generate_qr_image("https://edusfera.by")
     qr_path = asset_dir / f"header_qr_{uuid.uuid4().hex[:6]}.png"
@@ -274,8 +275,12 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
     )
     title_p = Paragraph(title_markup, ParagraphStyle("subjh", leading=13.5))
 
+    is_school = (exam_format == "school")
     total_tasks = count_a + count_b
-    task_breakdown = f"{total_tasks} (Часть А: {count_a}, Часть Б: {count_b})" if count_b > 0 else f"{count_a}"
+    if is_school:
+        task_breakdown = f"{total_tasks} (с выбором: {count_a}, открытых: {count_b})" if count_b > 0 else f"{count_a}"
+    else:
+        task_breakdown = f"{total_tasks} (Часть А: {count_a}, Часть Б: {count_b})" if count_b > 0 else f"{count_a}"
     score_note = " (10-балльная шкала)" if str(max_score) in ["10", "10.0"] else " (шкала ЦТ)"
     passport_markup = (
         f"<b>Время выполнения:</b> {escape(duration)}<br/>"
@@ -315,10 +320,23 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
     pupil_markup = f"<b>Учащийся:</b> __________________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> {grade_str} &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________"
     pupil_p = Paragraph(pupil_markup, ParagraphStyle("pupil", fontName="EDU", fontSize=8.8, leading=12))
 
-    # 4. Instruction box tailored by subject
+    # 4. Instruction box tailored by subject and format
     is_exact = _is_exact_science(subject)
     if custom_instructions and len(custom_instructions.strip()) > 10:
         raw_instr = custom_instructions
+    elif is_school:
+        if is_exact:
+            raw_instr = (
+                "В заданиях с выбором ответа отметьте один верный вариант. "
+                "В открытых заданиях запишите полученное целое число. "
+                "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
+            )
+        else:
+            raw_instr = (
+                "В заданиях с выбором ответа отметьте один верный вариант. "
+                "В открытых заданиях запишите краткий ответ (буквенно-цифровой код соответствия А1Б2..., комбинацию цифр или термин/фамилию). "
+                "Ответы переносите в бланк внизу листа аккуратно и разборчиво."
+            )
     elif is_exact:
         raw_instr = (
             "В заданиях Части А выберите один верный вариант ответа. "
@@ -376,9 +394,12 @@ def build_section_banner(title: str, width: float) -> Flowable:
     return t
 
 
-def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_exact: bool = True) -> Flowable:
+def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_exact: bool = True, is_school: bool = False) -> Flowable:
     """Renders a complete task with badge, prompt, options/answer-box, and divider without any overlapping."""
-    num_str = str(task.get("number", "А1"))
+    num_str = str(task.get("number", "1")).strip()
+    if is_school:
+        num_str = re.sub(r'^[АБAB]', '', num_str).strip() or "1"
+
     prompt_raw = str(task.get("prompt", ""))
     prompt_html = _safe_formula_markup(prompt_raw, asset_dir)
     prompt_p = Paragraph(prompt_html, STYLES["question"])
@@ -569,7 +590,7 @@ def build_student_workspace(width: float, height: float = 120) -> Flowable:
     return box_t
 
 
-def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100") -> Flowable:
+def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100", exam_format: str = "exam") -> Flowable:
     """Builds a tear-off answer sheet tailored for the specific variant."""
     elements = []
     cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
@@ -580,20 +601,20 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
     elements.append(header_p)
     elements.append(Spacer(1, 2.5))
 
-    # Grid for Part A
-    if part_a:
-        a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number']) for i, t in enumerate(part_a)]
-        col0_w = 90
-        cell_w = min(32, (width - col0_w) / max(1, len(a_headers)))
-        a_data = [
-            ["Часть А"] + a_headers,
-            ["Ответ"] + ["" for _ in a_headers]
+    if exam_format == "school":
+        all_tasks = part_a + part_b
+        headers = [re.sub(r'^[АБAB]', '', str(t.get('number', i+1))).strip() or str(i+1) for i, t in enumerate(all_tasks)]
+        col0_w = 80
+        cell_w = min(42, (width - col0_w) / max(1, len(headers)))
+        school_data = [
+            ["№ задания"] + headers,
+            ["Ответ"] + ["" for _ in headers]
         ]
-        a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[15, 18], hAlign='LEFT')
-        a_table.setStyle(TableStyle([
+        school_table = Table(school_data, colWidths=[col0_w] + [cell_w] * len(headers), rowHeights=[15, 18], hAlign='LEFT')
+        school_table.setStyle(TableStyle([
             ('FONTNAME', (0,0), (-1,-1), 'EDU'),
             ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
-            ('FONTSIZE', (0,0), (-1,-1), 7.5),
+            ('FONTSIZE', (0,0), (-1,-1), 8),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
@@ -601,33 +622,57 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
             ('LEFTPADDING', (0,0), (-1,-1), 2),
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
-        elements.append(a_table)
-        elements.append(Spacer(1, 2.5))
-
-    # Grid for Part B
-    if part_b:
-        b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number']) for i, t in enumerate(part_b)]
-        col0_w = 90
-        cell_w = min(48 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
-        b_label = "Ответ (число)" if is_exact else "Ответ (кратко)"
-        b_data = [
-            ["Часть Б"] + b_headers,
-            [b_label] + ["" for _ in b_headers]
-        ]
-        b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[15, 18], hAlign='LEFT')
-        b_table.setStyle(TableStyle([
-            ('FONTNAME', (0,0), (-1,-1), 'EDU'),
-            ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
-            ('FONTSIZE', (0,0), (-1,-1), 7.5),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-            ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
-            ('LEFTPADDING', (0,0), (-1,-1), 2),
-            ('RIGHTPADDING', (0,0), (-1,-1), 2),
-        ]))
-        elements.append(b_table)
+        elements.append(school_table)
         elements.append(Spacer(1, 4))
+    else:
+        # Grid for Part A
+        if part_a:
+            a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number']) for i, t in enumerate(part_a)]
+            col0_w = 90
+            cell_w = min(32, (width - col0_w) / max(1, len(a_headers)))
+            a_data = [
+                ["Часть А"] + a_headers,
+                ["Ответ"] + ["" for _ in a_headers]
+            ]
+            a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[15, 18], hAlign='LEFT')
+            a_table.setStyle(TableStyle([
+                ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+                ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 7.5),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+                ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+                ('LEFTPADDING', (0,0), (-1,-1), 2),
+                ('RIGHTPADDING', (0,0), (-1,-1), 2),
+            ]))
+            elements.append(a_table)
+            elements.append(Spacer(1, 2.5))
+
+        # Grid for Part B
+        if part_b:
+            b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number']) for i, t in enumerate(part_b)]
+            col0_w = 90
+            cell_w = min(48 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
+            b_label = "Ответ (число)" if is_exact else "Ответ (кратко)"
+            b_data = [
+                ["Часть Б"] + b_headers,
+                [b_label] + ["" for _ in b_headers]
+            ]
+            b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[15, 18], hAlign='LEFT')
+            b_table.setStyle(TableStyle([
+                ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+                ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 7.5),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+                ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+                ('LEFTPADDING', (0,0), (-1,-1), 2),
+                ('RIGHTPADDING', (0,0), (-1,-1), 2),
+            ]))
+            elements.append(b_table)
+            elements.append(Spacer(1, 4))
 
     # Teacher grading line
     if str(max_score) in ["10", "10.0"]:
@@ -689,6 +734,9 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     elements.append(Paragraph("Ниже приведена матрица для быстрой сверки результатов по всем вариантам:", STYLES["body"]))
     elements.append(Spacer(1, 5))
 
+    exam_format = meta.get("exam_format", "exam") if meta else "exam"
+    is_school = (exam_format == "school")
+
     num_vars = len(variants)
     var_cols = [Paragraph(f"<b>Вариант {v.get('number', i+1)}</b>", ParagraphStyle("vc", fontName="EDU-Bold", fontSize=8, alignment=1)) for i, v in enumerate(variants)]
     col0_w = 64
@@ -700,43 +748,71 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     tasks_a = first_var.get("part_a", [])
     tasks_b = first_var.get("part_b", [])
 
-    for i, t in enumerate(tasks_a):
-        task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number'])
-        lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
-        row = [lbl_p]
-        for v in variants:
-            v_tasks = v.get("part_a", [])
-            if i < len(v_tasks):
-                ans = str(v_tasks[i].get("correct", "—")).strip().upper()
-                # Clean answer: take only first letter if string or '—'
-                clean_letter = ans[0] if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
-                # Map 1..5 to A..E if numeric
-                if clean_letter in ['1','2','3','4','5']:
-                    clean_letter = chr(64 + int(clean_letter))
-                cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
-                row.append(cell_p)
-            else:
-                row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
-        matrix_rows.append(row)
+    if is_school:
+        all_tasks = tasks_a + tasks_b
+        for i, t in enumerate(all_tasks):
+            clean_num = re.sub(r'^[АБAB]', '', str(t.get('number', i+1))).strip() or str(i+1)
+            lbl_p = Paragraph(f"<b>{clean_num}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
+            row = [lbl_p]
+            for v in variants:
+                v_all = v.get("part_a", []) + v.get("part_b", [])
+                if i < len(v_all):
+                    curr_t = v_all[i]
+                    ans = str(curr_t.get("correct", "—")).strip()
+                    if not ans or ans.lower() in ["целое число", "ответ", "—"]:
+                        ans = "—"
+                    if curr_t.get("options"):
+                        clean_letter = ans[0].upper() if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
+                        if clean_letter in ['1','2','3','4','5']:
+                            clean_letter = chr(64 + int(clean_letter))
+                        cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
+                    else:
+                        if len(ans) > 10:
+                            ans = ans[:9] + "…"
+                        font_sz = 7.0 if len(ans) > 6 else 8.0
+                        lead_sz = 8.5 if len(ans) > 6 else 9.5
+                        cell_p = Paragraph(f"<b>{escape(ans)}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=font_sz, leading=lead_sz, alignment=1, textColor=colors.HexColor("#0f172a")))
+                    row.append(cell_p)
+                else:
+                    row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
+            matrix_rows.append(row)
+    else:
+        for i, t in enumerate(tasks_a):
+            task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number'])
+            lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
+            row = [lbl_p]
+            for v in variants:
+                v_tasks = v.get("part_a", [])
+                if i < len(v_tasks):
+                    ans = str(v_tasks[i].get("correct", "—")).strip().upper()
+                    clean_letter = ans[0] if ans and ans[0].isalpha() else (ans if ans in ['1','2','3','4','5'] else "—")
+                    if clean_letter in ['1','2','3','4','5']:
+                        clean_letter = chr(64 + int(clean_letter))
+                    cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=8.5, alignment=1, textColor=colors.HexColor("#0f172a")))
+                    row.append(cell_p)
+                else:
+                    row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
+            matrix_rows.append(row)
 
-    for i, t in enumerate(tasks_b):
-        task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number'])
-        lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
-        row = [lbl_p]
-        for v in variants:
-            v_tasks = v.get("part_b", [])
-            if i < len(v_tasks):
-                ans = str(v_tasks[i].get("correct", "—")).strip()
-                if not ans or ans.lower() in ["целое число", "ответ", "—"]:
-                    ans = "—"
-                # If short, display in bold; if longer string, wrap cleanly with small font
-                font_sz = 7.0 if len(ans) > 8 else 8.0
-                lead_sz = 8.5 if len(ans) > 8 else 9.5
-                cell_p = Paragraph(f"<b>{escape(ans)}</b>", ParagraphStyle("bc", fontName="EDU-Bold", fontSize=font_sz, leading=lead_sz, alignment=1, textColor=colors.HexColor("#0f172a")))
-                row.append(cell_p)
-            else:
-                row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
-        matrix_rows.append(row)
+        for i, t in enumerate(tasks_b):
+            task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number'])
+            lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
+            row = [lbl_p]
+            for v in variants:
+                v_tasks = v.get("part_b", [])
+                if i < len(v_tasks):
+                    ans = str(v_tasks[i].get("correct", "—")).strip()
+                    if not ans or ans.lower() in ["целое число", "ответ", "—"]:
+                        ans = "—"
+                    if len(ans) > 10:
+                        ans = ans[:9] + "…"
+                    font_sz = 7.0 if len(ans) > 6 else 8.0
+                    lead_sz = 8.5 if len(ans) > 6 else 9.5
+                    cell_p = Paragraph(f"<b>{escape(ans)}</b>", ParagraphStyle("bc", fontName="EDU-Bold", fontSize=font_sz, leading=lead_sz, alignment=1, textColor=colors.HexColor("#0f172a")))
+                    row.append(cell_p)
+                else:
+                    row.append(Paragraph("—", ParagraphStyle("dash", fontName="EDU", fontSize=8, alignment=1, textColor=colors.HexColor("#64748b"))))
+            matrix_rows.append(row)
 
     matrix_t = Table(matrix_rows, colWidths=[col0_w] + [v_col_w] * num_vars)
     matrix_t.setStyle(TableStyle([
@@ -820,12 +896,14 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
 
         for t in (v.get("part_a", []) + v.get("part_b", [])):
             t_num = t.get("number", "")
+            if is_school:
+                t_num = re.sub(r'^[АБAB]', '', str(t_num)).strip() or str(t.get("num", ""))
             ans = t.get("correct", "")
             expl = t.get("explanation", "").strip()
             # Clean monologue if any slipped through
             expl = re.sub(r'^(?:[^\.\?\!]+(?:стоп|проверяем|пересчитаем|исправляем|заменяем)[^\.\?\!]*[\.\?\!]\s*)+', '', expl, flags=re.IGNORECASE).strip()
-            if len(expl) > 130:
-                expl = expl[:125].rsplit(' ', 1)[0] + '...'
+            if len(expl) > 140:
+                expl = expl[:135].rsplit(' ', 1)[0] + '...'
             item_text = f"<b>{t_num}. Ответ: {ans}</b>"
             if expl:
                 item_text += f" — {_safe_formula_markup(expl, asset_dir)}"
@@ -898,6 +976,9 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
         part_a = variant.get("part_a", [])
         part_b = variant.get("part_b", [])
 
+        exam_format = data.get("exam_format", "exam")
+        is_school = (exam_format == "school")
+
         # Header for this variant
         header_blocks = build_variant_header(
             variant_title=var_title,
@@ -913,32 +994,44 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             grade=data.get("grade"),
             grade_label=data.get("grade_label"),
             work_type=data.get("work_type"),
-            work_type_title=data.get("work_type_title")
+            work_type_title=data.get("work_type_title"),
+            exam_format=exam_format
         )
         story.extend(header_blocks)
 
-        # Part A section
-        if part_a:
-            first_num = part_a[0].get("number", "А1")
-            last_num = part_a[-1].get("number", f"А{len(part_a)}")
-            banner = build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W)
-            story.append(banner)
-            story.append(Spacer(1, 5))
+        if is_school:
+            all_tasks = part_a + part_b
+            if all_tasks:
+                first_num = re.sub(r'^[АБAB]', '', str(all_tasks[0].get("number", "1"))).strip() or "1"
+                last_num = re.sub(r'^[АБAB]', '', str(all_tasks[-1].get("number", len(all_tasks)))).strip() or str(len(all_tasks))
+                banner = build_section_banner(f"Задания проверочной работы (№ {first_num}–{last_num})", CONTENT_W)
+                story.append(banner)
+                story.append(Spacer(1, 5))
+                for task in all_tasks:
+                    story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact, is_school=True))
+        else:
+            # Part A section
+            if part_a:
+                first_num = part_a[0].get("number", "А1")
+                last_num = part_a[-1].get("number", f"А{len(part_a)}")
+                banner = build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W)
+                story.append(banner)
+                story.append(Spacer(1, 5))
 
-            for task in part_a:
-                story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
+                for task in part_a:
+                    story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
-        # Part B section
-        if part_b:
-            first_num = part_b[0].get("number", "Б1")
-            last_num = part_b[-1].get("number", f"Б{len(part_b)}")
-            part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
-            banner = build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W)
-            story.append(banner)
-            story.append(Spacer(1, 5))
+            # Part B section
+            if part_b:
+                first_num = part_b[0].get("number", "Б1")
+                last_num = part_b[-1].get("number", f"Б{len(part_b)}")
+                part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
+                banner = build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W)
+                story.append(banner)
+                story.append(Spacer(1, 5))
 
-            for task in part_b:
-                story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
+                for task in part_b:
+                    story.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         # Workspace scratchpad if variant has <= 5 tasks to ensure balanced layout
         total_tasks = len(part_a) + len(part_b)
@@ -958,7 +1051,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
             story.append(Spacer(1, 4))
 
         # Answer sheet for this variant
-        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
+        story.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score, exam_format=exam_format))
 
     # Teacher master section at the end
     master_table_raw = data.get("master_table", [])
@@ -1006,6 +1099,9 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
         part_a = variant.get("part_a", [])
         part_b = variant.get("part_b", [])
 
+        exam_format = data.get("exam_format", "exam")
+        is_school = (exam_format == "school")
+
         header_blocks = build_variant_header(
             variant_title=var_title,
             subject=subject,
@@ -1020,26 +1116,37 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
             grade=data.get("grade"),
             grade_label=data.get("grade_label"),
             work_type=data.get("work_type"),
-            work_type_title=data.get("work_type_title")
+            work_type_title=data.get("work_type_title"),
+            exam_format=exam_format
         )
         story_student.extend(header_blocks)
 
-        if part_a:
-            first_num = part_a[0].get("number", "А1")
-            last_num = part_a[-1].get("number", f"А{len(part_a)}")
-            story_student.append(build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W))
-            story_student.append(Spacer(1, 5))
-            for task in part_a:
-                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
+        if is_school:
+            all_tasks = part_a + part_b
+            if all_tasks:
+                first_num = re.sub(r'^[АБAB]', '', str(all_tasks[0].get("number", "1"))).strip() or "1"
+                last_num = re.sub(r'^[АБAB]', '', str(all_tasks[-1].get("number", len(all_tasks)))).strip() or str(len(all_tasks))
+                story_student.append(build_section_banner(f"Задания проверочной работы (№ {first_num}–{last_num})", CONTENT_W))
+                story_student.append(Spacer(1, 5))
+                for task in all_tasks:
+                    story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact, is_school=True))
+        else:
+            if part_a:
+                first_num = part_a[0].get("number", "А1")
+                last_num = part_a[-1].get("number", f"А{len(part_a)}")
+                story_student.append(build_section_banner(f"Часть А. Задания с выбором одного правильного ответа ({first_num}–{last_num})", CONTENT_W))
+                story_student.append(Spacer(1, 5))
+                for task in part_a:
+                    story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
-        if part_b:
-            first_num = part_b[0].get("number", "Б1")
-            last_num = part_b[-1].get("number", f"Б{len(part_b)}")
-            part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
-            story_student.append(build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W))
-            story_student.append(Spacer(1, 5))
-            for task in part_b:
-                story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
+            if part_b:
+                first_num = part_b[0].get("number", "Б1")
+                last_num = part_b[-1].get("number", f"Б{len(part_b)}")
+                part_b_label = "Часть Б. Задания с кратким числовым ответом" if is_exact else "Часть Б. Задания с кратким ответом"
+                story_student.append(build_section_banner(f"{part_b_label} ({first_num}–{last_num})", CONTENT_W))
+                story_student.append(Spacer(1, 5))
+                for task in part_b:
+                    story_student.append(build_task_flowable(task, asset_dir, CONTENT_W, is_exact=is_exact))
 
         # Workspace scratchpad if variant has <= 5 tasks to ensure balanced layout
         total_tasks = len(part_a) + len(part_b)
@@ -1058,7 +1165,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
         else:
             story_student.append(Spacer(1, 4))
 
-        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score))
+        story_student.append(build_variant_answer_sheet(var_title, part_a, part_b, CONTENT_W, is_exact=is_exact, max_score=max_score, exam_format=exam_format))
 
     doc_student.build(story_student, canvasmaker=NumberedCanvas)
 

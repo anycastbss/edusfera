@@ -248,6 +248,7 @@ CRITICAL_FILES=(
     "resources/views/generator/pdf-template.blade.php"
     "resources/views/generator/pdf-standard-template.blade.php"
     "app/Services/Exam/ExamDocumentParser.php"
+    "app/Services/Exam/PedagogicalPromptEngine.php"
     "app/Services/Exam/PythonExamGeneratorService.php"
     "resources/views/generator/success.blade.php"
     "resources/views/payments/generator-hosted.blade.php"
