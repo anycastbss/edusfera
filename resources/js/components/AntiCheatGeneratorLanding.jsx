@@ -892,8 +892,18 @@ export default function AntiCheatGeneratorLanding() {
                         ))}
                     </div>
 
-                    {user ? (
-                        <div className="relative" ref={userMenuRef}>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="/generator/my"
+                            className="rounded-full px-3.5 py-1.5 text-xs font-bold text-white/90 hover:text-white bg-white/10 hover:bg-white/15 border border-white/15 transition-all flex items-center gap-1.5 shadow-sm"
+                            title="Архив сгенерированных контрольных и тестов"
+                        >
+                            <span className="text-[#C6FF33]">📂</span>
+                            <span>Мои материалы</span>
+                        </a>
+
+                        {user ? (
+                            <div className="relative" ref={userMenuRef}>
                             <button
                                 type="button"
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -1026,6 +1036,14 @@ export default function AntiCheatGeneratorLanding() {
                                             <MessageSquare className="w-4 h-4 text-violet-400" />
                                             <span>Сообщения</span>
                                         </a>
+
+                                        <a
+                                            href="/generator/my"
+                                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-bold text-[#C6FF33] hover:text-white rounded-xl hover:bg-white/10 transition-colors"
+                                        >
+                                            <FileText className="w-4 h-4 text-[#C6FF33]" />
+                                            <span>Мои материалы (Тесты)</span>
+                                        </a>
                                     </div>
 
                                     {/* Linked Accounts (Switching) */}
@@ -1101,6 +1119,7 @@ export default function AntiCheatGeneratorLanding() {
                             </a>
                         </div>
                     )}
+                    </div>
                 </div>
 
                 {/* Mobile Hamburger */}
@@ -1139,6 +1158,13 @@ export default function AntiCheatGeneratorLanding() {
                                     </span>
                                 </div>
                             </div>
+
+                            <a
+                                href="/generator/my"
+                                className="flex items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 px-4 py-2.5 text-sm font-bold text-[#C6FF33]"
+                            >
+                                <span>📂 Мои материалы (Тесты)</span>
+                            </a>
 
                             <a
                                 href={cabinetUrl}
@@ -1235,6 +1261,12 @@ export default function AntiCheatGeneratorLanding() {
                         </div>
                     ) : (
                         <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                            <a
+                                href="/generator/my"
+                                className="block text-center rounded-xl bg-white/15 hover:bg-white/20 px-4 py-3 text-sm font-bold text-[#C6FF33] border border-white/15"
+                            >
+                                📂 Мои материалы (Архив тестов)
+                            </a>
                             <a
                                 href="/login"
                                 className="block text-center rounded-xl bg-white/10 px-4 py-3 text-base font-medium text-white"

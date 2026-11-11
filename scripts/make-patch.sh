@@ -252,6 +252,7 @@ CRITICAL_FILES=(
     "app/Services/Exam/PedagogicalPromptEngine.php"
     "app/Services/Exam/PythonExamGeneratorService.php"
     "resources/views/generator/success.blade.php"
+    "resources/views/generator/cabinet.blade.php"
     "resources/views/payments/generator-hosted.blade.php"
 )
 

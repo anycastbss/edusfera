@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -117,10 +118,15 @@ class GeneratorCheckoutController extends Controller
                 'work_type' => $workType,
                 'difficulty' => $difficulty,
                 'exam_format' => $examFormat,
+                'user_id' => auth()->id(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ],
         ]);
+
+        // Auto-remember email for seamless cabinet access
+        session(['generator_email' => $email]);
+        Cookie::queue('generator_email', $email, 60 * 24 * 365);
 
         // Option 1: Admin bypass or test mode
         $user = auth()->user();
@@ -319,6 +325,9 @@ class GeneratorCheckoutController extends Controller
      */
     public function success(GeneratorOrder $order): View
     {
+        session(['generator_email' => $order->email]);
+        Cookie::queue('generator_email', $order->email, 60 * 24 * 365);
+
         return view('generator.success', [
             'order' => $order,
         ]);
@@ -332,6 +341,9 @@ class GeneratorCheckoutController extends Controller
         if (! $order->isPaid()) {
             return redirect()->route('generator')->with('error', 'Заказ ожидает оплаты.');
         }
+
+        session(['generator_email' => $order->email]);
+        Cookie::queue('generator_email', $order->email, 60 * 24 * 365);
 
         if (empty($order->generated_content)) {
             $gemini = app(GeminiService::class);
@@ -347,6 +359,79 @@ class GeneratorCheckoutController extends Controller
         return response()->download($pdfPath, $filename, [
             'Content-Type' => 'application/pdf',
         ]);
+    }
+
+    /**
+     * Teacher Workspace / Personal Cabinet (History of Generations)
+     */
+    public function cabinet(Request $request): View
+    {
+        $user = auth()->user();
+        $email = null;
+
+        if ($user && ! empty($user->email)) {
+            $email = strtolower(trim((string) $user->email));
+        } else {
+            $rawEmail = $request->query('email')
+                ?: session('generator_email')
+                ?: $request->cookie('generator_email');
+
+            if ($rawEmail && filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
+                $email = strtolower(trim((string) $rawEmail));
+            }
+        }
+
+        $orders = collect();
+        if ($email) {
+            session(['generator_email' => $email]);
+            Cookie::queue('generator_email', $email, 60 * 24 * 365);
+
+            $orders = GeneratorOrder::query()
+                ->where(function ($q) use ($email, $user) {
+                    $q->whereRaw('LOWER(email) = ?', [$email]);
+                    if ($user) {
+                        $q->orWhere('payload->user_id', $user->id);
+                    }
+                })
+                ->whereIn('status', ['completed', 'paid', 'generating', 'pending'])
+                ->orderByDesc('created_at')
+                ->get();
+        }
+
+        $totalVariants = (int) $orders->sum('variant_count');
+        $totalOrders = $orders->count();
+        // Estimated teacher time saved: ~15 minutes per parallel variant
+        $savedMinutes = $totalVariants * 15;
+        $savedHours = round($savedMinutes / 60, 1);
+
+        $distinctSubjects = $orders->pluck('subject')->filter()->unique()->values();
+
+        return view('generator.cabinet', [
+            'email' => $email,
+            'orders' => $orders,
+            'user' => $user,
+            'totalVariants' => $totalVariants,
+            'totalOrders' => $totalOrders,
+            'savedHours' => $savedHours,
+            'distinctSubjects' => $distinctSubjects,
+        ]);
+    }
+
+    /**
+     * Access / Switch email in personal cabinet
+     */
+    public function cabinetAccess(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $email = strtolower(trim($validated['email']));
+        session(['generator_email' => $email]);
+        Cookie::queue('generator_email', $email, 60 * 24 * 365);
+
+        return redirect()->route('generator.my', ['email' => $email])
+            ->with('status', "Материалы для {$email} успешно загружены.");
     }
 
     /**

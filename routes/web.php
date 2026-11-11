@@ -66,6 +66,19 @@ Route::get('/generator/download/{order:order_number}', [\App\Http\Controllers\Ge
     ->middleware(['throttle:20,1'])
     ->name('generator.download');
 
+// Generator Teacher Workspace / Personal Cabinet (Lightweight, No-Friction)
+Route::get('/generator/my', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
+    ->middleware(['web'])
+    ->name('generator.my');
+
+Route::get('/generator/cabinet', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
+    ->middleware(['web'])
+    ->name('generator.cabinet');
+
+Route::post('/generator/cabinet/access', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinetAccess'])
+    ->middleware(['web', 'throttle:15,1'])
+    ->name('generator.cabinet.access');
+
 Route::redirect('/promo', '/', 301);
 Route::any('/promo/{any}', function () {
     return redirect('/', 301);
