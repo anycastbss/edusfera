@@ -55,8 +55,12 @@ Route::get('/checkout/generator/callback/{order:order_number}', [\App\Http\Contr
     ->name('generator.checkout.callback');
 
 Route::get('/generator/status/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'status'])
-    ->middleware(['throttle:30,1'])
+    ->middleware(['throttle:60,1'])
     ->name('generator.status');
+
+Route::match(['get', 'post'], '/generator/process/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'process'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.process');
 
 Route::get('/generator/success/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'success'])
     ->middleware(['throttle:30,1'])
