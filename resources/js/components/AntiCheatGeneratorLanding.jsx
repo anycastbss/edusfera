@@ -2177,13 +2177,10 @@ export default function AntiCheatGeneratorLanding() {
 
                     {/* RIGHT COLUMN: Realistic Authentic White A4 Sheet Preview (7 cols) */}
                     <div
-                        className="lg:col-span-7 rounded-3xl p-5 sm:p-6 space-y-3.5 relative overflow-hidden"
+                        className="lg:col-span-7 rounded-3xl p-5 sm:p-6 space-y-3.5 relative overflow-hidden bg-[#121216]/95 border border-white/10 shadow-[0_16px_36px_-4px_rgba(0,0,0,0.6)]"
                         style={{
-                            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%), rgba(16, 16, 22, 0.82)',
-                            backdropFilter: 'blur(28px) saturate(190%)',
-                            WebkitBackdropFilter: 'blur(28px) saturate(190%)',
-                            border: '1px solid rgba(255, 255, 255, 0.14)',
-                            boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4), 0 24px 48px -12px rgba(0, 0, 0, 0.65)'
+                            boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.65)',
+                            transform: 'translateZ(0)'
                         }}
                     >
                         
