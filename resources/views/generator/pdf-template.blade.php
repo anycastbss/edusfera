@@ -434,11 +434,7 @@
         <tr>
             <td class="brand-col" style="width: 70%;">
                 <div class="logo-box">
-                    <svg width="26" height="26" viewBox="0 0 64 64" style="vertical-align: middle;">
-                        <rect width="64" height="64" rx="14" fill="#000000"/>
-                        <path d="M32 10L54 32L32 54L10 32L32 10Z" fill="none" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"/>
-                        <path d="M32 22L42 32L32 42L22 32L32 22Z" fill="#ffffff"/>
-                    </svg>
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAD9ElEQVR4nO2bV3IjMQwFF7r/nbHlrS2XgyxPIMAX8P41gd3EUAzxpzZZfH2XBMuFB3hPAu1CA35PYvcFBjxGovuHAx4zp3k+Ltxk4OMmqwUY+PjJipIx4DkTKyrAwOdN3hVg4PMnVw8CJ0J5JcD0fp3kWQEGvl7yqAADXzff2M4YwDxfBZjer59PjKcCmOejANP7ffLOeiqAeR7uvT/T99X/uFeA/A/fWAJfAb5CT1MJLAX4CXYaSvC2Xmz11kcgR5TtwoaLVQU42sPTqBLYCHAWappIYCHAVZhpIIG8AHchprgE0gIcHfDFL4M+ZQlkBTg72g9TCSQFuPpXLwwlkBPg7v/8MJNASoBVkzxhJIGMAKtn+MJEAgkBqqZ3w0ACegGq5/ZDXAJqAboWdkJYAloBulf1QlQCSgF2LemGoAR0Auxezw8xCagE2A1fUQIaAVDgq0lAIQAafKWtYw93+Hmzp766N0MVgBagC34aSwArQHfPz0JQyBJACrCr7OcNUKyDQjgBdn/z00wCKAF2w3eUAEYAFPhuEkAIgAbfSYLtAqDCd5FgqwDo8B0k2CYAC3x1CbYIwAZ/RVAlaBeAGX4WThmvuD68AMzwVSVoE0ABvqIELQIowVeToFwARfhKEpQKoAxfRYIyARzgK0hQIoATfHYJlgvgCJ9ZgqUCOMPvesbV138wbZNm2IYdxYKvboPln4DqMoYsQZDBLxsEOkoQhPBL/wY6SRCk8MsnghwkCGL4LVPByhIEOfy2xSBFCUIAfutysJIEIQK/fUOIggQhBP/f/d6eq/WOBxpiRSNUzMiFGPxtm0I75rxXN2YIwt+6LZxJghCFv/1gCIMEIQwf4mgYsgQhDh9CAFQJwgA+jABoEoQJfCgBUCQII/hwAuyWIMzgb5sIQmnQ/HAPR/iQFeBMg62aOg5T+NANgKGBE/jZZAToXD9wgw/9CUA7QqUIn0oAFAlSCD6dALslSDH4lALskiAF4dMK0C1BisKnFqBLghSGTy9AtQQpDl9CgCoJ0gC+jACrJUgT+FICrJIgjeDLCXBXgjSDLynAVQnSEL6sAGclSFP4VKuBV4OwtRw5shUA4VwAQ+QF2HUugCUWAnSfC2CKjQBd5wIYBfB52+JzAYQJqwpQeS6ANZYCPIMdhvCtBVh1LoA9H99cekJo8py9dQWYfBbAtw765Z31VADzfBVgqoB+PjGeCmCeZwJMFdDNN7Y/VYCRQC9Pmb76BIwEOvmR5YwBzPObAFMF+POS4ZEKMBLwJlbDnfUCjhzmenYMMNUAP6cYXRkEjgS4iW6Y80nAyGWOq3rziLAnt/mtLucjQk+Wcav+no8Qa1LG6S9SVof4OGmJOwAAAABJRU5ErkJggg==" width="26" height="26" style="vertical-align: middle; border: none; display: inline-block;" alt="EDUSFERA">
                 </div>
                 <div class="brand-name">EDUSFERA</div>
                 <span class="brand-divider">|</span>

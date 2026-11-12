@@ -979,6 +979,43 @@ try {
         exit;
     }
 
+    if ($action === 'debug_order') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        $orderNum = $_GET['order'] ?? 'VAR-2UCNYKPP';
+        $order = \App\Models\GeneratorOrder::where('order_number', $orderNum)->first();
+        if (!$order) { echo "Order not found\n"; exit; }
+        echo "Order: {$orderNum}\n";
+        echo "Content length: " . strlen($order->generated_content) . "\n";
+        $parsed = \App\Services\Exam\ExamDocumentParser::parse($order->generated_content, $order);
+        echo "Validation errors: " . json_encode($parsed['validationErrors'] ?? []) . "\n";
+        echo "Variants count: " . count($parsed['variants'] ?? []) . "\n";
+        foreach ($parsed['variants'] ?? [] as $vi => $v) {
+            echo "  Variant " . ($v['number'] ?? $vi) . ": Part A count=" . count($v['part_a'] ?? []) . ", Part B count=" . count($v['part_b'] ?? []) . "\n";
+        }
+        try {
+            // Also enable detailed debug output
+            $tmpDir = storage_path('app/temp_debug_var2');
+            if (!is_dir($tmpDir)) mkdir($tmpDir, 0755, true);
+            $jsonFile = $tmpDir . '/input.json';
+            // Let's call PythonExamGeneratorService but capture Process error output
+            $reflection = new ReflectionClass(\App\Services\Exam\PythonExamGeneratorService::class);
+            $method = $reflection->getMethod('generate');
+            $ok = \App\Services\Exam\PythonExamGeneratorService::generate($order, $parsed, 'generator_orders/test_debug.pdf');
+            echo "PythonExamGeneratorService result: " . ($ok ? 'TRUE' : 'FALSE') . "\n";
+            // Check laravel log for the last error
+            $logPath = __DIR__.'/../storage/logs/laravel.log';
+            if (file_exists($logPath)) {
+                $content = file_get_contents($logPath);
+                $chunk = substr($content, -2000);
+                echo "Recent log:\n" . htmlspecialchars($chunk) . "\n";
+            }
+        } catch (\Throwable $e) {
+            echo "Exception: " . $e->getMessage() . "\n" . $e->getTraceAsString() . "\n";
+        }
+        echo "</pre>";
+        exit;
+    }
+
     // ── ACTION: Check / Setup Python for PDF Generator ─────────────────
     if ($action === 'check_python') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";

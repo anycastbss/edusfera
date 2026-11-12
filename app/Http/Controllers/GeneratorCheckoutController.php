@@ -436,8 +436,8 @@ class GeneratorCheckoutController extends Controller
         $text = preg_replace('/\\\\sqrt\{([^}]+)\}/u', '√($1)', $text);
         $text = preg_replace('/\\\\sqrt\s*([0-9a-zA-Z]+)/u', '√$1', $text);
 
-        // 2. Convert LaTeX fractions: \frac{a}{b} -> (a)/(b)
-        $text = preg_replace('/\\\\frac\{([^}]+)\}\{([^}]+)\}/u', '($1)/($2)', $text);
+        // 2. Note: LaTeX fractions \frac{a}{b} are preserved for Python STIX math rendering.
+        // For DomPDF fallback, convert \frac{a}{b} only when building fallback view.
 
         // 3. Convert powers like x^2, x^3, x^4, x^{-1} to unicode superscripts
         $superscripts = [
@@ -774,38 +774,69 @@ class GeneratorCheckoutController extends Controller
                 $out .= "---\n\n";
             } else {
                 // Exact science / Math / Equations
-                $isEq = str_contains($topic, 'уравнен') || str_contains($topic, 'линейн') || str_contains($topic, 'алгебр');
+                $isEq = str_contains($topic, 'уравнен') || str_contains($topic, 'линейн') || str_contains($topic, 'алгебр') || str_contains($topic, 'математ');
 
                 for ($a = 1; $a <= $countA; $a++) {
                     $prefix = $isSchool ? "Задание {$a}:" : "Задание А{$a}:";
 
-                    if ($isEq) {
-                        if ($a === 1) {
-                            $root = (($i * 2 + 1) % 7) + 2; // 2..8
-                            $k = (($i + 1) % 3) + 2; // 2, 3, 4
-                            $bVal = (($i * 3 + 2) % 9) + 1; // 1..9
-                            $cVal = $k * $root + $bVal;
-                            $cond = "Решите линейное уравнение: {$k}x + {$bVal} = {$cVal}";
-                        } elseif ($a === 2) {
-                            $root = (($i * 3 + 4) % 8) + 1; // 1..8
-                            $m = (($i + 2) % 3) + 2; // 2..4
-                            $p = ($i % 5) + 2; // 2..6
-                            $rhs = $m * ($root - $p);
-                            $cond = "Найдите корень уравнения: {$m}(x - {$p}) = {$rhs}";
-                        } else {
-                            $root = (($i * 4 + 3) % 9) + 2; // 2..10
-                            $coeff1 = 5; $coeff2 = 2;
-                            $p1 = ($i % 4) + 1;
-                            $p2 = ($coeff1 - $coeff2) * $root - $p1;
-                            $cond = "При каком значении переменной x значение выражения 5x - {$p1} равно значению выражения 2x + {$p2}?";
+                    // Generate distinct, high-quality math problems for each task index ($a) and variant ($i)
+                    // Every equation is explicitly wrapped in $...$ for Microsoft Word / LaTeX typography
+                    $taskType = (($a - 1) % 6) + 1;
+                    if ($taskType === 1) {
+                        // Type 1: k*x + b = c
+                        $root = (($i * 2 + $a * 3) % 9) + 2; // 2..10
+                        $k = (($i + $a) % 3) + 2; // 2..4
+                        $bVal = (($i * 3 + $a * 5) % 11) + 1; // 1..11
+                        $cVal = $k * $root + $bVal;
+                        $cond = "Решите линейное уравнение: \${$k}x + {$bVal} = {$cVal}\$";
+                        $correctVal = $root;
+                    } elseif ($taskType === 2) {
+                        // Type 2: m*(x - p) = rhs
+                        $root = (($i * 3 + $a * 2) % 8) + 3; // 3..10
+                        $m = (($i + $a * 2) % 3) + 2; // 2..4
+                        $p = (($i + $a) % 4) + 1; // 1..4
+                        $rhs = $m * ($root - $p);
+                        $cond = "Найдите корень уравнения: \${$m}(x - {$p}) = {$rhs}\$";
+                        $correctVal = $root;
+                    } elseif ($taskType === 3) {
+                        // Type 3: c1*x - p1 = c2*x + p2
+                        $root = (($i * 4 + $a * 7) % 8) + 2; // 2..9
+                        $c1 = (($a % 3) + 4); // 4..6
+                        $c2 = $c1 - ((($i + $a) % 2) + 2); // 2..4
+                        $p1 = (($i * 2 + $a) % 5) + 1; // 1..5
+                        $p2 = ($c1 - $c2) * $root - $p1;
+                        $cond = "При каком значении переменной \$x\$ значение выражения \${$c1}x - {$p1}\$ равно значению выражения \${$c2}x + {$p2}\$?";
+                        $correctVal = $root;
+                    } elseif ($taskType === 4) {
+                        // Type 4: Fractional equation (x + f1) / denom = f2
+                        $root = (($i * 5 + $a * 3) % 10) + 2; // 2..11
+                        $denom = (($i + $a) % 3) + 2; // 2..4
+                        $f1 = (($i * 2 + $a * 3) % 7) + 1; // 1..7
+                        $f2 = (int) (($root + $f1) / $denom);
+                        // Adjust f1 so (root + f1) is perfectly divisible by denom
+                        $remainder = ($root + $f1) % $denom;
+                        if ($remainder !== 0) {
+                            $f1 += ($denom - $remainder);
+                            $f2 = (int) (($root + $f1) / $denom);
                         }
+                        $cond = "Найдите корень уравнения с дробью: \$\\frac{x + {$f1}}{{$denom}} = {$f2}\$";
+                        $correctVal = $root;
+                    } elseif ($taskType === 5) {
+                        // Type 5: Brackets expansion: m1*(x + p1) - m2*x = rhs
+                        $root = (($i * 3 + $a * 4) % 9) + 2; // 2..10
+                        $m1 = (($i + $a) % 2) + 3; // 3..4
+                        $m2 = $m1 - 1; // 2..3 (coeff of x becomes 1)
+                        $p1 = (($i + $a * 3) % 5) + 2; // 2..6
+                        $rhs = $root + $m1 * $p1;
+                        $cond = "Решите уравнение со скобками: \${$m1}(x + {$p1}) - {$m2}x = {$rhs}\$";
                         $correctVal = $root;
                     } else {
+                        // Type 6: Value of algebraic expression
                         $root = (($i * 2 + $a) % 8) + 2;
-                        $k = ($i % 3) + 2;
-                        $c = ($a * 3) + 1;
+                        $k = (($i + $a) % 3) + 2;
+                        $c = ($a * 2) + 3;
                         $correctVal = $k * $root - $c;
-                        $cond = "Вычислите значение выражения {$k}x - {$c} при x = {$root}:";
+                        $cond = "Вычислите значение выражения \${$k}x - {$c}\$ при \$x = {$root}\$:";
                     }
 
                     $letters = ['A', 'B', 'C', 'D'];
@@ -824,10 +855,10 @@ class GeneratorCheckoutController extends Controller
                     $out .= "**{$prefix}** {$cond}\n";
                     foreach ($opts as $optIdx => $optVal) {
                         $num = $optIdx + 1;
-                        $out .= "{$num}) {$optVal}\n";
+                        $out .= "{$num}) \${$optVal}\$\n";
                     }
                     $out .= "Ответ: {$correctLetter}\n";
-                    $out .= "Пояснение: Выполняем тождественные преобразования и получаем корень x = {$correctVal}.\n\n";
+                    $out .= "Пояснение: Выполняем тождественные преобразования и получаем корень \$x = {$correctVal}\$.\n\n";
                     $varKeys["A{$a}"] = $correctLetter;
                 }
 
@@ -835,28 +866,41 @@ class GeneratorCheckoutController extends Controller
                     $taskNum = $isSchool ? ($countA + $b) : $b;
                     $prefix = $isSchool ? "Задание {$taskNum}:" : "Задание Б{$b}:";
 
-                    if ($isEq) {
-                        if ($b === 1) {
-                            $root = (($i * 3 + 5) % 11) + 3; // 3..13
-                            $u = ($i % 3) + 1;
-                            $rhs = 4 * ($root - $u) - 2 * $root;
-                            $cond = "Решите уравнение: 4(x - {$u}) - 2x = {$rhs}. Запишите полученный корень в виде целого числа:";
-                        } else {
-                            $root = (($i * 4 + 7) % 13) + 4; // 4..16
-                            $denom = 3;
-                            $sub = ($root % 3);
-                            $rhs = (int) (($root - $sub) / $denom);
-                            $cond = "Найдите корень уравнения с дробным коэффициентом: (x - {$sub}) / 3 = {$rhs}. В ответ запишите целое число:";
-                        }
-                        $ansNum = $root;
+                    $taskTypeB = (($b - 1) % 5) + 1;
+                    if ($taskTypeB === 1) {
+                        $root = (($i * 3 + $b * 5) % 11) + 3; // 3..13
+                        $u = (($i + $b) % 3) + 1;
+                        $rhs = 4 * ($root - $u) - 2 * $root;
+                        $cond = "Решите уравнение: \$4(x - {$u}) - 2x = {$rhs}\$. Запишите полученный корень в виде целого числа:";
+                    } elseif ($taskTypeB === 2) {
+                        $root = (($i * 4 + $b * 7) % 13) + 4; // 4..16
+                        $denom = 3;
+                        $sub = ($root % 3);
+                        $rhs = (int) (($root - $sub) / $denom);
+                        $cond = "Найдите корень уравнения с дробным коэффициентом: \$\\frac{x - {$sub}}{3} = {$rhs}\$. В ответ запишите целое число:";
+                    } elseif ($taskTypeB === 3) {
+                        $root = (($i * 2 + $b * 4) % 10) + 5; // 5..14
+                        $k1 = (($b + $i) % 2) + 2; // 2..3
+                        $p1 = (($b * 2 + $i) % 4) + 1; // 1..4
+                        $rhs = ($k1 + 1) * $root - $k1 * $p1;
+                        $cond = "Решите уравнение: \${$k1}(x - {$p1}) + x = {$rhs}\$. Укажите корень уравнения:";
+                    } elseif ($taskTypeB === 4) {
+                        $root = (($i * 5 + $b * 3) % 12) + 3; // 3..14
+                        $c1 = ($b % 3) + 2;
+                        $c2 = $root * 4 - $c1 * 3;
+                        $cond = "Найдите значение корня уравнения: \$\\frac{4x - {$c2}}{3} = {$c1}\$. Запишите найденное число:";
                     } else {
-                        $ansNum = $i * 5 + $b * 3;
-                        $cond = "Найдите числовое значение выражения при x = {$i}: (x + {$b}) · 5 - {$b} и запишите целое число:";
+                        $root = (($i * 3 + $b * 2) % 9) + 4; // 4..12
+                        $u = ($i % 4) + 2;
+                        $v = ($b % 3) + 1;
+                        $rhs = 5 * ($root - $u) - 3 * ($root - $v);
+                        $cond = "Решите линейное уравнение: \$5(x - {$u}) - 3(x - {$v}) = {$rhs}\$. В бланк внесите целое число:";
                     }
+                    $ansNum = $root;
 
                     $out .= "**{$prefix}** {$cond}\n";
                     $out .= "Ответ: {$ansNum}\n";
-                    $out .= "Пояснение: После раскрытия скобок и приведения подобных слагаемых получаем x = {$ansNum}.\n\n";
+                    $out .= "Пояснение: После раскрытия скобок и приведения подобных слагаемых получаем \$x = {$ansNum}\$.\n\n";
                     $varKeys["B{$b}"] = (string) $ansNum;
                 }
                 $out .= "---\n\n";

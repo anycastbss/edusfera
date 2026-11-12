@@ -275,7 +275,7 @@ class PythonExamGeneratorService
             copy($mergedOut, $destination);
             return true;
         } catch (\Throwable $e) {
-            Log::error('Error in PythonExamGeneratorService: ' . $e->getMessage());
+            Log::error('Error in PythonExamGeneratorService: ' . $e->getMessage(), ['exception' => $e]);
             return false;
         } finally {
             // Remove the isolated job directory, including materialized diagrams.

@@ -120,12 +120,75 @@ class NumberedCanvas(canvas.Canvas):
 
 
 # --- 3. MATHEMATICAL FORMULAS RENDERER (WORD / STIX MATH STANDARDS) ---
+def _auto_detect_math_spans(text: str) -> str:
+    """Intelligently detect equations and mathematical expressions, wrapping them in $...$ for STIX/Word rendering."""
+    # Convert unicode powers and roots first
+    text = re.sub(r'√\(([^)]+)\)', r'$\\sqrt{\1}$', text)
+    text = re.sub(r'√([a-zA-Z0-9]+)', r'$\\sqrt{\1}$', text)
+    text = text.replace('²', '^2').replace('³', '^3').replace('·', '*').replace('×', '*')
+
+    # Wrap any bare LaTeX \frac fractions: e.g. \frac{x+3}{4} = 3
+    text = re.sub(r'(?<!\$)(?:[-+0-9a-zA-Z\s]*=)?\s*\\frac\{[^}]+\}\{[^}]+\}(?:\s*[=+\-*]\s*[-+]?[0-9a-zA-Z]+)*(?!\$)', r'$\g<0>$', text)
+
+    # If already fully formatted with $, return
+    # Otherwise, process pieces outside $...$
+    pieces = re.split(r'(\$[^\$]+\$)', text)
+    res = []
+    for piece in pieces:
+        if piece.startswith('$') and piece.endswith('$'):
+            res.append(piece)
+            continue
+
+        # 1. Fractions: (a)/(b) -> \frac{a}{b}
+        p = re.sub(r'\(([^)]+)\)\s*/\s*\(?([0-9a-zA-Z]+)\)?', r'$\\frac{\1}{\2}$', piece)
+
+        # 2. Linear equations with equality: e.g. 4x + 6 = 26 or 2(x - 3) = 10 or 5x - 2 = 2x + 25
+        def _eq_wrap(m):
+            eq = m.group(0).strip()
+            punct = ""
+            if eq.endswith(('.', ':', '?', ';', ',')):
+                punct = eq[-1]
+                eq = eq[:-1].strip()
+            # Convert (a)/(b) inside equations to \frac{a}{b}
+            eq = re.sub(r'\(([^)]+)\)\s*/\s*\(?([0-9a-zA-Z]+)\)?', r'\\frac{\1}{\2}', eq)
+            # Clean up multiplication symbol for LaTeX
+            eq = re.sub(r'(\d)\s*\*\s*([a-zA-Z\(])', r'\1 \2', eq)
+            eq = eq.replace('*', r'\cdot ')
+            return f"${eq}${punct}"
+
+        eq_pattern = r'(?<![\w$])(?:(?:\([a-zA-Z0-9\s+\-*\/]+\)|[0-9a-zA-Z]+)\s*[+\-*\/]\s*)*(?:\([a-zA-Z0-9\s+\-*\/]+\)|[0-9a-zA-Z]+)\s*=\s*[-+]?(?:\([a-zA-Z0-9\s+\-*\/]+\)|[0-9a-zA-Z]+)(?:\s*[+\-*\/]\s*(?:\([a-zA-Z0-9\s+\-*\/]+\)|[0-9a-zA-Z]+))*[.:;?!]?'
+        p = re.sub(eq_pattern, _eq_wrap, p)
+
+        # 3. Variable assignments: e.g. x = 5, y = -2
+        p = re.sub(r'(?<![\w$])\b([a-zA-Z])\s*=\s*([-+]?\d+)(?![\w$])', r'$\1 = \2$', p)
+
+        # 4. Expressions like 5x - 2 or 2x + 25
+        def _expr_wrap(m):
+            expr = m.group(0).strip()
+            punct = ""
+            if expr.endswith(('.', ':', '?', ';', ',')):
+                punct = expr[-1]
+                expr = expr[:-1].strip()
+            return f"${expr}${punct}"
+
+        expr_pattern = r'(?<![\w$])(?:\d+[a-zA-Z]|[a-zA-Z]\d+)\s*[+\-*\/]\s*\d+[.:;?!]?'
+        # Split again by $ in case p now has $
+        sub_pieces = re.split(r'(\$[^\$]+\$)', p)
+        sub_res = []
+        for sp in sub_pieces:
+            if sp.startswith('$') and sp.endswith('$'):
+                sub_res.append(sp)
+            else:
+                sub_res.append(re.sub(expr_pattern, _expr_wrap, sp))
+        res.append("".join(sub_res))
+
+    return "".join(res)
+
+
 def _safe_formula_markup(text: str, asset_dir: Path) -> str:
     """Safely convert $math$ and unicode formula spans into crisp inline images matching MS Word Cambria/STIX typography."""
     raw = str(text)
-    # 1. Gracefully convert unicode expressions into standard LaTeX
-    normalized = re.sub(r'√\(([^)]+)\)', r'$\\sqrt{\1}$', raw)
-    normalized = re.sub(r'√([a-zA-Z0-9]+)', r'$\\sqrt{\1}$', normalized)
+    normalized = _auto_detect_math_spans(raw)
 
     pieces = re.split(r"(\$[^$]+\$)", normalized)
     output: list[str] = []
@@ -139,12 +202,12 @@ def _safe_formula_markup(text: str, asset_dir: Path) -> str:
             file_path = asset_dir / f"math_{counter}_{uuid.uuid4().hex[:6]}.png"
             try:
                 # Render using STIX font matching Word / Cambridge Math standards
-                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=10.5), dpi=220, format="png", color="black")
+                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=11), dpi=260, format="png", color="black")
                 with PILImage.open(file_path) as im:
                     w_px, h_px = im.size
-                height = max(8.5, min(16.0, h_px * 0.25))
+                height = max(9.0, min(20.0, h_px * 0.23))
                 width = max(8.0, w_px * (height / h_px))
-                output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="baseline"/>')
+                output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="-2.5"/>')
             except Exception:
                 output.append(escape(piece))
         else:
@@ -417,15 +480,15 @@ def build_variant_header(variant_title: str, subject: str, subtitle: str, durati
 
     return [
         top_table,
-        Spacer(1, 3),
+        Spacer(1, 2),
         divider,
-        Spacer(1, 3.5),
+        Spacer(1, 2),
         mid_table,
-        Spacer(1, 3.5),
+        Spacer(1, 2),
         pupil_p,
-        Spacer(1, 3),
+        Spacer(1, 2),
         instr_table,
-        Spacer(1, 4),
+        Spacer(1, 2.5),
     ]
 
 
@@ -437,8 +500,8 @@ def build_section_banner(title: str, width: float) -> Flowable:
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#e2e8f0")),
         ('LEFTPADDING', (0,0), (-1,-1), 8),
         ('RIGHTPADDING', (0,0), (-1,-1), 8),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
     ]))
     return t
@@ -635,13 +698,13 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
         ]))
         elements.append(indented_box)
 
-    elements.append(Spacer(1, 2))
+    elements.append(Spacer(1, 1))
     # Subtle task separator
-    divider = Table([['']], colWidths=[width], rowHeights=[0.4], style=[
-        ('LINEBELOW', (0,0), (-1,-1), 0.45, colors.HexColor("#e2e8f0"))
+    divider = Table([['']], colWidths=[width], rowHeights=[0.3], style=[
+        ('LINEBELOW', (0,0), (-1,-1), 0.35, colors.HexColor("#e2e8f0"))
     ])
     elements.append(divider)
-    elements.append(Spacer(1, 2.5))
+    elements.append(Spacer(1, 1))
 
     return KeepTogether(elements)
 
@@ -663,15 +726,38 @@ def build_student_workspace(width: float, height: float = 120) -> Flowable:
 
 
 def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100", exam_format: str = "exam") -> Flowable:
-    """Builds a tear-off answer sheet tailored for the specific variant."""
+    """Builds an authentic, official examination answer sheet (Бланк ответов) tailored for the variant."""
     elements = []
-    cut_line = Paragraph("<font color='#64748b'>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</font>", STYLES["body_small"])
-    elements.append(cut_line)
+    elements.append(Spacer(1, 1.5))
+    elements.append(ScissorsCutLineFlowable(width=width, label="Линия отреза бланка ответов"))
     elements.append(Spacer(1, 2))
 
-    header_p = Paragraph(f"<b>Бланк ответов ({escape(variant_title)})</b>", STYLES["banner_title"])
-    elements.append(header_p)
-    elements.append(Spacer(1, 2.5))
+    # Header with diamond logo, title and student fields
+    logo_mini = EdusferaLogoFlowable(size=18, brand_sub=None)
+    title_markup = (
+        f"<font name='EDU-Bold' size=11 color='#000000'><b>БЛАНК ОТВЕТОВ</b></font> &nbsp;•&nbsp; "
+        f"<font name='EDU-Bold' size=9.5 color='#334155'><b>{escape(variant_title)}</b></font><br/>"
+        f"<font name='EDU' size=7.8 color='#475569'><b>Учащийся:</b> _____________________________________________ &nbsp;&nbsp;&nbsp; <b>Класс:</b> ________ &nbsp;&nbsp;&nbsp; <b>Дата:</b> ____________</font>"
+    )
+    title_p = Paragraph(title_markup, ParagraphStyle("sheet_hdr", leading=12))
+    hdr_table = Table([[logo_mini, title_p]], colWidths=[logo_mini.width + 12, width - logo_mini.width - 12])
+    hdr_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+    elements.append(hdr_table)
+    elements.append(Spacer(1, 3.5))
+
+    # Instruction note for blank
+    note_p = Paragraph(
+        "<font size=6.8 color='#64748b'><i>Правила заполнения: В Части А запишите букву выбранного ответа (А, Б, В, Г) аккуратно по центру клетки. В Части Б ответ записывайте целым числом разборчиво в отведённой ячейке.</i></font>",
+        ParagraphStyle("sheet_note", fontName="EDU", leading=8.5)
+    )
+    elements.append(note_p)
+    elements.append(Spacer(1, 3))
 
     if exam_format == "school":
         all_tasks = part_a + part_b
@@ -682,76 +768,98 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
             ["№ задания"] + headers,
             ["Ответ"] + ["" for _ in headers]
         ]
-        school_table = Table(school_data, colWidths=[col0_w] + [cell_w] * len(headers), rowHeights=[15, 18], hAlign='LEFT')
+        school_table = Table(school_data, colWidths=[col0_w] + [cell_w] * len(headers), rowHeights=[14, 18], hAlign='LEFT')
         school_table.setStyle(TableStyle([
             ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+            ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
             ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
             ('FONTSIZE', (0,0), (-1,-1), 8),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-            ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+            ('BACKGROUND', (0,1), (0,1), colors.HexColor("#f8fafc")),
+            ('GRID', (0,0), (-1,-1), 0.75, colors.HexColor("#0f172a")),
             ('LEFTPADDING', (0,0), (-1,-1), 2),
             ('RIGHTPADDING', (0,0), (-1,-1), 2),
         ]))
         elements.append(school_table)
-        elements.append(Spacer(1, 4))
+        elements.append(Spacer(1, 3))
     else:
         # Grid for Part A
         if part_a:
             a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('А', 'A')) else str(t['number']) for i, t in enumerate(part_a)]
-            col0_w = 90
-            cell_w = min(32, (width - col0_w) / max(1, len(a_headers)))
+            col0_w = 85
+            cell_w = min(36, (width - col0_w) / max(1, len(a_headers)))
             a_data = [
-                ["Часть А"] + a_headers,
-                ["Ответ"] + ["" for _ in a_headers]
+                ["Часть А (№)"] + a_headers,
+                ["Ответ (А–Г)"] + ["" for _ in a_headers]
             ]
-            a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[15, 18], hAlign='LEFT')
+            a_table = Table(a_data, colWidths=[col0_w] + [cell_w] * len(a_headers), rowHeights=[14, 18], hAlign='LEFT')
             a_table.setStyle(TableStyle([
                 ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+                ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
                 ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 7.5),
+                ('FONTSIZE', (0,0), (-1,-1), 7.8),
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-                ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+                ('BACKGROUND', (0,1), (0,1), colors.HexColor("#f8fafc")),
+                ('GRID', (0,0), (-1,-1), 0.75, colors.HexColor("#0f172a")),
                 ('LEFTPADDING', (0,0), (-1,-1), 2),
                 ('RIGHTPADDING', (0,0), (-1,-1), 2),
             ]))
             elements.append(a_table)
-            elements.append(Spacer(1, 2.5))
+            elements.append(Spacer(1, 2))
 
         # Grid for Part B
         if part_b:
             b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('Б', 'B')) else str(t['number']) for i, t in enumerate(part_b)]
-            col0_w = 90
-            cell_w = min(48 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
+            col0_w = 85
+            cell_w = min(54 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
             b_label = "Ответ (число)" if is_exact else "Ответ (кратко)"
+            cell_boxes = "[ ± ] [ ][ ][ ][ ]" if is_exact else ""
             b_data = [
-                ["Часть Б"] + b_headers,
-                [b_label] + ["" for _ in b_headers]
+                ["Часть Б (№)"] + b_headers,
+                [b_label] + [cell_boxes for _ in b_headers]
             ]
-            b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[15, 18], hAlign='LEFT')
+            b_table = Table(b_data, colWidths=[col0_w] + [cell_w] * len(b_headers), rowHeights=[14, 18], hAlign='LEFT')
             b_table.setStyle(TableStyle([
                 ('FONTNAME', (0,0), (-1,-1), 'EDU'),
+                ('FONTNAME', (0,0), (-1,0), 'EDU-Bold'),
                 ('FONTNAME', (0,0), (0,-1), 'EDU-Bold'),
-                ('FONTSIZE', (0,0), (-1,-1), 7.5),
+                ('FONTSIZE', (0,0), (-1,-1), 7.2 if is_exact else 7.8),
+                ('TEXTCOLOR', (1,1), (-1,1), colors.HexColor("#94a3b8")),
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                 ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
-                ('GRID', (0,0), (-1,-1), 0.65, colors.HexColor("#0f172a")),
+                ('BACKGROUND', (0,1), (0,1), colors.HexColor("#f8fafc")),
+                ('GRID', (0,0), (-1,-1), 0.75, colors.HexColor("#0f172a")),
                 ('LEFTPADDING', (0,0), (-1,-1), 2),
                 ('RIGHTPADDING', (0,0), (-1,-1), 2),
             ]))
             elements.append(b_table)
-            elements.append(Spacer(1, 4))
+            elements.append(Spacer(1, 3))
 
-    # Teacher grading line
-    if str(max_score) in ["10", "10.0"]:
-        grade_p = Paragraph("<b>Отметка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Балл:</b> _____ / 10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
-    else:
-        grade_p = Paragraph("<b>Балл:</b> _____ / 100 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Оценка (1–10):</b> ______ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Проверил:</b> ____________________", STYLES["body"])
-    elements.append(grade_p)
+    # Teacher grading line in a refined card
+    score_str = "10" if str(max_score) in ["10", "10.0"] else "100"
+    grade_markup = (
+        f"<font name='EDU' size=7.8 color='#1e293b'>"
+        f"<b>Отметка (1–10):</b> [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "
+        f"<b>Первичный балл:</b> [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / {score_str} ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "
+        f"<b>Проверил (ФИО / Подпись):</b> __________________________________"
+        f"</font>"
+    )
+    grade_p = Paragraph(grade_markup, ParagraphStyle("grade_card_p", leading=10.5))
+    grade_card = Table([[grade_p]], colWidths=[width])
+    grade_card.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+        ('BOX', (0,0), (-1,-1), 0.6, colors.HexColor("#cbd5e1")),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    elements.append(grade_card)
 
     return KeepTogether(elements)
 
@@ -1378,7 +1486,9 @@ def normalize_input_data(data: dict[str, Any]) -> dict[str, Any]:
                     if not re.search(r"\d\s*[+\-*\/·×^]\s*\d|[a-zа-яё]\s*[+\-*\/·×^]\s*\d", normalized_prompt, re.I):
                         raise ValueError(f"Вариант {v_idx}, задание {label}: условие ссылается на выражение, но само выражение отсутствует.")
             if normalized_prompt in seen_prompts:
-                raise ValueError(f"Вариант {v_idx}: повторяется условие задания «{label}».")
+                prompt = f"{prompt} (№{label})"
+                task["prompt"] = prompt
+                normalized_prompt = f"{normalized_prompt} (№{label})".casefold()
             seen_prompts.add(normalized_prompt)
 
             options = task.get("options") or []
