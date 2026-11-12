@@ -893,6 +893,42 @@ try {
         exit;
     }
 
+    // ── ACTION: List Recent Generator Orders ────────────────────────
+    if ($action === 'list_orders') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "📋 <b>Последние 15 заказов генератора:</b>\n\n";
+        $orders = \App\Models\GeneratorOrder::latest()->take(15)->get();
+        foreach ($orders as $o) {
+            $hasPdf = ! empty($o->pdf_path) ? '✓ PDF' : '✗ no PDF';
+            $hasContent = ! empty($o->generated_content) ? '✓ Content' : '✗ no Content';
+            $downUrl = route('generator.download', ['order' => $o->order_number]);
+            echo "• {$o->order_number} | status: {$o->status} | {$hasContent} | {$hasPdf} | topic: ".mb_substr($o->topic, 0, 30)." | created: {$o->created_at}\n";
+            echo "  URL: {$downUrl}\n\n";
+        }
+        echo "</pre>";
+        exit;
+    }
+
+    // ── ACTION: Clear Rate Limiting Cache ────────────────────────────
+    if ($action === 'clear_rate_limit') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "⚡ <b>Очистка Rate Limiter кэша...</b>\n\n";
+        $cacheDir = __DIR__.'/../storage/framework/cache/data';
+        if (is_dir($cacheDir)) {
+            @exec("rm -rf {$cacheDir}/* 2>/dev/null");
+            echo "   ✓ Файловый кэш Rate Limiter очищен ({$cacheDir})\n";
+        }
+        try {
+            \Illuminate\Support\Facades\Cache::flush();
+            echo "   ✓ Laravel Cache::flush() выполнен успешно\n";
+        } catch (\Throwable $e) {
+            echo "   ⚠️ Cache::flush: ".$e->getMessage()."\n";
+        }
+        echo "\n🎉 Готово! Все ограничения 429 сброшены.\n";
+        echo "</pre>";
+        exit;
+    }
+
     // ── ACTION: Fix / Re-render Order PDF ────────────────────────────
     if ($action === 'fix_order_pdf') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
