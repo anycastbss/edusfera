@@ -22,17 +22,13 @@ export default function GuaranteeSection() {
 
     return (
         <section className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 py-12 sm:py-16">
-            <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-white/10 p-7 sm:p-10 backdrop-blur-md shadow-2xl overflow-hidden">
-                {/* Emerald / Lime Glow - zero cost radial gradients */}
-                <div className="absolute top-0 right-1/4 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(198,255,51,0.08) 0%, transparent 70%)' }} />
-                <div className="absolute bottom-0 left-1/4 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.12) 0%, transparent 70%)' }} />
-
+            <div className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-7 sm:p-10 backdrop-blur-md shadow-2xl overflow-hidden">
                 <div className="relative z-10">
                     {/* Header */}
                     <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 space-y-3">
                         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#C6FF33]/10 border border-[#C6FF33]/30 text-xs font-mono text-[#C6FF33] font-bold">
                             <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>100% МЕТОДИЧЕСКАЯ ГАРАНТИЯ И БЕЗОПАСНОСТЬ</span>
+                            <span>Методическая гарантия и безопасность</span>
                         </div>
                         <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                             Ноль риска: гарантия точности заданий и возврата средств

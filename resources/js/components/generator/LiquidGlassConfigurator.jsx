@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
     ChevronDown,
     SlidersHorizontal,
-    Sparkles,
     Check,
     Printer,
     FileText,
     X,
-    ArrowRight
+    ArrowRight,
+    BookOpen
 } from 'lucide-react';
 
 const FAST_TWEEN = { duration: 0.16, ease: [0.16, 1, 0.3, 1] };
@@ -48,7 +48,7 @@ export default function LiquidGlassConfigurator({
 
     // Current subject object
     const activeSubjectObj = SUBJECTS.find(s => s.id === selectedSubject) || SUBJECTS[0];
-    const ActiveSubjectIcon = activeSubjectObj?.icon || Sparkles;
+    const ActiveSubjectIcon = activeSubjectObj?.icon || BookOpen;
 
     // Close subject dropdown when clicking outside
     useEffect(() => {
@@ -77,25 +77,7 @@ export default function LiquidGlassConfigurator({
 
     return (
         <div className="relative group">
-            {/* AMBIENT REFRACTION LIGHTS (Zero-blur hardware-accelerated radial gradients) */}
-            <div
-                className="absolute -top-12 -left-10 w-72 h-72 pointer-events-none -z-10 opacity-70"
-                style={{
-                    background: 'radial-gradient(circle, rgba(125,57,235,0.22) 0%, rgba(125,57,235,0) 70%)',
-                    transform: 'translateZ(0)'
-                }}
-                aria-hidden="true"
-            />
-            <div
-                className="absolute -bottom-10 -right-8 w-64 h-64 pointer-events-none -z-10 opacity-50"
-                style={{
-                    background: 'radial-gradient(circle, rgba(198,255,51,0.15) 0%, rgba(198,255,51,0) 70%)',
-                    transform: 'translateZ(0)'
-                }}
-                aria-hidden="true"
-            />
-
-            {/* MAIN LIQUID GLASS CONTAINER (GPU Optimized 12px blur, no nested blur) */}
+            {/* MAIN LIQUID GLASS CONTAINER (Edusfera Aurora Glass Standard) */}
             <div
                 className="relative rounded-3xl p-5 sm:p-6 space-y-4 overflow-visible"
                 style={{
@@ -103,36 +85,27 @@ export default function LiquidGlassConfigurator({
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
-                    boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.5)',
+                    boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.5)',
                     transform: 'translateZ(0)',
                     contain: 'layout paint'
                 }}
             >
-                {/* Subtle Top Specular Glass Reflection Sheen */}
-                <div
-                    className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none rounded-t-3xl"
-                    aria-hidden="true"
-                />
-
                 {/* STEP 1: SUBJECT & GRADE SELECTION */}
                 <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="flex h-2 w-2 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7D39EB] opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7D39EB]"></span>
-                            </span>
-                            <label className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                            <span className="w-2 h-2 rounded-full bg-[#C6FF33]" />
+                            <label className="text-xs font-semibold text-slate-200">
                                 1. Предмет и класс
                             </label>
                         </div>
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#C6FF33]/15 border border-[#C6FF33]/30 text-[#C6FF33] font-bold">
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300 font-semibold">
                             {selectedGrade === 'abiturient' ? 'Абитуриент' : selectedGrade + ' класс'}
                         </span>
                     </div>
 
                     <div className="space-y-2">
-                        {/* Apple Liquid Glass Custom Subject Popover */}
+                        {/* Custom Subject Popover */}
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 type="button"
@@ -141,11 +114,9 @@ export default function LiquidGlassConfigurator({
                                 style={{
                                     background: 'rgba(255, 255, 255, 0.04)',
                                     border: isSubjectDropdownOpen
-                                        ? '1px solid rgba(125, 57, 235, 0.8)'
+                                        ? '1px solid #7D39EB'
                                         : '1px solid rgba(255, 255, 255, 0.12)',
-                                    boxShadow: isSubjectDropdownOpen
-                                        ? '0 0 16px rgba(125, 57, 235, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15)'
-                                        : 'inset 0 1px 1px rgba(255, 255, 255, 0.05)'
+                                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05)'
                                 }}
                             >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -243,9 +214,9 @@ export default function LiquidGlassConfigurator({
                                         {isSel && (
                                             <motion.div
                                                 layoutId="activeGradeLiquidPill"
-                                                className="absolute inset-0 rounded-xl bg-gradient-to-b from-[#8B5CF6] to-[#7D39EB]"
+                                                className="absolute inset-0 rounded-xl bg-[#7D39EB]"
                                                 style={{
-                                                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(125, 57, 235, 0.5)',
+                                                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(125, 57, 235, 0.3)',
                                                     willChange: 'transform'
                                                 }}
                                                 transition={FAST_TWEEN}
@@ -308,7 +279,7 @@ export default function LiquidGlassConfigurator({
                         <div className="space-y-1.5 pt-0.5">
                             <div className="text-[10px] font-semibold text-slate-400 flex items-center justify-between">
                                 <span className="flex items-center gap-1.5">
-                                    <Sparkles className="w-3 h-3 text-[#C6FF33]" />
+                                    <BookOpen className="w-3 h-3 text-[#C6FF33]" />
                                     <span>Темы из программы ({selectedQuarter} четверть):</span>
                                 </span>
                                 <span className="text-slate-500">клик для выбора</span>
@@ -642,7 +613,7 @@ export default function LiquidGlassConfigurator({
                                         >
                                             {[
                                                 { id: '1', label: 'I четв.' },
-                                                { id: '2', label: 'II четв. ⚡' },
+                                                { id: '2', label: 'II четв.' },
                                                 { id: '3', label: 'III четв.' },
                                                 { id: '4', label: 'IV четв.' }
                                             ].map((q) => {
@@ -679,23 +650,16 @@ export default function LiquidGlassConfigurator({
                     </AnimatePresence>
                 </div>
 
-                {/* PRIMARY ACTION CTA BUTTON (Apple Liquid Glass) */}
+                {/* PRIMARY ACTION CTA BUTTON */}
                 <div className="pt-2 space-y-2.5">
                     <button
                         type="button"
                         onClick={() => setShowPayModal(true)}
-                        className="w-full relative group/cta py-4 px-6 rounded-2xl text-white font-bold text-base tracking-tight cursor-pointer overflow-hidden select-none active:scale-[0.98] transition-transform duration-100"
+                        className="w-full relative group/cta py-4 px-6 rounded-2xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-base tracking-tight cursor-pointer overflow-hidden select-none active:scale-[0.98] transition-all"
                         style={{
-                            background: 'linear-gradient(135deg, #8B5CF6 0%, #7D39EB 50%, #6D28D9 100%)',
-                            boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.4), 0 10px 25px -4px rgba(125, 57, 235, 0.5)'
+                            boxShadow: 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.35), 0 10px 25px -4px rgba(125, 57, 235, 0.35)'
                         }}
                     >
-                        {/* Top specular edge highlight */}
-                        <div
-                            className="absolute top-0 inset-x-6 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none"
-                            aria-hidden="true"
-                        />
-
                         <div className="relative z-10 flex items-center justify-center gap-2">
                             <span>Сформировать комплект на урок — 5 BYN</span>
                             <ArrowRight className="w-4 h-4 group-hover/cta:translate-x-1 transition-transform duration-150" />

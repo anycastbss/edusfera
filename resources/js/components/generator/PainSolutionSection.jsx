@@ -1,5 +1,5 @@
 import React from 'react';
-import { XCircle, CheckCircle2, Zap, ShieldAlert, Sparkles, Clock } from 'lucide-react';
+import { XCircle, CheckCircle2, Zap, ShieldAlert, Clock } from 'lucide-react';
 
 export default function PainSolutionSection() {
     const painPoints = [
@@ -45,8 +45,8 @@ export default function PainSolutionSection() {
             {/* Header */}
             <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-slate-300">
-                    <Sparkles className="w-3.5 h-3.5 text-[#C6FF33]" />
-                    <span>ПОЧЕМУ ПРЕПОДАВАТЕЛИ ВЫБИРАЮТ EDUSFERA</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C6FF33]" />
+                    <span>Сравнение подходов</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
                     Сравните: вечер учителя до и после Edusfera
@@ -59,8 +59,7 @@ export default function PainSolutionSection() {
             {/* Side-by-Side Comparison */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
                 {/* BEFORE: The Pain */}
-                <div className="relative rounded-3xl bg-[#121214]/90 border border-rose-500/20 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(0,0,0,0.5)] flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(244,63,94,0.08) 0%, transparent 70%)' }} />
+                <div className="relative rounded-3xl bg-[#121214]/95 border border-rose-500/20 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(0,0,0,0.5)] flex flex-col justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-rose-500/15">
                             <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
@@ -102,12 +101,11 @@ export default function PainSolutionSection() {
                 </div>
 
                 {/* AFTER: The Solution */}
-                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-[#7D39EB]/40 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(125,57,235,0.2)] flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-56 h-56 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.18) 0%, transparent 70%)' }} />
+                <div className="relative rounded-3xl bg-[#121214]/95 border border-[#7D39EB]/40 p-6 sm:p-8 backdrop-blur-md shadow-[0_16px_36px_-4px_rgba(0,0,0,0.5)] flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#7D39EB]/25">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-[#7D39EB]/20 border border-[#7D39EB]/50 flex items-center justify-center text-[#C6FF33] shrink-0 shadow-lg shadow-violet-500/25">
+                                <div className="w-10 h-10 rounded-2xl bg-[#7D39EB]/20 border border-[#7D39EB]/40 flex items-center justify-center text-[#C6FF33] shrink-0">
                                     <Zap className="w-5 h-5" />
                                 </div>
                                 <div>

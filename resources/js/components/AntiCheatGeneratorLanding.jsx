@@ -9,7 +9,6 @@ import {
     ShieldCheck, 
     Clock,
     Printer,
-    Sparkles,
     AlertCircle,
     Loader2,
     Calculator,
@@ -190,7 +189,7 @@ export const WORK_TYPES = [
         id: 'olympiad', 
         name: 'Олимпиадные задания', 
         shortLabel: 'Олимпиада',
-        icon: Sparkles, 
+        icon: Award, 
         duration: '45–60 мин',
         desc: 'Углубленный уровень и нестандартная логика для гимназий',
         tasksA: 3,
@@ -1703,10 +1702,7 @@ export default function AntiCheatGeneratorLanding() {
                                 className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-4 py-2 text-sm font-semibold hover:bg-emerald-500/30 transition-all flex items-center gap-2.5 cursor-pointer backdrop-blur-md shadow-sm focus:outline-none"
                                 aria-expanded={userMenuOpen}
                             >
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                </span>
+                                <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                 <span className="truncate max-w-[120px]">{user.name || 'Кабинет'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-emerald-200 font-bold border border-white/10">
                                     {user.role_label || (user.role === 'tutor' ? 'Репетитор' : user.role === 'admin' ? 'Администратор' : user.role === 'parent' ? 'Родитель' : 'Ученик')}
@@ -1737,9 +1733,9 @@ export default function AntiCheatGeneratorLanding() {
                                     <div className="space-y-0.5">
                                         <a
                                             href={cabinetUrl}
-                                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#7D39EB]/30 to-[#C6FF33]/20 border border-white/10 hover:from-[#7D39EB]/50 hover:to-[#C6FF33]/30 transition-all"
+                                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-white rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 transition-colors"
                                         >
-                                            <span className="text-base">🚀</span>
+                                            <GraduationCap className="w-4 h-4 text-emerald-400" />
                                             <span>Личный кабинет</span>
                                         </a>
 
@@ -1750,7 +1746,7 @@ export default function AntiCheatGeneratorLanding() {
                                                     href={financeUrl}
                                                     className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                                                 >
-                                                    <Sparkles className="w-4 h-4 text-amber-400" />
+                                                    <Tag className="w-4 h-4 text-amber-400" />
                                                     <span>Управление тарифом</span>
                                                 </a>
                                                 <a
@@ -1816,7 +1812,7 @@ export default function AntiCheatGeneratorLanding() {
                                                     href="/admin/saa-s-management"
                                                     className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-200 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
                                                 >
-                                                    <Sparkles className="w-4 h-4 text-violet-400" />
+                                                    <SlidersHorizontal className="w-4 h-4 text-neutral-300" />
                                                     <span>Управление SaaS</span>
                                                 </a>
                                             </>
@@ -1892,13 +1888,13 @@ export default function AntiCheatGeneratorLanding() {
                             </a>
                             <a
                                 href="/register"
-                                className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold px-4 py-2 text-sm hover:from-violet-500 hover:to-indigo-500 transition-all shadow-md"
+                                className="rounded-full bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-semibold px-4 py-2 text-sm transition-colors"
                             >
                                 Регистрация
                             </a>
                             <a
                                 href="/diagnostic"
-                                className="rounded-full bg-[#C6FF33] text-black font-extrabold px-4 py-2 text-sm hover:bg-[#d4ff59] transition-all shadow-md"
+                                className="rounded-full bg-[#C6FF33] text-black font-extrabold px-4 py-2 text-sm hover:bg-[#d4ff59] transition-all shadow-xs"
                             >
                                 ИИ-Диагностика
                             </a>
@@ -1946,9 +1942,10 @@ export default function AntiCheatGeneratorLanding() {
 
                             <a
                                 href={cabinetUrl}
-                                className="flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#7D39EB]/40 to-[#C6FF33]/30 border border-white/20 px-4 py-3 text-sm font-semibold text-white"
+                                className="flex items-center justify-center gap-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 px-4 py-3 text-sm font-semibold text-white transition-colors"
                             >
-                                <span>🚀 Личный кабинет</span>
+                                <GraduationCap className="w-4 h-4 text-emerald-400" />
+                                <span>Личный кабинет</span>
                             </a>
 
                             {user.role === 'tutor' && (
@@ -1957,7 +1954,7 @@ export default function AntiCheatGeneratorLanding() {
                                         href={financeUrl}
                                         className="flex items-center gap-2.5 rounded-xl bg-white/5 px-4 py-2.5 text-sm font-medium text-white"
                                     >
-                                        <Sparkles className="w-4 h-4 text-amber-400" />
+                                        <Tag className="w-4 h-4 text-amber-400" />
                                         <span>Управление тарифом</span>
                                     </a>
                                     <a
@@ -2047,7 +2044,7 @@ export default function AntiCheatGeneratorLanding() {
                             </a>
                             <a
                                 href="/register"
-                                className="block text-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-base font-bold text-white shadow-md"
+                                className="block text-center rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] px-4 py-3 text-base font-semibold text-white transition-colors"
                             >
                                 Регистрация
                             </a>
@@ -2087,18 +2084,13 @@ export default function AntiCheatGeneratorLanding() {
                     {/* Left: Text & Key Highlights (7-8 cols) */}
                     <div className="lg:col-span-7 xl:col-span-8 space-y-3.5">
                         <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 text-xs font-medium text-neutral-300 backdrop-blur-md shadow-xs">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7D39EB] opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7D39EB]"></span>
-                            </span>
+                            <span className="w-2 h-2 rounded-full bg-[#C6FF33]" />
                             <span className="tracking-wide">Стандарты ЦТ и ЦЭ 2026 • Экзаменационная программа Беларуси</span>
                         </div>
 
                         <h1 className="text-2xl sm:text-4xl lg:text-[40px] xl:text-[42px] font-extrabold tracking-tight text-white leading-[1.18]">
                             Контрольные работы на класс. <br className="hidden sm:inline" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white/95 to-white/60">
-                                Без единого шанса списать.
-                            </span>
+                            <span>Без единого шанса списать.</span>
                         </h1>
 
                         <p className="text-sm sm:text-base text-neutral-400 leading-relaxed font-normal max-w-2xl">
@@ -2124,17 +2116,12 @@ export default function AntiCheatGeneratorLanding() {
                     {/* Right: Floating 3D Graphic (PC/Desktop only, 4-5 cols) */}
                     <div className="hidden lg:flex lg:col-span-5 xl:col-span-4 justify-center xl:justify-end items-center pointer-events-none select-none">
                         <div className="relative w-full max-w-[280px] xl:max-w-[320px]">
-                            {/* Subtle Ambient Backlight */}
-                            <div 
-                                className="absolute inset-0 bg-gradient-to-tr from-violet-600/30 via-[#C6FF33]/15 to-transparent blur-3xl rounded-full opacity-60"
-                                aria-hidden="true"
-                            />
                             <img
                                 src="/images/generator-hero-graphic.png"
                                 alt="Онлайн-урок и интерактивный класс Edusfera"
                                 width="1199"
                                 height="1312"
-                                className="relative z-10 w-full h-auto object-contain drop-shadow-[0_12px_32px_rgba(125,57,235,0.25)]"
+                                className="relative z-10 w-full h-auto object-contain drop-shadow-[0_12px_32px_rgba(0,0,0,0.4)]"
                                 loading="eager"
                                 fetchPriority="high"
                             />
@@ -2216,7 +2203,7 @@ export default function AntiCheatGeneratorLanding() {
                                         previewTab === 'keys' ? 'bg-[#7D39EB] text-white shadow-xs' : 'text-slate-400 hover:text-white'
                                     }`}
                                 >
-                                    ★ Ключи ответов (2 мин)
+                                    Ключи ответов (2 мин)
                                 </button>
                             </div>
 
@@ -2538,13 +2525,13 @@ export default function AntiCheatGeneratorLanding() {
 
                                 {/* Admin Mode Notification */}
                                 {Boolean(user?.is_admin || user?.role === 'admin') && (
-                                    <div className="p-3 rounded-xl bg-[#7D39EB]/15 border border-[#7D39EB]/40 text-xs text-white space-y-1">
+                                    <div className="p-3 rounded-xl bg-white/[0.04] border border-[#7D39EB]/40 text-xs text-white space-y-1">
                                         <div className="flex items-center gap-1.5 font-bold text-[#C6FF33]">
-                                            <Sparkles className="w-4 h-4 text-[#C6FF33] shrink-0" />
+                                            <SlidersHorizontal className="w-4 h-4 text-[#C6FF33] shrink-0" />
                                             <span>Режим администратора активен</span>
                                         </div>
                                         <p className="text-[11px] text-slate-300 leading-tight">
-                                            Тестовая генерация без списания средств в Альфа-Банке. ИИ составит варианты и сразу откроет готовый PDF.
+                                            Тестовое формирование проверочной работы без списания средств в банке. Сервис подготовит варианты и откроет готовый PDF.
                                         </p>
                                     </div>
                                 )}
@@ -2554,7 +2541,7 @@ export default function AntiCheatGeneratorLanding() {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="w-full py-3.5 px-4 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-[0_0_20px_rgba(125,57,235,0.35)] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="w-full py-3.5 px-4 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? (
                                             <>
@@ -2565,8 +2552,8 @@ export default function AntiCheatGeneratorLanding() {
                                             <>
                                                 {Boolean(user?.is_admin || user?.role === 'admin') ? (
                                                     <>
-                                                        <Sparkles className="w-4 h-4 text-[#C6FF33]" />
-                                                        <span>Сгенерировать тест (Администратор — 0 BYN)</span>
+                                                        <FileText className="w-4 h-4 text-[#C6FF33]" />
+                                                        <span>Сформировать тест (Администратор — 0 BYN)</span>
                                                     </>
                                                 ) : (
                                                     <>
@@ -2731,7 +2718,7 @@ export default function AntiCheatGeneratorLanding() {
                             </button>
 
                             {/* Success Icon */}
-                            <div className="w-16 h-16 rounded-2xl bg-[#C6FF33]/15 border border-[#C6FF33]/40 text-[#C6FF33] flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(198,255,51,0.25)]">
+                            <div className="w-16 h-16 rounded-2xl bg-[#C6FF33]/15 border border-[#C6FF33]/40 text-[#C6FF33] flex items-center justify-center mx-auto">
                                 <Check className="w-8 h-8 stroke-[2.5]" />
                             </div>
 
@@ -2752,7 +2739,7 @@ export default function AntiCheatGeneratorLanding() {
                                 <button
                                     type="button"
                                     onClick={() => setShowSuccessModal(false)}
-                                    className="w-full py-3.5 px-4 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-[0_0_20px_rgba(125,57,235,0.4)] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                    className="w-full py-3.5 px-4 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
                                 >
                                     <span>Сформировать ещё один комплект</span>
                                     <span>→</span>

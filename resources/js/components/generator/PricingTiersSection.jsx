@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Check, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function PricingTiersSection({ onSelectPlan }) {
     const singleFeatures = [
@@ -17,8 +17,8 @@ export default function PricingTiersSection({ onSelectPlan }) {
             {/* Header */}
             <div className="text-center max-w-2xl mx-auto mb-10 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-[#C6FF33]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>ПРОЗРАЧНАЯ СТОИМОСТЬ</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C6FF33]" />
+                    <span>Стоимость комплекта</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
                     5 BYN за готовый комплект на урок
@@ -30,7 +30,7 @@ export default function PricingTiersSection({ onSelectPlan }) {
 
             {/* Single Centered Pricing Card */}
             <div className="max-w-xl mx-auto">
-                <div className="relative rounded-3xl bg-gradient-to-b from-[#18181C] to-[#121214] border border-[#7D39EB]/50 p-7 sm:p-9 backdrop-blur-md shadow-[0_20px_50px_rgba(125,57,235,0.2)] flex flex-col justify-between">
+                <div className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-7 sm:p-9 backdrop-blur-md shadow-xl flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <span className="text-xs font-mono uppercase tracking-wider text-[#C6FF33] font-bold">
@@ -56,7 +56,7 @@ export default function PricingTiersSection({ onSelectPlan }) {
                         <div className="space-y-3 pt-5 border-t border-white/10">
                             {singleFeatures.map((feat, i) => (
                                 <div key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300">
-                                    <div className="mt-0.5 w-4 h-4 rounded-full bg-[#7D39EB]/20 border border-[#7D39EB]/50 flex items-center justify-center shrink-0">
+                                    <div className="mt-0.5 w-4 h-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                                         <Check className="w-2.5 h-2.5 text-[#C6FF33]" />
                                     </div>
                                     <span>{feat}</span>
@@ -69,7 +69,7 @@ export default function PricingTiersSection({ onSelectPlan }) {
                         <button
                             type="button"
                             onClick={() => onSelectPlan(false)}
-                            className="w-full py-4 px-6 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs uppercase tracking-wide transition-all shadow-[0_0_25px_rgba(125,57,235,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                            className="w-full py-4 px-6 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                         >
                             <span>Сформировать комплект на урок — 5 BYN</span>
                             <ArrowRight className="w-4 h-4 text-white" />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle, Sparkles, MessageCircle } from 'lucide-react';
+import { ChevronDown, HelpCircle, MessageCircle } from 'lucide-react';
 
 export default function FaqSection() {
     const [openIndex, setOpenIndex] = useState(0);
@@ -41,7 +41,7 @@ export default function FaqSection() {
             <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-[#C6FF33]">
                     <HelpCircle className="w-3.5 h-3.5" />
-                    <span>ОТВЕТЫ НА ЧАСТЫЕ ВОПРОСЫ ПРЕПОДАВАТЕЛЕЙ</span>
+                    <span>Частые вопросы</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
                     Всё, что важно знать перед покупкой
@@ -60,8 +60,8 @@ export default function FaqSection() {
                             key={index}
                             className={`rounded-2xl border transition-all overflow-hidden ${
                                 isOpen
-                                    ? 'bg-[#18181C] border-[#7D39EB]/50 shadow-[0_10px_30px_rgba(125,57,235,0.15)]'
-                                    : 'bg-[#121214]/90 border-white/10 hover:border-white/20'
+                                    ? 'bg-[#18181C] border-[#7D39EB]/50 shadow-md'
+                                    : 'bg-[#121214]/95 border-white/10 hover:border-white/20'
                             }`}
                         >
                             <button

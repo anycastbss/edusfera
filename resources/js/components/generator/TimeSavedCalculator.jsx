@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Moon, Sparkles, Clock, Check, ArrowRight } from 'lucide-react';
+import { Calculator, Moon, Clock, Check, ArrowRight } from 'lucide-react';
 
 export default function TimeSavedCalculator({ onOpenModal }) {
     const [classesCount, setClassesCount] = useState(2);
@@ -14,10 +14,6 @@ export default function TimeSavedCalculator({ onOpenModal }) {
     return (
         <section className="w-full max-w-[1240px] mx-auto px-4 sm:px-6 py-12 sm:py-16">
             <div className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-6 sm:p-10 backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden">
-                {/* Background glow decoration - zero cost radial gradients */}
-                <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(125,57,235,0.12) 0%, transparent 70%)' }} />
-                <div className="absolute bottom-0 right-0 w-80 h-80 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(198,255,51,0.08) 0%, transparent 70%)' }} />
-
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                     
                     {/* Left Column: Sliders & Controls (7 cols) */}
@@ -25,7 +21,7 @@ export default function TimeSavedCalculator({ onOpenModal }) {
                         <div>
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-[#C6FF33] mb-3">
                                 <Calculator className="w-3.5 h-3.5" />
-                                <span>ИНТЕРАКТИВНЫЙ КАЛЬКУЛЯТОР ВЫГОДЫ</span>
+                                <span>Калькулятор экономии времени</span>
                             </div>
                             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                                 Сколько часов жизни вы спасёте за 1 месяц?
@@ -108,7 +104,7 @@ export default function TimeSavedCalculator({ onOpenModal }) {
                     </div>
 
                     {/* Right Column: Dynamic Visual Results Card (5 cols) */}
-                    <div className="lg:col-span-5 bg-gradient-to-b from-[#18181C] to-[#121214] border border-[#7D39EB]/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative flex flex-col justify-between">
+                    <div className="lg:col-span-5 bg-[#121214]/95 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-xl relative flex flex-col justify-between">
                         <div className="space-y-6">
                             <div className="flex items-center justify-between pb-4 border-b border-white/10">
                                 <span className="text-xs font-mono uppercase tracking-wider text-slate-400">
@@ -153,7 +149,7 @@ export default function TimeSavedCalculator({ onOpenModal }) {
                             <button
                                 type="button"
                                 onClick={onOpenModal}
-                                className="w-full py-3.5 px-5 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs uppercase tracking-wide transition-all shadow-[0_0_25px_rgba(125,57,235,0.4)] flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                                className="w-full py-3.5 px-5 rounded-xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                             >
                                 <span>Сэкономить время за 5 BYN</span>
                                 <ArrowRight className="w-4 h-4" />

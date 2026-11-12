@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, MapPin, CheckCircle, Quote, Sparkles } from 'lucide-react';
+import { Star, MapPin, CheckCircle, Quote } from 'lucide-react';
 
 export default function TestimonialsSection() {
     const testimonials = [
@@ -40,8 +40,8 @@ export default function TestimonialsSection() {
             {/* Header */}
             <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-3">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-[#C6FF33]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>ОТЗЫВЫ ПРЕПОДАВАТЕЛЕЙ БЕЛАРУСИ</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C6FF33]" />
+                    <span>Отзывы учителей и репетиторов</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
                     Проверено в гимназиях и школах по всей стране
@@ -56,7 +56,7 @@ export default function TestimonialsSection() {
                 {testimonials.map((item, index) => (
                     <div
                         key={index}
-                        className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-6 sm:p-7 backdrop-blur-md shadow-lg flex flex-col justify-between hover:border-violet-500/30 transition-all group"
+                        className="relative rounded-3xl bg-[#121214]/95 border border-white/10 p-6 sm:p-7 backdrop-blur-md shadow-lg flex flex-col justify-between hover:border-white/20 transition-all group"
                     >
                         <div>
                             {/* Card Top: Stars & City */}
