@@ -175,6 +175,7 @@ class PythonExamGeneratorService
                 'website_url' => 'https://edusfera.by',
                 'instructions' => $parsedData['instructionText'] ?: 'В заданиях Части А выберите один верный вариант ответа. В заданиях Части Б запишите полученное целое число. Ответы переносите в бланк внизу листа аккуратно и разборчиво.',
                 'exam_format' => $parsedData['examFormat'] ?? ($isSchoolFormat ? 'school' : 'exam'),
+                'print_layout' => $parsedData['printLayout'] ?? ($isSchoolFormat ? 'economy' : 'standard'),
                 'variants' => $variantsPayload,
                 'master_table' => $parsedData['masterTable'] ?? [],
                 'grading_scale' => $parsedData['gradingScale'] ?? [],

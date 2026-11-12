@@ -67,34 +67,14 @@ Route::get('/generator/download/{order:order_number}', [\App\Http\Controllers\Ge
     ->name('generator.download');
 
 // Generator Teacher Workspace / Personal Cabinet (Lightweight, No-Friction)
-Route::get('/generator/my', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
-    ->middleware(['web'])
-    ->name('generator.my');
+Route::redirect('/generator/my', '/generator', 301)->name('generator.my');
+Route::redirect('/generator/cabinet', '/generator', 301)->name('generator.cabinet');
+Route::redirect('/teacher', '/generator', 301)->name('generator.teacher');
+Route::redirect('/uchitelskaya', '/generator', 301)->name('generator.uchitelskaya');
+Route::any('/teacher/{any}', function () {
+    return redirect('/generator', 301);
+})->where('any', '.*');
 
-Route::get('/generator/cabinet', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
-    ->middleware(['web'])
-    ->name('generator.cabinet');
-
-// Teacher Studio / Учительская Edusfera routes
-Route::get('/teacher', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
-    ->middleware(['web'])
-    ->name('generator.teacher');
-
-Route::get('/uchitelskaya', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinet'])
-    ->middleware(['web'])
-    ->name('generator.uchitelskaya');
-
-Route::get('/teacher/board/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'board'])
-    ->middleware(['web', 'throttle:60,1'])
-    ->name('generator.board');
-
-Route::get('/teacher/share/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'share'])
-    ->middleware(['web', 'throttle:60,1'])
-    ->name('generator.share');
-
-Route::post('/generator/cabinet/access', [\App\Http\Controllers\GeneratorCheckoutController::class, 'cabinetAccess'])
-    ->middleware(['web', 'throttle:15,1'])
-    ->name('generator.cabinet.access');
 
 Route::redirect('/promo', '/', 301);
 Route::any('/promo/{any}', function () {

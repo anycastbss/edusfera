@@ -443,7 +443,7 @@
                 <div class="brand-name">EDUSFERA</div>
                 <span class="brand-divider">|</span>
                 <span class="brand-slogan">Не зубри. Знай.</span>
-                <div class="brand-desc">Платформа для репетиторов</div>
+                <div class="brand-desc">Учебно-методический комплекс</div>
             </td>
             <td class="brand-col" style="width: 30%; text-align: right;">
                 <div class="qr-card">

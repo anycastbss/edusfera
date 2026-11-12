@@ -57,6 +57,47 @@ if (! hash_equals($authKey, $providedKey)) {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'menu';
 
+function cleanupLegacyTeacherStudio(): array {
+    $deleted = [];
+    $files = [
+        __DIR__.'/../resources/views/generator/cabinet.blade.php',
+        __DIR__.'/../resources/views/generator/board.blade.php',
+        __DIR__.'/../resources/views/generator/rno.blade.php',
+        __DIR__.'/../resources/views/generator/share.blade.php',
+        __DIR__.'/../resources/views/generator/blank-sheet.blade.php',
+        __DIR__.'/../resources/views/generator/partials/blank-form-content.blade.php',
+        __DIR__.'/../app/Services/Exam/RnoGeneratorService.php',
+    ];
+    foreach ($files as $file) {
+        if (file_exists($file)) {
+            @unlink($file);
+            $deleted[] = basename($file);
+        }
+    }
+    $partialsDir = __DIR__.'/../resources/views/generator/partials';
+    if (is_dir($partialsDir)) {
+        @rmdir($partialsDir);
+        $deleted[] = 'generator/partials (dir)';
+    }
+    return $deleted;
+}
+
+if ($action === 'cleanup_teacher_studio') {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<!DOCTYPE html><html lang='ru'><body style='background:#0f172a; color:#f8fafc; font-family:monospace; padding:20px;'><pre>";
+    echo "🧹 <b>Удаление неиспользуемых файлов учительской...</b>\n\n";
+    $removed = cleanupLegacyTeacherStudio();
+    if (! empty($removed)) {
+        echo "   ✓ Успешно удалены файлы:\n     - " . implode("\n     - ", $removed) . "\n";
+    } else {
+        echo "   ✓ Все устаревшие файлы учительской уже удалены ранее.\n";
+    }
+    echo "\n🎉 Готово!\n";
+    echo "<a href='?key=edusfera2026' style='color:#38bdf8; font-weight:bold;'>← Вернуться в меню обслуживания</a>";
+    echo "</pre></body></html>";
+    exit;
+}
+
 // ── АВАРИЙНЫЙ ОБРАБОТЧИК: Загрузка и распаковка патчей ДО загрузки ядра Laravel ──
 // Позволяет восстановить платформу, даже если в коде Laravel есть синтаксическая ошибка
 if ($action === 'upload_patch' || $action === 'unpack_patch') {
@@ -113,6 +154,11 @@ if ($action === 'upload_patch' || $action === 'unpack_patch') {
         }
         $zip->close();
         echo "   ✓ Безопасно распаковано файлов: {$extractedCount} в корень сайта ({$targetDir})\n";
+
+        $cleanedFiles = cleanupLegacyTeacherStudio();
+        if (! empty($cleanedFiles)) {
+            echo "   ✓ Очищены устаревшие файлы учительской:\n     - " . implode("\n     - ", $cleanedFiles) . "\n";
+        }
 
         // Сброс кэша Laravel и PHP OPcache
         if (function_exists('opcache_reset')) {
@@ -195,7 +241,7 @@ $currentGeminiLiteModel = (string) env('GEMINI_LITE_MODEL', config('services.gem
 $currentGeminiBaseUrl = (string) env('GEMINI_BASE_URL', config('services.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'));
 $currentGeminiProxy = (string) env('GEMINI_PROXY', config('services.gemini.proxy', ''));
 $currentGeminiUseXboxDns = (bool) env('GEMINI_USE_XBOX_DNS', config('services.gemini.use_xbox_dns', true));
-$currentGeminiDnsServers = (string) env('GEMINI_DNS_SERVERS', config('services.gemini.dns_servers', '181.215.40.49,31.58.216.201'));
+$currentGeminiDnsServers = (string) env('GEMINI_DNS_SERVERS', config('services.gemini.dns_servers', '143.20.64.55,31.58.216.201'));
 
 // Current Queue settings
 $currentQueueConnection = (string) env('QUEUE_CONNECTION', config('queue.default', 'database'));
@@ -334,7 +380,7 @@ if ($action === 'menu') {
                     </label>
 
                     <label>DNS / SNI узлы для Gemini (через запятую):</label>
-                    <input type="text" name="gemini_dns_servers" value="<?= htmlspecialchars($currentGeminiDnsServers) ?>" placeholder="181.215.40.49,31.58.216.201">
+                    <input type="text" name="gemini_dns_servers" value="<?= htmlspecialchars($currentGeminiDnsServers) ?>" placeholder="143.20.64.55,31.58.216.201">
 
                     <label>Base URL (Reverse Proxy / Cloudflare Worker):</label>
                     <input type="text" name="gemini_base_url" value="<?= htmlspecialchars($currentGeminiBaseUrl) ?>" placeholder="https://generativelanguage.googleapis.com/v1beta">
@@ -821,7 +867,7 @@ try {
         $model = trim($_POST['gemini_model'] ?? 'gemini-flash-latest');
         $liteModel = trim($_POST['gemini_lite_model'] ?? 'gemini-3.5-flash-lite');
         $useXboxDns = ! empty($_POST['gemini_use_xbox_dns']) ? 'true' : 'false';
-        $dnsServers = trim($_POST['gemini_dns_servers'] ?? '181.215.40.49,31.58.216.201');
+        $dnsServers = trim($_POST['gemini_dns_servers'] ?? '143.20.64.55,31.58.216.201');
 
         updateEnvKey('GEMINI_API_KEY', $key);
         updateEnvKey('GEMINI_BASE_URL', $baseUrl ?: 'https://generativelanguage.googleapis.com/v1beta');
@@ -1070,7 +1116,7 @@ try {
     // ── ACTION: Test DNS proxy ─────────────────────────────────────────
     if ($action === 'test_xbox_dns') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
-        echo "🎮 <b>Тестирование доступа через DNS (181.215.40.49, 31.58.216.201):</b>\n\n";
+        echo "🎮 <b>Тестирование доступа через DNS (143.20.64.55, 31.58.216.201):</b>\n\n";
 
         $apiKey = config('services.gemini.api_key');
         echo '1. API Key: '.($apiKey ? substr($apiKey, 0, 8).'...' : 'пусто')."\n";
@@ -1078,7 +1124,7 @@ try {
         // Step 1: IPs from config / service
         $ips = config('services.gemini.dns_servers')
             ? array_values(array_filter(array_map('trim', explode(',', config('services.gemini.dns_servers')))))
-            : ['181.215.40.49', '31.58.216.201'];
+            : ['143.20.64.55', '31.58.216.201'];
         echo "2. Прокси-узлы DNS для generativelanguage.googleapis.com:\n";
         foreach ($ips as $ip) {
             echo "   - {$ip}\n";
@@ -1975,11 +2021,12 @@ try {
     }
 
     try {
-        // Автоматическое обновление GEMINI_DNS_SERVERS в .env при обнаружении устаревших IP
+        // Автоматическое обновление GEMINI_DNS_SERVERS в .env
         $currentDnsEnv = (string) env('GEMINI_DNS_SERVERS', '');
-        if (empty($currentDnsEnv) || str_contains($currentDnsEnv, '143.20.64.55') || str_contains($currentDnsEnv, '91.108.243.78')) {
-            updateEnvKey('GEMINI_DNS_SERVERS', '181.215.40.49,31.58.216.201');
-            echo "   ✓ DNS серверы для Gemini в .env обновлены на 181.215.40.49,31.58.216.201\n";
+        if ($currentDnsEnv !== '143.20.64.55,31.58.216.201') {
+            updateEnvKey('GEMINI_DNS_SERVERS', '143.20.64.55,31.58.216.201');
+            updateEnvKey('GEMINI_USE_XBOX_DNS', 'true');
+            echo "   ✓ DNS серверы для Gemini в .env обновлены на 143.20.64.55,31.58.216.201 (Bezmezhau DNS)\n";
         }
     } catch (Throwable $e) {
         echo '   ⚠️ Проверка Gemini DNS в .env: '.$e->getMessage()."\n";

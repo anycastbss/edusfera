@@ -554,13 +554,13 @@ class GeminiService
 
     /**
      * Get IP addresses for generativelanguage.googleapis.com routing.
-     * Defaults to Inscript / Comss DNS servers: 181.215.40.49, 31.58.216.201.
+     * Defaults to Bezmezhau DNS servers: 143.20.64.55, 31.58.216.201.
      *
      * @return array<string>
      */
     public function getXboxDnsIps(): array
     {
-        $fallback = ['181.215.40.49', '31.58.216.201'];
+        $fallback = ['143.20.64.55', '31.58.216.201'];
 
         $configured = config('services.gemini.dns_servers');
         if (! empty($configured)) {

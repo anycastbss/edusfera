@@ -38,7 +38,7 @@
                 Я — репетитор
             </a>
             <a href="{{ route('generator') }}" class="inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold {{ $ghostClass }}">
-                <span>Генератор ЦТ</span>
+                <span>Генератор заданий</span>
                 <span class="rounded bg-[#C6FF33] px-1.5 py-0.2 text-[10px] font-black text-black">5 BYN</span>
             </a>
             <a href="{{ route('news.index') }}" class="inline-flex min-h-10 items-center rounded-xl border px-4 text-sm font-semibold {{ $ghostClass }}">

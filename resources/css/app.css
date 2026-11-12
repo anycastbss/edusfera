@@ -647,13 +647,14 @@
 
 
 @media print {
-    body * {
+    body:has(#printable-ai-content) * {
         visibility: hidden;
     }
-    #printable-ai-content, #printable-ai-content * {
+    body:has(#printable-ai-content) #printable-ai-content,
+    body:has(#printable-ai-content) #printable-ai-content * {
         visibility: visible;
     }
-    #printable-ai-content {
+    body:has(#printable-ai-content) #printable-ai-content {
         position: absolute;
         left: 0;
         top: 0;

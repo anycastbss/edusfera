@@ -111,6 +111,37 @@ class GeneratorServiceTest extends TestCase
         ]);
     }
 
+    public function test_checkout_initiation_with_subscription_charges_9_90_byn(): void
+    {
+        $gatewayMock = Mockery::mock(AlfaBankPaymentGateway::class);
+        $gatewayMock->shouldReceive('createPayment')
+            ->once()
+            ->with(Mockery::on(function ($args) {
+                return (float) $args['amount'] === 9.90;
+            }))
+            ->andReturn([
+                'success' => true,
+                'redirect_url' => 'https://payment.alfabank.by/test-redirect',
+                'mdOrder' => 'alfa-order-sub',
+            ]);
+        $this->app->instance(AlfaBankPaymentGateway::class, $gatewayMock);
+
+        $response = $this->postJson(route('generator.checkout.initiate'), [
+            'email' => 'teacher@school.by',
+            'subject' => 'math',
+            'topic' => 'Теорема Пифагора',
+            'count' => 20,
+            'plan_type' => 'subscription',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('generator_orders', [
+            'email' => 'teacher@school.by',
+            'amount_kopecks' => 990,
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_hosted_view_loads_for_order(): void
     {
         $order = GeneratorOrder::create([
@@ -268,4 +299,124 @@ class GeneratorServiceTest extends TestCase
         $this->assertEquals('pending', $order->status);
         $this->assertFalse($order->isPaid());
     }
+
+    public function test_parser_enforces_strict_variant_symmetry_when_ai_generates_extra_tasks(): void
+    {
+        $order = GeneratorOrder::create([
+            'order_number' => 'GEN-SYMMETRY',
+            'email' => 'tutor@school.by',
+            'subject' => 'Математика',
+            'topic' => 'Линейные уравнения',
+            'variant_count' => 2,
+            'amount_kopecks' => 500,
+            'currency' => 'BYN',
+            'status' => 'paid',
+            'payload' => [
+                'count_a' => 3,
+                'count_b' => 2,
+                'work_type' => 'independent',
+                'grade' => '7',
+                'exam_format' => 'school',
+            ],
+        ]);
+
+        $rawAiText = <<<TEXT
+### Вариант 1
+Задание 1: Найдите значение x: 2x = 8.
+1) 2
+2) 4
+3) 6
+4) 8
+Ответ: 2)
+
+Задание 2: Найдите корень уравнения: 3x - 9 = 0.
+1) 3
+2) -3
+3) 9
+4) 0
+Ответ: 1)
+
+Задание 3: Решите уравнение: 5x + 5 = 20.
+1) 1
+2) 2
+3) 3
+4) 4
+Ответ: 3)
+
+Задание 4: Решите уравнение 2(x - 1) = 6. Запишите ответ:
+Ответ: 4
+
+Задание 5: Найдите корень уравнения: 7x - 14 = 0.
+Ответ: 2
+
+### Вариант 2
+Задание 1: Найдите значение x: 3x = 12.
+1) 2
+2) 4
+3) 6
+4) 8
+Ответ: 2)
+
+Задание 2: Найдите корень уравнения: 4x - 16 = 0.
+1) 4
+2) -4
+3) 8
+4) 0
+Ответ: 1)
+
+Задание 3: Решите уравнение: 2x + 6 = 14.
+1) 1
+2) 2
+3) 3
+4) 4
+Ответ: 4)
+
+Задание 4 (ЛИШНЕЕ): Лишнее тестовое задание от нейросети
+1) A
+2) B
+3) C
+4) D
+Ответ: 1)
+
+Задание 5: Решите уравнение 3(x - 2) = 9. Запишите ответ:
+Ответ: 5
+
+Задание 6: Найдите корень уравнения: 5x - 20 = 0.
+Ответ: 4
+
+Задание 7 (ЛИШНЕЕ): Еще одно лишнее задание в Варианте 2
+Ответ: 99
+TEXT;
+
+        $parsed = \App\Services\Exam\ExamDocumentParser::parse($rawAiText, $order);
+
+        $variants = $parsed['variants'];
+        $this->assertCount(2, $variants);
+
+        // Variant 1: exactly 3 Part A, 2 Part B (total 5)
+        $this->assertCount(3, $variants[0]['part_a']);
+        $this->assertCount(2, $variants[0]['part_b']);
+        $this->assertEquals(5, count($variants[0]['part_a']) + count($variants[0]['part_b']));
+
+        // Variant 2: MUST BE NORMALIZED TO EXACTLY 3 Part A, 2 Part B (total 5, NO 6 or 7 tasks!)
+        $this->assertCount(3, $variants[1]['part_a']);
+        $this->assertCount(2, $variants[1]['part_b']);
+        $this->assertEquals(5, count($variants[1]['part_a']) + count($variants[1]['part_b']));
+
+        // Renumbering must be strictly 1, 2, 3, 4, 5 for school format
+        $v2Tasks = array_merge($variants[1]['part_a'], $variants[1]['part_b']);
+        for ($i = 0; $i < 5; $i++) {
+            $this->assertEquals($i + 1, $v2Tasks[$i]['num']);
+            $this->assertEquals((string)($i + 1), $v2Tasks[$i]['number']);
+        }
+
+        // Master table must have exactly 2 rows, each with 3 A keys and 2 B keys
+        $master = $parsed['masterTable'];
+        $this->assertCount(2, $master);
+        $this->assertCount(3, explode(', ', $master[0]['part_a']));
+        $this->assertCount(2, explode(', ', $master[0]['part_b']));
+        $this->assertCount(3, explode(', ', $master[1]['part_a']));
+        $this->assertCount(2, explode(', ', $master[1]['part_b']));
+    }
 }
+

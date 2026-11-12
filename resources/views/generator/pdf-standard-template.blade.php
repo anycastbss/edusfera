@@ -443,7 +443,7 @@
                 <div class="brand-name">EDUSFERA</div>
                 <span class="brand-divider">|</span>
                 <span class="brand-slogan">Не зубри. Знай.</span>
-                <div class="brand-desc">Платформа для репетиторов</div>
+                <div class="brand-desc">Учебно-методический комплекс</div>
             </td>
             <td class="brand-col" style="width: 30%; text-align: right;">
                 <div class="qr-card">
@@ -715,6 +715,68 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- КОНТРОЛЬНАЯ ЭКСПРЕСС-ЛИНЕЙКА УЧИТЕЛЯ -->
+    <div style="margin-top: 15px; border-top: 2px dashed #94a3b8; padding-top: 8px;">
+        <div style="font-size: 8pt; font-weight: bold; color: #1e293b; margin-bottom: 2px; text-transform: uppercase;">
+            ✂ КОНТРОЛЬНАЯ ЭКСПРЕСС-ЛИНЕЙКА УЧИТЕЛЯ (ДЛЯ ПРОВЕРКИ СТОПКИ ЗА ПЕРЕМЕНУ)
+        </div>
+        <div style="font-size: 6.5pt; color: #64748b; margin-bottom: 6px;">
+            Вырежьте вертикальные полоски по пунктирным линиям и прикладывайте к бланку ответов ученика для мгновенной сверки за 3 секунды:
+        </div>
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 7.5pt; text-align: center;">
+            <thead>
+                <tr style="background: #e2e8f0; font-weight: bold;">
+                    @foreach($variants as $v)
+                    <th style="padding: 3px; border: 1px solid #94a3b8; border-right: 2px solid #475569;">
+                        ✂ ВАРИАНТ {{ $v['number'] }} ✂
+                    </th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    @foreach($variants as $v)
+                    <td style="vertical-align: top; padding: 0; border: 1px solid #94a3b8; border-right: 2px solid #475569;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 7pt;">
+                            <tr style="background: #f1f5f9; font-weight: bold;">
+                                <td style="width: 25%; padding: 2px; border-bottom: 1px solid #cbd5e1;">№</td>
+                                <td style="width: 50%; padding: 2px; border-bottom: 1px solid #cbd5e1;">Ключ</td>
+                                <td style="width: 25%; padding: 2px; border-bottom: 1px solid #cbd5e1;">Балл</td>
+                            </tr>
+                            @php
+                                $allTasks = array_merge($v['part_a'] ?? [], $v['part_b'] ?? []);
+                                $totalT = count($allTasks);
+                                $pts = $totalT > 0 ? max(1, (int)round(10 / $totalT)) : 2;
+                            @endphp
+                            @foreach($allTasks as $idx => $t)
+                            <tr style="background: {{ $idx % 2 === 0 ? '#fff' : '#f8fafc' }};">
+                                <td style="padding: 2px; border-bottom: 1px solid #e2e8f0; color: #64748b;">
+                                    {{ $t['number'] ?? ($idx + 1) }}
+                                </td>
+                                <td style="padding: 2px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">
+                                    {{ $t['correct'] ?? '—' }}
+                                </td>
+                                <td style="padding: 2px; border-bottom: 1px solid #e2e8f0; color: #047857;">
+                                    +{{ $pts }}
+                                </td>
+                            </tr>
+                            @endforeach
+                            <tr style="background: #f8fafc; font-weight: bold;">
+                                <td colspan="3" style="padding: 2px; border-top: 1px solid #cbd5e1; font-size: 6.5pt;">
+                                    Макс: {{ $totalT * $pts }} б.
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    @endforeach
+                </tr>
+            </tbody>
+        </table>
+        <div style="font-size: 7pt; text-align: center; color: #94a3b8; margin-top: 4px;">
+            ✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ✂
+        </div>
     </div>
 </div>
 @endif

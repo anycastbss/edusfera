@@ -66,11 +66,12 @@ class GeneratorCheckoutController extends Controller
             'count' => ['nullable', 'integer', 'min:5', 'max:30'],
             'count_a' => ['nullable', 'integer', 'min:1', 'max:10'],
             'count_b' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'plan_type' => ['nullable', 'string', 'in:single,quarter_pass'],
+            'plan_type' => ['nullable', 'string', 'in:single,quarter_pass,subscription'],
             'grade' => ['nullable', 'string', 'in:5,6,7,8,9,10,11,abiturient'],
-            'work_type' => ['nullable', 'string', 'in:independent,control,diagnostic,test,ct_ce,olympiad,exam'],
+            'work_type' => ['nullable', 'string', 'in:independent,control,diagnostic,test,express,ct_ce,olympiad,exam'],
             'difficulty' => ['nullable', 'string', 'in:base,advanced,olympiad'],
             'exam_format' => ['nullable', 'string', 'in:school,exam,ct_ce'],
+            'print_layout' => ['nullable', 'string', 'in:economy,micro,standard'],
             'test_bypass' => ['nullable'],
         ], [
             'email.required' => 'Укажите адрес электронной почты для получения материалов.',
@@ -91,11 +92,21 @@ class GeneratorCheckoutController extends Controller
         $difficulty = $validated['difficulty'] ?? 'base';
         $numGrade = is_numeric($grade) ? (int) $grade : 11;
         $examFormat = $validated['exam_format'] ?? (($numGrade < 10 && $workType !== 'ct_ce') ? 'school' : 'exam');
+        $printLayout = $validated['print_layout'] ?? ($examFormat === 'school' ? 'economy' : 'standard');
 
         $isQuarterPass = ($planType === 'quarter_pass');
-        $amountByn = $isQuarterPass ? 19.00 : 5.00;
+        $isSubscription = ($planType === 'subscription');
+        if ($isSubscription) {
+            $amountByn = 9.90;
+            $orderNumber = 'SUB-'.strtoupper(Str::random(8));
+        } elseif ($isQuarterPass) {
+            $amountByn = 19.00;
+            $orderNumber = 'PASS-'.strtoupper(Str::random(8));
+        } else {
+            $amountByn = 5.00;
+            $orderNumber = 'VAR-'.strtoupper(Str::random(8));
+        }
         $amountKopecks = (int) round($amountByn * 100);
-        $orderNumber = ($isQuarterPass ? 'PASS-' : 'VAR-').strtoupper(Str::random(8));
 
         // Create pending order
         $order = GeneratorOrder::create([
@@ -109,15 +120,14 @@ class GeneratorCheckoutController extends Controller
             'status' => 'pending',
             'payload' => [
                 'subject_id' => $rawSubject,
-                'plan_type' => $planType,
-                'is_quarter_pass' => $isQuarterPass,
-                'credits_total' => $isQuarterPass ? 10 : 1,
+                'plan_type' => 'single',
                 'count_a' => $countA,
                 'count_b' => $countB,
                 'grade' => $grade,
                 'work_type' => $workType,
                 'difficulty' => $difficulty,
                 'exam_format' => $examFormat,
+                'print_layout' => $printLayout,
                 'user_id' => auth()->id(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -181,9 +191,7 @@ class GeneratorCheckoutController extends Controller
 
         $redirectUrl = route('generator.checkout.hosted', ['order' => $order->order_number]);
 
-        $description = $isQuarterPass
-            ? sprintf('Edusfera Вариант (Абонемент 10 тем): %s [%s]', mb_substr($topic, 0, 30), $orderNumber)
-            : sprintf('Edusfera Вариант (%d вар.): %s [%s]', $variantCount, mb_substr($topic, 0, 40), $orderNumber);
+        $description = sprintf('Edusfera Вариант (%d вар.): %s [%s]', $variantCount, mb_substr($topic, 0, 40), $orderNumber);
 
         try {
             $paymentResult = $gateway->createPayment([
@@ -360,184 +368,6 @@ class GeneratorCheckoutController extends Controller
         return response()->download($pdfPath, $filename, [
             'Content-Type' => 'application/pdf',
         ]);
-    }
-
-    /**
-     * Generate cryptographically secure magic token for instant teacher cabinet access
-     */
-    public static function generateMagicToken(string $email): string
-    {
-        $secret = (string) (config('app.key') ?: 'edusfera_magic_teacher_key');
-
-        return substr(hash_hmac('sha256', 'teacher_cabinet_'.strtolower(trim($email)), $secret), 0, 32);
-    }
-
-    /**
-     * Build authenticated Magic Link URL for instant cabinet access
-     */
-    public static function makeMagicCabinetUrl(string $email): string
-    {
-        $email = strtolower(trim($email));
-
-        return route('generator.teacher', [
-            'email' => $email,
-            'token' => self::generateMagicToken($email),
-        ]);
-    }
-
-    /**
-     * Interactive Classroom Whiteboard / Projector Mode for answer matrix & lesson timer
-     */
-    public function board(Request $request, GeneratorOrder|string $order): View|RedirectResponse
-    {
-        if (is_string($order)) {
-            $order = GeneratorOrder::where('order_number', $order)
-                ->orWhere('id', is_numeric($order) ? (int) $order : 0)
-                ->firstOrFail();
-        }
-
-        if (empty($order->generated_content)) {
-            $gemini = app(GeminiService::class);
-            $this->generateContentAndPdf($order, $gemini);
-            $order->refresh();
-        }
-
-        $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
-        $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
-
-        return view('generator.board', array_merge([
-            'order' => $order,
-            'boardUrl' => route('generator.board', ['order' => $order->order_number]),
-            'shareUrl' => route('generator.share', ['order' => $order->order_number]),
-            'downloadUrl' => route('generator.download', ['order' => $order->order_number]),
-            'cabinetUrl' => self::makeMagicCabinetUrl($order->email),
-        ], $parsedData));
-    }
-
-    /**
-     * Public lightweight test card for sharing with teacher colleagues (no login required)
-     */
-    public function share(Request $request, GeneratorOrder|string $order): View
-    {
-        if (is_string($order)) {
-            $order = GeneratorOrder::where('order_number', $order)
-                ->orWhere('id', is_numeric($order) ? (int) $order : 0)
-                ->firstOrFail();
-        }
-
-        if (empty($order->generated_content)) {
-            $gemini = app(GeminiService::class);
-            $this->generateContentAndPdf($order, $gemini);
-            $order->refresh();
-        }
-
-        $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
-        $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
-
-        return view('generator.share', array_merge([
-            'order' => $order,
-            'boardUrl' => route('generator.board', ['order' => $order->order_number]),
-            'downloadUrl' => route('generator.download', ['order' => $order->order_number]),
-            'shareUrl' => route('generator.share', ['order' => $order->order_number]),
-            'cabinetUrl' => self::makeMagicCabinetUrl($order->email),
-        ], $parsedData));
-    }
-
-    /**
-     * Teacher Workspace / Personal Cabinet (History of Generations)
-     */
-    public function cabinet(Request $request): View
-    {
-        $user = auth()->user();
-        $email = null;
-
-        // Magic link authentication (Instant token check for 1-click zero-friction access)
-        if ($request->filled('email') && $request->filled('token')) {
-            $candidateEmail = strtolower(trim((string) $request->query('email')));
-            $candidateToken = (string) $request->query('token');
-            if (filter_var($candidateEmail, FILTER_VALIDATE_EMAIL)) {
-                $expectedToken = self::generateMagicToken($candidateEmail);
-                if (hash_equals($expectedToken, $candidateToken)) {
-                    $email = $candidateEmail;
-                    session(['generator_email' => $email]);
-                    Cookie::queue('generator_email', $email, 60 * 24 * 365);
-                }
-            }
-        }
-
-        if (! $email) {
-            if ($user && ! empty($user->email)) {
-                $email = strtolower(trim((string) $user->email));
-            } else {
-                $rawEmail = $request->query('email')
-                    ?: session('generator_email')
-                    ?: $request->cookie('generator_email');
-
-                if ($rawEmail && filter_var($rawEmail, FILTER_VALIDATE_EMAIL)) {
-                    $email = strtolower(trim((string) $rawEmail));
-                }
-            }
-        }
-
-        $orders = collect();
-        $magicLink = null;
-        if ($email) {
-            session(['generator_email' => $email]);
-            Cookie::queue('generator_email', $email, 60 * 24 * 365);
-            $magicLink = self::makeMagicCabinetUrl($email);
-
-            $orders = GeneratorOrder::query()
-                ->where(function ($q) use ($email, $user) {
-                    $q->whereRaw('LOWER(email) = ?', [$email]);
-                    if ($user) {
-                        $q->orWhere('payload->user_id', $user->id);
-                    }
-                })
-                ->whereIn('status', ['completed', 'paid', 'generating', 'pending'])
-                ->orderByDesc('created_at')
-                ->get();
-        }
-
-        $totalVariants = (int) $orders->sum('variant_count');
-        $totalOrders = $orders->count();
-        // Estimated teacher time saved: ~15 minutes per parallel variant
-        $savedMinutes = $totalVariants * 15;
-        $savedHours = round($savedMinutes / 60, 1);
-
-        $distinctSubjects = $orders->pluck('subject')->filter()->unique()->values();
-
-        return view('generator.cabinet', [
-            'email' => $email,
-            'orders' => $orders,
-            'user' => $user,
-            'totalVariants' => $totalVariants,
-            'totalOrders' => $totalOrders,
-            'savedHours' => $savedHours,
-            'distinctSubjects' => $distinctSubjects,
-            'magicLink' => $magicLink,
-            'isTeacherStudio' => $request->routeIs('generator.teacher', 'generator.uchitelskaya') || $request->has('teacher'),
-        ]);
-    }
-
-    /**
-     * Access / Switch email in personal cabinet
-     */
-    public function cabinetAccess(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
-        ]);
-
-        $email = strtolower(trim($validated['email']));
-        session(['generator_email' => $email]);
-        Cookie::queue('generator_email', $email, 60 * 24 * 365);
-
-        $targetRoute = $request->routeIs('generator.teacher', 'generator.uchitelskaya') ? 'generator.teacher' : 'generator.my';
-
-        return redirect()->route($targetRoute, [
-            'email' => $email,
-            'token' => self::generateMagicToken($email),
-        ])->with('status', "Материалы для {$email} успешно загружены.");
     }
 
     /**
@@ -926,17 +756,15 @@ class GeneratorCheckoutController extends Controller
     {
         try {
             $downloadUrl = route('generator.download', ['order' => $order->order_number]);
-            $boardUrl = route('generator.board', ['order' => $order->order_number]);
-            $magicCabinetUrl = self::makeMagicCabinetUrl($order->email);
-            $subject = "Ваш комплект заданий ({$order->subject}) — Заказ {$order->order_number}";
+            $subject = "Ваш комплект проверочной работы ({$order->subject}) — Заказ {$order->order_number}";
 
-            Mail::send([], [], function ($message) use ($order, $downloadUrl, $boardUrl, $magicCabinetUrl, $subject) {
+            Mail::send([], [], function ($message) use ($order, $downloadUrl, $subject) {
                 $message->to($order->email)
                     ->subject($subject)
                     ->html(
                         '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #111827; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">'.
                         '<div style="margin-bottom: 20px;">'.
-                        '<span style="background-color: #f3f4f6; color: #4f46e5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; border-radius: 6px;">Учительская Edusfera</span>'.
+                        '<span style="background-color: #f3f4f6; color: #4f46e5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; border-radius: 6px;">Edusfera.by</span>'.
                         '</div>'.
                         '<h2 style="color: #0f172a; margin-top: 8px; margin-bottom: 12px; font-size: 22px;">Комплект проверочной работы готов!</h2>'.
                         '<p style="font-size: 15px; line-height: 1.5; color: #475569;">Здравствуйте! Ваш заказ проверочной работы по стандартам 2026 года успешно сформирован.</p>'.
@@ -947,17 +775,11 @@ class GeneratorCheckoutController extends Controller
                         '<p style="margin: 4px 0; font-size: 14px;"><strong>Количество вариантов:</strong> '.$order->variant_count.' шт. + мастер-таблица ответов</p>'.
                         '</div>'.
                         '<div style="margin: 25px 0;">'.
-                        '<p style="margin: 0 0 14px 0;">'.
+                        '<p style="margin: 0;">'.
                         '<a href="'.$downloadUrl.'" style="display: inline-block; background-color: #C6FF33; color: #000000; font-weight: 800; text-decoration: none; padding: 14px 26px; border-radius: 12px; font-size: 15px;">Скачать PDF с вариантами</a>'.
                         '</p>'.
-                        '<p style="margin: 0 0 10px 0; font-size: 14px;">'.
-                        '<a href="'.$boardUrl.'" style="color: #2563eb; font-weight: 600; text-decoration: underline;">🖥️ Открыть матрицу ключей для проектора (Интерактивная доска) →</a>'.
-                        '</p>'.
-                        '<p style="margin: 0; font-size: 14px;">'.
-                        '<a href="'.$magicCabinetUrl.'" style="color: #4f46e5; font-weight: 600; text-decoration: underline;">📁 Архив моих материалов в Учительской (вход без пароля) →</a>'.
-                        '</p>'.
                         '</div>'.
-                        '<p style="font-size: 12px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px;">Образовательная платформа Edusfera.by • Учительская студия • Минск, Беларусь</p>'.
+                        '<p style="font-size: 12px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px;">Образовательная платформа Edusfera.by • Минск, Беларусь</p>'.
                         '</div>'
                     );
 
@@ -975,3 +797,4 @@ class GeneratorCheckoutController extends Controller
         }
     }
 }
+

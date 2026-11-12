@@ -138,7 +138,7 @@ export default function NexumHero() {
 
   const navItems = [
     { label: 'Каталог', href: '/tutors' },
-    { label: 'Генератор ЦТ', href: '/generator', badge: '5 BYN' },
+    { label: 'Генератор заданий', href: '/generator', badge: '5 BYN' },
     { label: 'ИИ-Диагностика', href: '/diagnostic' },
     { label: 'Новости', href: '/news' },
     { label: 'Репетиторам', href: '/for-tutors', isSpecial: true },
