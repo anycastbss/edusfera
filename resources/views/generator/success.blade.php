@@ -10,7 +10,7 @@
 </head>
 <body class="bg-[#000000] text-white min-h-screen flex items-center justify-center p-4 font-sans selection:bg-[#7D39EB] selection:text-white">
     @php
-        $isReady = ! empty($order->generated_content) && $order->status === 'completed';
+        $isReady = ! empty($order->generated_content);
     @endphp
 
     <div class="w-full max-w-lg bg-[#0E0E12] border border-white/15 rounded-3xl p-7 sm:p-10 shadow-2xl space-y-6 text-center relative overflow-hidden">
@@ -151,10 +151,9 @@
             const orderNumber = @js($order->order_number);
             const statusUrl = "/generator/status/" + orderNumber;
             const processUrl = "/generator/process/" + orderNumber;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             let progress = 25;
             let checkCount = 0;
-            let isProcessing = false;
+            let isDone = false;
 
             const progressBar = document.getElementById('progress-bar');
             const stageText = document.getElementById('loading-stage-text');
@@ -163,19 +162,39 @@
             const loadingCard = document.getElementById('loading-card');
             const readyCard = document.getElementById('ready-card');
 
-            // Trigger background processing if not already started
+            function markReady() {
+                if (isDone) return;
+                isDone = true;
+                if (timer) clearInterval(timer);
+                if (progressBar) progressBar.style.width = '100%';
+                setTimeout(() => {
+                    if (loadingCard) loadingCard.classList.add('hidden');
+                    if (readyCard) {
+                        readyCard.classList.remove('hidden');
+                        readyCard.classList.add('block');
+                    }
+                }, 300);
+            }
+
+            // Trigger background processing if not already started (GET request, safe from CSRF mismatch)
             fetch(processUrl, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'Accept': 'application/json'
                 }
-            }).catch(() => {});
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.is_ready) {
+                    markReady();
+                }
+            })
+            .catch(() => {});
 
             const timer = setInterval(async () => {
+                if (isDone) return;
                 checkCount++;
-                progress = Math.min(92, progress + 8);
+                progress = Math.min(94, progress + 6);
                 if (progressBar) progressBar.style.width = progress + '%';
 
                 if (checkCount === 3 && stageText) {
@@ -198,15 +217,7 @@
                     const data = await res.json();
 
                     if (data.is_ready) {
-                        clearInterval(timer);
-                        if (progressBar) progressBar.style.width = '100%';
-                        setTimeout(() => {
-                            if (loadingCard) loadingCard.classList.add('hidden');
-                            if (readyCard) {
-                                readyCard.classList.remove('hidden');
-                                readyCard.classList.add('block');
-                            }
-                        }, 400);
+                        markReady();
                     }
                 } catch (e) {
                     // Retrying quietly

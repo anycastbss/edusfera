@@ -904,13 +904,25 @@ try {
         }
 
         echo "🔄 Пересборка PDF для заказа {$orderNum} с новым алгоритмом формул...\n";
+        $order->update([
+            'status' => 'completed',
+            'paid_at' => $order->paid_at ?? now(),
+        ]);
+        $order->refresh();
+
         $controller = app(\App\Http\Controllers\GeneratorCheckoutController::class);
         $reflection = new ReflectionClass($controller);
         $method = $reflection->getMethod('ensurePdfExists');
         $method->setAccessible(true);
         $path = $method->invoke($controller, $order, true);
 
+        // Also fix any other orders that have generated_content or PDF but status is generating
+        \App\Models\GeneratorOrder::where('status', 'generating')
+            ->whereNotNull('generated_content')
+            ->update(['status' => 'completed']);
+
         $downloadUrl = route('generator.download', ['order' => $order->order_number]);
+        echo "✓ Статус заказа обновлен: completed\n";
         echo "✓ PDF пересобран: {$path} (".round(filesize($path) / 1024, 1)." КБ)\n\n";
         echo "👉 Скачать обновленный PDF: <a href='{$downloadUrl}' style='color:#C6FF33;'>{$downloadUrl}</a>\n";
         echo "</pre>";

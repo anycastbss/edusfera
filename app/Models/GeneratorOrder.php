@@ -37,7 +37,7 @@ class GeneratorOrder extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === 'paid' || $this->status === 'completed';
+        return in_array($this->status, ['paid', 'completed', 'generating'], true) || ! empty($this->paid_at);
     }
 
     public function amountByn(): float

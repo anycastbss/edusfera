@@ -337,6 +337,11 @@ class GeneratorCheckoutController extends Controller
      */
     public function status(GeneratorOrder $order): JsonResponse
     {
+        if (! empty($order->generated_content) && $order->status !== 'completed') {
+            $order->update(['status' => 'completed']);
+            $order->refresh();
+        }
+
         return response()->json([
             'order_number' => $order->order_number,
             'status' => $order->status,
@@ -356,6 +361,11 @@ class GeneratorCheckoutController extends Controller
             $order->refresh();
         }
 
+        if (! empty($order->generated_content) && $order->status !== 'completed') {
+            $order->update(['status' => 'completed']);
+            $order->refresh();
+        }
+
         return response()->json([
             'order_number' => $order->order_number,
             'status' => $order->status,
@@ -372,6 +382,11 @@ class GeneratorCheckoutController extends Controller
     {
         session(['generator_email' => $order->email]);
         Cookie::queue('generator_email', $order->email, 60 * 24 * 365);
+
+        if (! empty($order->generated_content) && $order->status !== 'completed') {
+            $order->update(['status' => 'completed']);
+            $order->refresh();
+        }
 
         return view('generator.success', [
             'order' => $order,
@@ -393,6 +408,11 @@ class GeneratorCheckoutController extends Controller
         if (empty($order->generated_content)) {
             $gemini = app(GeminiService::class);
             $this->generateContentAndPdf($order, $gemini);
+            $order->refresh();
+        }
+
+        if ($order->status !== 'completed') {
+            $order->update(['status' => 'completed']);
             $order->refresh();
         }
 
