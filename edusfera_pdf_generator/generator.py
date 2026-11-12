@@ -13,6 +13,7 @@ from xml.sax.saxutils import escape
 
 import qrcode
 import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
 from matplotlib.mathtext import math_to_image
 from matplotlib.font_manager import FontProperties
 from PIL import Image as PILImage
@@ -118,22 +119,30 @@ class NumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
-# --- 3. MATHEMATICAL FORMULAS RENDERER ---
+# --- 3. MATHEMATICAL FORMULAS RENDERER (WORD / STIX MATH STANDARDS) ---
 def _safe_formula_markup(text: str, asset_dir: Path) -> str:
-    """Safely convert $math$ spans into clean inline images and preserve unicode formulas."""
-    pieces = re.split(r"(\$[^$]+\$)", str(text))
+    """Safely convert $math$ and unicode formula spans into crisp inline images matching MS Word Cambria/STIX typography."""
+    raw = str(text)
+    # 1. Gracefully convert unicode expressions into standard LaTeX
+    normalized = re.sub(r'√\(([^)]+)\)', r'$\\sqrt{\1}$', raw)
+    normalized = re.sub(r'√([a-zA-Z0-9]+)', r'$\\sqrt{\1}$', normalized)
+
+    pieces = re.split(r"(\$[^$]+\$)", normalized)
     output: list[str] = []
     counter = 0
     for piece in pieces:
         if len(piece) >= 2 and piece.startswith("$") and piece.endswith("$"):
             expr = piece[1:-1].strip()
+            if not expr:
+                continue
             counter += 1
             file_path = asset_dir / f"math_{counter}_{uuid.uuid4().hex[:6]}.png"
             try:
-                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=10.5), dpi=180, format="png", color="black")
+                # Render using STIX font matching Word / Cambridge Math standards
+                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=10.5), dpi=220, format="png", color="black")
                 with PILImage.open(file_path) as im:
                     w_px, h_px = im.size
-                height = max(8.5, min(14.0, h_px * 0.28))
+                height = max(8.5, min(16.0, h_px * 0.25))
                 width = max(8.0, w_px * (height / h_px))
                 output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="baseline"/>')
             except Exception:

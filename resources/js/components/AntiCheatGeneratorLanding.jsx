@@ -53,6 +53,7 @@ import GuaranteeSection from './generator/GuaranteeSection';
 import TestimonialsSection from './generator/TestimonialsSection';
 import FaqSection from './generator/FaqSection';
 import LiquidGlassConfigurator from './generator/LiquidGlassConfigurator';
+import MathText from './generator/MathText';
 import Footer from './Footer';
 
 const SUBJECTS = [
@@ -1086,49 +1087,49 @@ const SAMPLE_PREVIEWS = {
         title: 'ПРОВЕРОЧНАЯ РАБОТА ПО МАТЕМАТИКЕ',
         v1: {
             variantNum: 1,
-            taskA1: 'Укажите больший корень квадратного уравнения x² - 5x + 6 = 0:',
+            taskA1: 'Укажите больший корень квадратного уравнения $x^2 - 5x + 6 = 0$:',
             options: ['1) 2', '2) 3', '3) -2', '4) -3'],
             correctIndex: 1,
-            taskB1: 'Решите уравнение 2x² - 7x + 3 = 0. В бланк ответов запишите произведение корней, умноженное на 2:',
+            taskB1: 'Решите уравнение $2x^2 - 7x + 3 = 0$. В бланк ответов запишите произведение корней, умноженное на 2:',
             answer: '3'
         },
         v2: {
             variantNum: 2,
-            taskA1: 'Укажите меньший корень квадратного уравнения x² - 7x + 10 = 0:',
+            taskA1: 'Укажите меньший корень квадратного уравнения $x^2 - 7x + 10 = 0$:',
             options: ['1) 5', '2) 2', '3) -2', '4) -5'],
             correctIndex: 1,
-            taskB1: 'Решите уравнение 2x² - 9x + 4 = 0. В бланк ответов запишите произведение корней, умноженное на 2:',
+            taskB1: 'Решите уравнение $2x^2 - 9x + 4 = 0$. В бланк ответов запишите произведение корней, умноженное на 2:',
             answer: '4'
         },
         keys: [
-            { varNum: 1, a1: '2 (3)', b1: '3', note: 'Корни 2 и 3, больший корень 3. В Б1 по теореме Виета x1*x2 = 3/2.' },
-            { varNum: 2, a1: '2 (2)', b1: '4', note: 'Корни 2 и 5, меньший корень 2. В Б1: 2 * (4/2) = 4.' },
-            { varNum: 3, a1: '1 (4)', b1: '6', note: 'Ловушка знака при расчете дискриминанта D = b² - 4ac.' },
-            { varNum: 4, a1: '4 (1)', b1: '2', note: 'Забывают разделить на 2a в формуле корней.' }
+            { varNum: 1, a1: '2 (3)', b1: '3', note: 'Корни $2$ и $3$, больший корень $3$. В Б1 по теореме Виета $x_1 \\cdot x_2 = 3/2$.' },
+            { varNum: 2, a1: '2 (2)', b1: '4', note: 'Корни $2$ и $5$, меньший корень $2$. В Б1: $2 \\cdot (4/2) = 4$.' },
+            { varNum: 3, a1: '1 (4)', b1: '6', note: 'Ловушка знака при расчете дискриминанта $D = b^2 - 4ac$.' },
+            { varNum: 4, a1: '4 (1)', b1: '2', note: 'Забывают разделить на $2a$ в формуле корней.' }
         ]
     },
     math: {
         title: 'ПРОВЕРОЧНАЯ РАБОТА ПО МАТЕМАТИКЕ',
         v1: {
             variantNum: 1,
-            taskA1: 'Укажите корень уравнения √(2x + 7) = x - 4:',
+            taskA1: 'Укажите корень уравнения $\\sqrt{2x + 7} = x - 4$:',
             options: ['1) 1', '2) 9', '3) 1 и 9', '4) -1'],
             correctIndex: 1,
-            taskB1: 'Решите уравнение √(x² - 5x + 6) · √(x - 1) = 0. В бланк ответов запишите произведение всех действительных корней уравнения:',
+            taskB1: 'Решите уравнение $\\sqrt{x^2 - 5x + 6} \\cdot \\sqrt{x - 1} = 0$. В бланк ответов запишите произведение всех действительных корней уравнения:',
             answer: '6'
         },
         v2: {
             variantNum: 2,
-            taskA1: 'Укажите корень уравнения √(3x + 4) = x - 2:',
+            taskA1: 'Укажите корень уравнения $\\sqrt{3x + 4} = x - 2$:',
             options: ['1) -1', '2) 7', '3) 0 и 7', '4) 2'],
             correctIndex: 1,
-            taskB1: 'Решите уравнение √(x² - 7x + 12) · √(x - 2) = 0. В бланк ответов запишите произведение всех действительных корней уравнения:',
+            taskB1: 'Решите уравнение $\\sqrt{x^2 - 7x + 12} \\cdot \\sqrt{x - 2} = 0$. В бланк ответов запишите произведение всех действительных корней уравнения:',
             answer: '24'
         },
         keys: [
-            { varNum: 1, a1: '2 (9)', b1: '6', note: 'Посторонний корень x=1 отсекается условием x - 4 ≥ 0. В Б1 корни 1, 2, 3.' },
-            { varNum: 2, a1: '2 (7)', b1: '24', note: 'Посторонний корень x=0 отсекается условием x - 2 ≥ 0. В Б1 корни 2, 3, 4.' },
-            { varNum: 3, a1: '4 (5)', b1: '10', note: 'Ловушка знака при возведении в квадрат (x-a)². Проверка ОДЗ подкоренного выражения.' },
+            { varNum: 1, a1: '2 (9)', b1: '6', note: 'Посторонний корень $x=1$ отсекается условием $x - 4 \\ge 0$. В Б1 корни $1, 2, 3$.' },
+            { varNum: 2, a1: '2 (7)', b1: '24', note: 'Посторонний корень $x=0$ отсекается условием $x - 2 \\ge 0$. В Б1 корни $2, 3, 4$.' },
+            { varNum: 3, a1: '4 (5)', b1: '10', note: 'Ловушка знака при возведении в квадрат $(x-a)^2$. Проверка ОДЗ подкоренного выражения.' },
             { varNum: 4, a1: '1 (8)', b1: '15', note: 'Ложное сокращение на корень без фиксации равенства нулю.' }
         ]
     },
@@ -2286,12 +2287,12 @@ export default function AntiCheatGeneratorLanding() {
                                                 <span className="text-slate-500 font-normal">1 балл</span>
                                             </div>
                                             <div className="text-xs text-slate-900 leading-snug font-medium">
-                                                {currentSample.v1.taskA1}
+                                                <MathText text={currentSample.v1.taskA1} />
                                             </div>
                                             <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-700 pt-1">
                                                 {currentSample.v1.options.map((opt, i) => (
                                                     <span key={i} className={`p-1.5 rounded ${i === currentSample.v1.correctIndex ? 'bg-white text-slate-900 font-bold border border-slate-300 shadow-2xs' : 'bg-transparent'}`}>
-                                                        {opt}
+                                                        <MathText text={opt} />
                                                     </span>
                                                 ))}
                                             </div>
@@ -2303,7 +2304,7 @@ export default function AntiCheatGeneratorLanding() {
                                                 <span className="text-slate-500 font-normal">2 балла</span>
                                             </div>
                                             <div className="text-xs text-slate-900 leading-snug font-medium">
-                                                {currentSample.v1.taskB1}
+                                                <MathText text={currentSample.v1.taskB1} />
                                             </div>
                                             <div className="text-xs text-slate-500 pt-1 font-mono">
                                                 Ответ ученика: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]
@@ -2321,12 +2322,12 @@ export default function AntiCheatGeneratorLanding() {
                                                 <span className="text-slate-500 font-normal">1 балл</span>
                                             </div>
                                             <div className="text-xs text-slate-900 leading-snug font-medium">
-                                                {currentSample.v2.taskA1}
+                                                <MathText text={currentSample.v2.taskA1} />
                                             </div>
                                             <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-700 pt-1">
                                                 {currentSample.v2.options.map((opt, i) => (
                                                     <span key={i} className={`p-1.5 rounded ${i === currentSample.v2.correctIndex ? 'bg-white text-slate-900 font-bold border border-slate-300 shadow-2xs' : 'bg-transparent'}`}>
-                                                        {opt}
+                                                        <MathText text={opt} />
                                                     </span>
                                                 ))}
                                             </div>
@@ -2338,7 +2339,7 @@ export default function AntiCheatGeneratorLanding() {
                                                 <span className="text-slate-500 font-normal">2 балла</span>
                                             </div>
                                             <div className="text-xs text-slate-900 leading-snug font-medium">
-                                                {currentSample.v2.taskB1}
+                                                <MathText text={currentSample.v2.taskB1} />
                                             </div>
                                             <div className="text-xs text-slate-500 pt-1 font-mono">
                                                 Ответ ученика: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]
@@ -2364,9 +2365,9 @@ export default function AntiCheatGeneratorLanding() {
                                             {currentSample.keys.map((k, i) => (
                                                 <div key={i} className="grid grid-cols-12 p-2 border-b border-slate-100 text-slate-600 items-center last:border-none">
                                                     <div className="col-span-2 text-center font-bold text-slate-900">№ {k.varNum}</div>
-                                                    <div className="col-span-3 text-center text-emerald-600 font-bold">{k.a1}</div>
-                                                    <div className="col-span-3 text-center font-bold text-slate-900">{k.b1}</div>
-                                                    <div className="col-span-4 text-[10px] text-slate-500 truncate" title={k.note}>{k.note}</div>
+                                                    <div className="col-span-3 text-center text-emerald-600 font-bold"><MathText text={k.a1} /></div>
+                                                    <div className="col-span-3 text-center font-bold text-slate-900"><MathText text={k.b1} /></div>
+                                                    <div className="col-span-4 text-[10px] text-slate-500 truncate" title={k.note}><MathText text={k.note} /></div>
                                                 </div>
                                             ))}
                                         </div>
@@ -2647,12 +2648,12 @@ export default function AntiCheatGeneratorLanding() {
                                         Задание А1 (с выбором ответа • 1 балл):
                                     </div>
                                     <p className="text-slate-800 font-medium">
-                                        {currentSample.v1.taskA1}
+                                        <MathText text={currentSample.v1.taskA1} />
                                     </p>
                                     <div className="grid grid-cols-2 gap-1.5 pt-1 text-slate-700">
                                         {currentSample.v1.options.map((opt, i) => (
                                             <span key={i} className={`p-1.5 rounded ${i === currentSample.v1.correctIndex ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-300' : 'bg-slate-50'}`}>
-                                                {opt}
+                                                <MathText text={opt} />
                                             </span>
                                         ))}
                                     </div>
@@ -2663,7 +2664,7 @@ export default function AntiCheatGeneratorLanding() {
                                         Задание Б1 (краткий числовой ответ • 2 балла):
                                     </div>
                                     <p className="text-slate-800 font-medium">
-                                        {currentSample.v1.taskB1}
+                                        <MathText text={currentSample.v1.taskB1} />
                                     </p>
                                     <div className="font-mono text-slate-500 pt-1">
                                         Ответ учащегося: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]
