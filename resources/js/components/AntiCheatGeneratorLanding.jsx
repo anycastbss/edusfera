@@ -1628,6 +1628,9 @@ export default function AntiCheatGeneratorLanding() {
                 const firstError = Object.values(data.errors)[0];
                 setErrorMessage(Array.isArray(firstError) ? firstError[0] : String(firstError));
                 setIsSubmitting(false);
+            } else if (data.message) {
+                setErrorMessage(data.message);
+                setIsSubmitting(false);
             } else {
                 setErrorMessage('Не удалось связаться с платёжным шлюзом. Пожалуйста, повторите попытку.');
                 setIsSubmitting(false);
