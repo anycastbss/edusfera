@@ -399,7 +399,8 @@ class GeminiService
         $modelsToTry = array_values(array_unique(array_filter([
             $primaryModel,
             $this->liteModel,
-            'gemini-3.5-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
             'gemini-flash-latest',
         ])));
 
@@ -472,18 +473,20 @@ class GeminiService
         $modelsToTry = array_values(array_unique(array_filter([
             $model,
             $this->liteModel,
-            'gemini-3.5-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
             'gemini-flash-latest',
         ])));
 
         foreach ($modelsToTry as $currentModel) {
             try {
                 $url = "{$this->baseUrl}/models/{$currentModel}:generateContent";
+                $perModelTimeout = min(15, $timeoutSeconds);
                 $request = Http::withHeaders([
                     'Content-Type' => 'application/json',
                     'X-goog-api-key' => $this->apiKey,
                 ])
-                    ->timeout($timeoutSeconds);
+                    ->timeout($perModelTimeout);
 
                 $request = $this->applyHttpOptions($request);
 

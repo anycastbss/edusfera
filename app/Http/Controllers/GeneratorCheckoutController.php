@@ -691,15 +691,23 @@ class GeneratorCheckoutController extends Controller
     protected function buildFallbackContent(GeneratorOrder $order, int $count): string
     {
         $subjectType = $this->getSubjectType($order->subject);
-        $countA = (int) ($order->payload['count_a'] ?? 4);
-        $countB = (int) ($order->payload['count_b'] ?? 2);
+        $payload = is_array($order->payload) ? $order->payload : [];
+        $countA = (int) ($payload['count_a'] ?? 3);
+        $countB = (int) ($payload['count_b'] ?? 2);
+        $grade = (string) ($payload['grade'] ?? '7');
+        $numGrade = is_numeric($grade) ? (int) $grade : 7;
+        $isSchool = ($numGrade < 10 && ($payload['work_type'] ?? '') !== 'ct_ce');
+        $topic = mb_strtolower(trim((string) $order->topic));
 
         $out = "# Комплект проверочных вариантов ЦТ/ЦЭ 2026\n\n";
         $out .= "**Предмет:** {$order->subject}  \n";
         $out .= "**Тема:** {$order->topic}  \n\n";
 
+        $masterKeys = [];
+
         for ($i = 1; $i <= $count; $i++) {
             $out .= "### Вариант {$i}\n\n";
+            $varKeys = [];
 
             if ($subjectType === 'humanities') {
                 $qBank = [
@@ -713,7 +721,8 @@ class GeneratorCheckoutController extends Controller
                 for ($a = 1; $a <= $countA; $a++) {
                     $qIdx = ($a - 1 + $i - 1) % count($qBank);
                     $q = $qBank[$qIdx];
-                    $out .= "**Задание А{$a} (Часть А, с выбором ответа):**  \n";
+                    $prefix = $isSchool ? "Задание {$a}:" : "Задание А{$a} (Часть А, с выбором ответа):";
+                    $out .= "**{$prefix}**  \n";
                     $out .= "{$q[0]}  \n";
                     foreach ($q[1] as $optIdx => $optText) {
                         $num = $optIdx + 1;
@@ -721,13 +730,16 @@ class GeneratorCheckoutController extends Controller
                     }
                     $out .= "Ответ: {$q[2]}  \n";
                     $out .= "Пояснение: {$q[3]}  \n\n";
+                    $varKeys["A{$a}"] = $q[2];
                 }
 
                 $bAnswers = ['А2Б1В4Г3', 'Статут ВКЛ', 'А1Б3В2Г4', 'фольварк', '1569', 'Сапега'];
                 for ($b = 1; $b <= $countB; $b++) {
+                    $taskNum = $isSchool ? ($countA + $b) : $b;
                     if ($b % 2 === 1) {
                         $ansCode = $bAnswers[($i + $b) % count($bAnswers)];
-                        $out .= "**Задание Б{$b} (Часть Б, установление соответствия):**  \n";
+                        $prefix = $isSchool ? "Задание {$taskNum}:" : "Задание Б{$b} (Часть Б, установление соответствия):";
+                        $out .= "**{$prefix}**  \n";
                         $out .= "Установите соответствие между историческими деятелями и их деятельностью:  \n";
                         $out .= "А) Франциск Скорина  1) Подготовка и издание Статута 1588 г.  \n";
                         $out .= "Б) Лев Сапега        2) Первопечатник, издание Библии 1517 г.  \n";
@@ -735,69 +747,133 @@ class GeneratorCheckoutController extends Controller
                         $out .= "Г) Николай Радзивилл Черный 4) Лидер Реформации, основатель Брестской типографии  \n";
                         $out .= "Ответ: {$ansCode}  \n";
                         $out .= "Пояснение: Каждый деятель сопоставлен с его главным историческим вкладом.  \n\n";
+                        $varKeys["B{$b}"] = $ansCode;
                     } else {
                         $term = ($i % 2 === 1) ? 'Статут ВКЛ' : 'фольварк';
-                        $out .= "**Задание Б{$b} (Часть Б, исторический термин):**  \n";
+                        $prefix = $isSchool ? "Задание {$taskNum}:" : "Задание Б{$b} (Часть Б, исторический термин):";
+                        $out .= "**{$prefix}**  \n";
                         $out .= "Запишите название исторического понятия/термина в именительном падеже:  \n";
                         $out .= "Ответ: {$term}  \n";
                         $out .= "Пояснение: Определение термина по стандартам экзаменационной программы Беларуси.  \n\n";
+                        $varKeys["B{$b}"] = $term;
                     }
                 }
                 $out .= "---\n\n";
             } else {
+                // Exact science / Math / Equations
+                $isEq = str_contains($topic, 'уравнен') || str_contains($topic, 'линейн') || str_contains($topic, 'алгебр');
+
                 for ($a = 1; $a <= $countA; $a++) {
-                    $numA = 2 * $i + $a;
-                    $opts = [$numA, $numA + 4, $numA - 2, $numA * 2];
-                    $correctLetter = ['A', 'B', 'C', 'D'][($a + $i) % 4];
-                    $out .= "**Задание А{$a}:** Выберите верное значение выражения при k = {$i}:\n";
+                    $prefix = $isSchool ? "Задание {$a}:" : "Задание А{$a}:";
+
+                    if ($isEq) {
+                        if ($a === 1) {
+                            $root = (($i * 2 + 1) % 7) + 2; // 2..8
+                            $k = (($i + 1) % 3) + 2; // 2, 3, 4
+                            $bVal = (($i * 3 + 2) % 9) + 1; // 1..9
+                            $cVal = $k * $root + $bVal;
+                            $cond = "Решите линейное уравнение: {$k}x + {$bVal} = {$cVal}";
+                        } elseif ($a === 2) {
+                            $root = (($i * 3 + 4) % 8) + 1; // 1..8
+                            $m = (($i + 2) % 3) + 2; // 2..4
+                            $p = ($i % 5) + 2; // 2..6
+                            $rhs = $m * ($root - $p);
+                            $cond = "Найдите корень уравнения: {$m}(x - {$p}) = {$rhs}";
+                        } else {
+                            $root = (($i * 4 + 3) % 9) + 2; // 2..10
+                            $coeff1 = 5; $coeff2 = 2;
+                            $p1 = ($i % 4) + 1;
+                            $p2 = ($coeff1 - $coeff2) * $root - $p1;
+                            $cond = "При каком значении переменной x значение выражения 5x - {$p1} равно значению выражения 2x + {$p2}?";
+                        }
+                        $correctVal = $root;
+                    } else {
+                        $root = (($i * 2 + $a) % 8) + 2;
+                        $k = ($i % 3) + 2;
+                        $c = ($a * 3) + 1;
+                        $correctVal = $k * $root - $c;
+                        $cond = "Вычислите значение выражения {$k}x - {$c} при x = {$root}:";
+                    }
+
+                    $letters = ['A', 'B', 'C', 'D'];
+                    $corrIdx = ($a + $i) % 4;
+                    $opts = [];
+                    $offsets = [-3, 2, -1, 4];
+                    for ($o = 0; $o < 4; $o++) {
+                        if ($o === $corrIdx) {
+                            $opts[$o] = (string) $correctVal;
+                        } else {
+                            $opts[$o] = (string) ($correctVal + $offsets[$o]);
+                        }
+                    }
+                    $correctLetter = $letters[$corrIdx];
+
+                    $out .= "**{$prefix}** {$cond}\n";
                     foreach ($opts as $optIdx => $optVal) {
                         $num = $optIdx + 1;
                         $out .= "{$num}) {$optVal}\n";
                     }
                     $out .= "Ответ: {$correctLetter}\n";
-                    $out .= "Пояснение: Расчет по стандартным алгебраическим формулам.\n\n";
+                    $out .= "Пояснение: Выполняем тождественные преобразования и получаем корень x = {$correctVal}.\n\n";
+                    $varKeys["A{$a}"] = $correctLetter;
                 }
 
                 for ($b = 1; $b <= $countB; $b++) {
-                    $numB = $i * 5 + $b;
-                    $out .= "**Задание Б{$b}:** Найдите числовое значение выражения при x = {$numB} и запишите целое число:\n";
-                    $out .= "Ответ: {$numB}\n";
-                    $out .= "Пояснение: Решение уравнения с проверкой ограничений ОДЗ.\n\n";
+                    $taskNum = $isSchool ? ($countA + $b) : $b;
+                    $prefix = $isSchool ? "Задание {$taskNum}:" : "Задание Б{$b}:";
+
+                    if ($isEq) {
+                        if ($b === 1) {
+                            $root = (($i * 3 + 5) % 11) + 3; // 3..13
+                            $u = ($i % 3) + 1;
+                            $rhs = 4 * ($root - $u) - 2 * $root;
+                            $cond = "Решите уравнение: 4(x - {$u}) - 2x = {$rhs}. Запишите полученный корень в виде целого числа:";
+                        } else {
+                            $root = (($i * 4 + 7) % 13) + 4; // 4..16
+                            $denom = 3;
+                            $sub = ($root % 3);
+                            $rhs = (int) (($root - $sub) / $denom);
+                            $cond = "Найдите корень уравнения с дробным коэффициентом: (x - {$sub}) / 3 = {$rhs}. В ответ запишите целое число:";
+                        }
+                        $ansNum = $root;
+                    } else {
+                        $ansNum = $i * 5 + $b * 3;
+                        $cond = "Найдите числовое значение выражения при x = {$i}: (x + {$b}) · 5 - {$b} и запишите целое число:";
+                    }
+
+                    $out .= "**{$prefix}** {$cond}\n";
+                    $out .= "Ответ: {$ansNum}\n";
+                    $out .= "Пояснение: После раскрытия скобок и приведения подобных слагаемых получаем x = {$ansNum}.\n\n";
+                    $varKeys["B{$b}"] = (string) $ansNum;
                 }
                 $out .= "---\n\n";
             }
+            $masterKeys[$i] = $varKeys;
         }
 
         $out .= "## Сводная мастер-таблица правильных ответов для преподавателя\n\n";
         $headerParts = ["Вариант"];
-        for ($a = 1; $a <= $countA; $a++) $headerParts[] = "А{$a}";
-        for ($b = 1; $b <= $countB; $b++) $headerParts[] = "Б{$b}";
-        $headerParts[] = "Экзаменационная ловушка (пояснение для учителя)";
+        for ($a = 1; $a <= $countA; $a++) $headerParts[] = $isSchool ? "№{$a}" : "А{$a}";
+        for ($b = 1; $b <= $countB; $b++) {
+            $taskNum = $isSchool ? ($countA + $b) : $b;
+            $headerParts[] = $isSchool ? "№{$taskNum}" : "Б{$b}";
+        }
+        $headerParts[] = "Методический фокус и типичные ошибки";
 
         $out .= "| " . implode(' | ', $headerParts) . " |\n";
         $out .= "| " . implode(' | ', array_map(fn($h) => ':---:', array_slice($headerParts, 0, -1))) . " | :--- |\n";
 
         for ($i = 1; $i <= $count; $i++) {
             $rowParts = [(string)$i];
-            if ($subjectType === 'humanities') {
-                $ansLetters = ['B', 'B', 'C', 'B', 'C'];
-                for ($a = 1; $a <= $countA; $a++) {
-                    $rowParts[] = $ansLetters[($a - 1 + $i - 1) % count($ansLetters)];
-                }
-                $bAnsList = ['А2Б1В4Г3', 'Статут ВКЛ', 'А1Б3В2Г4', 'фольварк', '1569', 'Сапега'];
-                for ($b = 1; $b <= $countB; $b++) {
-                    $rowParts[] = ($b % 2 === 1) ? $bAnsList[($i + $b) % count($bAnsList)] : (($i % 2 === 1) ? 'Статут ВКЛ' : 'фольварк');
-                }
-                $rowParts[] = "Контроль дат уний, статутов и сословных институтов ВКЛ";
-            } else {
-                for ($a = 1; $a <= $countA; $a++) {
-                    $rowParts[] = ['A', 'B', 'C', 'D'][($a + $i) % 4];
-                }
-                for ($b = 1; $b <= $countB; $b++) {
-                    $rowParts[] = (string)($i * 5 + $b);
-                }
-                $rowParts[] = "Внимание к знакам коэффициентов и ОДЗ";
+            for ($a = 1; $a <= $countA; $a++) {
+                $rowParts[] = $masterKeys[$i]["A{$a}"] ?? 'A';
             }
+            for ($b = 1; $b <= $countB; $b++) {
+                $rowParts[] = $masterKeys[$i]["B{$b}"] ?? '0';
+            }
+            $rowParts[] = ($subjectType === 'humanities')
+                ? "Контроль хронологии и терминов ВКЛ"
+                : "Внимание к знакам при переносе слагаемых и раскрытии скобок";
             $out .= "| " . implode(' | ', $rowParts) . " |\n";
         }
 

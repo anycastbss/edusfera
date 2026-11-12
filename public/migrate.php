@@ -948,6 +948,20 @@ try {
 
         $controller = app(\App\Http\Controllers\GeneratorCheckoutController::class);
         $reflection = new ReflectionClass($controller);
+
+        $forceRebuildContent = isset($_GET['regenerate_content']) || str_contains((string) $order->generated_content, 'при k =');
+        if ($forceRebuildContent) {
+            echo "🔄 Перегенерация текстового контента заданий с реальными формулами...\n";
+            $methodContent = $reflection->getMethod('buildFallbackContent');
+            $methodContent->setAccessible(true);
+            $newContent = $methodContent->invoke($controller, $order, (int) ($order->variant_count ?: 5));
+            $order->update([
+                'generated_content' => \App\Http\Controllers\GeneratorCheckoutController::cleanMathFormulasForPrint($newContent),
+            ]);
+            $order->refresh();
+            echo "✓ Текстовый контент обновлен с реальными математическими уравнениями!\n";
+        }
+
         $method = $reflection->getMethod('ensurePdfExists');
         $method->setAccessible(true);
         $path = $method->invoke($controller, $order, true);

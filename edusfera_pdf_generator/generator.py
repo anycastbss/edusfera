@@ -167,11 +167,11 @@ def _is_exact_science(subject: str) -> bool:
 
 class EdusferaLogoFlowable(Flowable):
     """Draws the official black diamond EDUSFERA logo."""
-    def __init__(self, size: float = 30, brand_sub: str = "Учебно-методический комплекс"):
+    def __init__(self, size: float = 30, brand_sub: str | None = "Учебно-методический комплекс"):
         super().__init__()
         self.size = size
         self.brand_sub = brand_sub
-        self.width = size + 115
+        self.width = size + (115 if brand_sub else 68)
         self.height = size
 
     def wrap(self, availWidth, availHeight):
@@ -201,11 +201,13 @@ class EdusferaLogoFlowable(Flowable):
         c.line(cx - d2, cy, cx, cy + d2)
         # Logotype
         c.setFillColor(colors.black)
-        c.setFont("EDU-Bold", 16 if s >= 28 else 12)
-        c.drawString(s + 8, s * 0.44, "EDUSFERA")
-        c.setFont("EDU", 7.0 if s >= 28 else 5.8)
-        c.setFillColor(colors.HexColor("#475569"))
-        c.drawString(s + 8.5, s * 0.12, self.brand_sub)
+        c.setFont("EDU-Bold", 16 if s >= 28 else 11)
+        y_text = s * 0.44 if self.brand_sub else s * 0.28
+        c.drawString(s + 6, y_text, "EDUSFERA")
+        if self.brand_sub:
+            c.setFont("EDU", 7.0 if s >= 28 else 5.8)
+            c.setFillColor(colors.HexColor("#475569"))
+            c.drawString(s + 6.5, s * 0.12, self.brand_sub)
         c.restoreState()
 
 
@@ -1180,7 +1182,7 @@ def build_economy_variant(
     is_exact = _is_exact_science(subject)
 
     # 1. Compact Header
-    logo_flow = EdusferaLogoFlowable(size=20, brand_sub="Учебно-методический комплекс")
+    logo_flow = EdusferaLogoFlowable(size=18, brand_sub=None)
     
     topic_clean = subtitle.replace("Проверочная работа:", "").strip()
     if topic_clean.lower().startswith(subject.lower()):
@@ -1190,10 +1192,10 @@ def build_economy_variant(
     grade_disp = f" ({grade_label})" if grade_label else ""
     
     header_left = Paragraph(
-        f"<font name='EDU-Bold' size=10 color='#000000'><b>{escape(subject)}</b></font> &nbsp;•&nbsp; "
-        f"<font name='EDU' size=8.5 color='#475569'>{escape(work_disp)}{escape(grade_disp)}</font><br/>"
-        f"<font name='EDU' size=7.5 color='#64748b'>Тема: {escape(topic_clean)}</font>",
-        ParagraphStyle("econ_hl", leading=10.5)
+        f"<font name='EDU-Bold' size=9.5 color='#000000'><b>{escape(subject)}</b></font> &nbsp;•&nbsp; "
+        f"<font name='EDU' size=8 color='#475569'>{escape(work_disp)}{escape(grade_disp)}</font><br/>"
+        f"<font name='EDU-Bold' size=7.5 color='#334155'>Тема: </font><font name='EDU' size=7.5 color='#475569'>{escape(topic_clean)}</font>",
+        ParagraphStyle("econ_hl", leading=10)
     )
     
     badge_p = Paragraph(f"<b>{escape(var_title)}</b>", ParagraphStyle("econ_bdg", fontName="EDU-Bold", fontSize=9, alignment=1, textColor=colors.black))
@@ -1211,7 +1213,7 @@ def build_economy_variant(
     
     header_table = Table([
         [logo_flow, header_left, badge_t]
-    ], colWidths=[105, width - 185, 80])
+    ], colWidths=[80, width - 160, 80])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (2,0), (2,0), 'RIGHT'),
