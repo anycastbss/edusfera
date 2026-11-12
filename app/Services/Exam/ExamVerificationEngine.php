@@ -37,6 +37,14 @@ class ExamVerificationEngine
         $variants = $parsed['variants'] ?? [];
         $masterTable = $parsed['masterTable'] ?? [];
 
+        if (! empty($parsed['validationErrors'])) {
+            Log::warning('ExamVerificationEngine: source test rejected before verification', [
+                'order' => $order->order_number ?? null,
+                'errors' => $parsed['validationErrors'],
+            ]);
+            return $content;
+        }
+
         if (empty($variants)) {
             return $content;
         }
@@ -78,33 +86,15 @@ class ExamVerificationEngine
             foreach ($variant['part_b'] as $tIdx => &$task) {
                 $rawAns = trim((string) ($task['correct'] ?? ''));
 
-                // 2.3 Гуманитарные предметы: запрет на подсчет лет и «целое число»
-                if ($isHumanities) {
-                    $promptB = (string) ($task['condition_html'] ?? '');
-                    if (preg_match('/(?:сколько лет|посчитайте|вычислите разницу|целое число)/ui', $promptB)) {
-                        $task['condition_html'] = "Установите соответствие между историческими событиями/памятниками и эпохами/деятелями. Ответ запишите в виде кода (например, А1Б2В3Г4).";
-                        $rawAns = 'А2Б1В4Г3';
-                    }
-
-                    if (empty($rawAns) || mb_strtolower($rawAns) === 'целое число' || is_numeric($rawAns) || mb_strtolower($rawAns) === '—' || str_contains($rawAns, '____')) {
-                        $humanitiesPool = [
-                            'А2Б1В4Г3', 'Статут ВКЛ', 'А1Б3В2Г4', 'фольварк', '1569',
-                            'Магдебургское право', 'Сапега', 'Люблинская уния', 'А3Б1В4Г2', 'Франциск Скорина'
-                        ];
-                        $task['correct'] = $humanitiesPool[($tIdx + $varNum) % count($humanitiesPool)];
-                        $task['explanation'] = "Верный ответ: {$task['correct']}. Записывается в бланк точно по образцу без пробелов.";
-                        $hasCorrections = true;
-                    }
-                }
-
-                // 2.4 Точные науки: открытый ответ обязан быть красивым целым числом
-                if ($isExact) {
-                    if (empty($rawAns) || mb_strtolower($rawAns) === 'целое число' || mb_strtolower($rawAns) === '—' || str_contains($rawAns, '____')) {
-                        $mathPool = ['14', '-3', '25', '6', '12', '-1', '8', '30'];
-                        $task['correct'] = $mathPool[($tIdx + $varNum) % count($mathPool)];
-                        $task['explanation'] = "Точный расчет дает корень {$task['correct']}.";
-                        $hasCorrections = true;
-                    }
+                // Do not fabricate open answers or replace the task statement.
+                // Missing / generic answers are reported by ExamDocumentParser and
+                // block PDF export; inventing a plausible-looking key is unsafe.
+                if (empty($rawAns) || in_array(mb_strtolower($rawAns), ['целое число', '—', 'ответ'], true)
+                    || str_contains($rawAns, '____')) {
+                    Log::warning('ExamVerificationEngine: open task has no verified answer', [
+                        'variant' => $varNum,
+                        'task' => $task['num'] ?? ($tIdx + 1),
+                    ]);
                 }
             }
             unset($task);

@@ -370,7 +370,7 @@ class ExamDocumentParser
         // Programmatic Verification & Sanitization Gate:
         // Cleanse explanations of internal drafting monologue, ensure option consistency,
         // and cross-synchronize master table with verified variants.
-        self::sanitizeAndVerifyVariants($variants, $masterTable, $order);
+        $validationErrors = self::sanitizeAndVerifyVariants($variants, $masterTable, $order);
 
         // Calculate metadata
         $firstVar = $variants[0] ?? ['part_a' => [], 'part_b' => []];
@@ -429,6 +429,7 @@ class ExamDocumentParser
         return [
             'variants' => $variants,
             'masterTable' => $masterTable,
+            'validationErrors' => $validationErrors,
             'qrCodeBase64' => $qrPngB64,
             'qrCodePngBase64' => $qrPngB64,
             'testTitle' => $testTitle,
@@ -498,296 +499,145 @@ class ExamDocumentParser
      * Programmatic verification gate: cleanses AI reasoning artifacts, validates option consistency,
      * and strictly synchronizes master table with variants.
      */
-    public static function sanitizeAndVerifyVariants(array &$variants, array &$masterTable, GeneratorOrder $order): void
+    public static function sanitizeAndVerifyVariants(array &$variants, array &$masterTable, GeneratorOrder $order): array
     {
-        $subject = mb_strtolower($order->subject ?? '');
-        $isHumanities = str_contains($subject, 'истор') || str_contains($subject, 'обществ');
-
+        // IMPORTANT: this method must never invent tasks, distractors or answer keys.
+        // It only normalizes labels and reports defects. Invalid content is blocked
+        // before PDF export instead of being silently "repaired" with random values.
+        $errors = [];
         $payload = is_array($order->payload) ? $order->payload : [];
+        $subject = mb_strtolower((string) ($order->subject ?? ''));
+        $isExact = str_contains($subject, 'математ') || str_contains($subject, 'алгебр')
+            || str_contains($subject, 'геометр') || str_contains($subject, 'физик')
+            || str_contains($subject, 'хим');
+
         $targetCountA = (int) ($payload['count_a'] ?? 0);
         $targetCountB = (int) ($payload['count_b'] ?? 0);
         $workType = (string) ($payload['work_type'] ?? 'independent');
         $grade = (string) ($payload['grade'] ?? '7');
-        $numGrade = is_numeric($grade) ? (int)$grade : 11;
+        $numGrade = is_numeric($grade) ? (int) $grade : 11;
         $rawFormat = (string) ($payload['exam_format'] ?? '');
         $isSchool = ($rawFormat === 'school') || ($rawFormat === '' && $numGrade < 10 && $workType !== 'ct_ce');
 
-        // Derive target task count if not explicitly set
-        if ($targetCountA <= 0 && $targetCountB <= 0) {
-            [$targetCountA, $targetCountB] = match ($workType) {
-                'express' => [2, 1],
-                'independent' => [3, 2],
-                'control' => [5, 5],
-                'diagnostic' => [4, 2],
-                'test' => [4, 1],
-                'ct_ce', 'exam' => [10, 5],
-                'olympiad' => [5, 5],
-                default => [3, 2],
-            };
+        if (empty($variants)) {
+            return ['Документ не содержит ни одного варианта.'];
         }
-        if ($targetCountA <= 0) {
-            $targetCountA = ! empty($variants[0]['part_a']) ? count($variants[0]['part_a']) : 3;
-        }
-
-        // ════════════════════════════════════════════════════════════════
-        // 0. IRONCLAD VARIANT SYMMETRY ENFORCEMENT
-        // Every single variant MUST contain exactly $targetCountA in Part A
-        // and $targetCountB in Part B. No variant may have an extra or missing task!
-        // ════════════════════════════════════════════════════════════════
-        foreach ($variants as $vIdx => &$variant) {
-            $varNum = $variant['number'] ?? ($vIdx + 1);
-
-            // Symmetrize Part A
-            $currA = count($variant['part_a'] ?? []);
-            if ($currA > $targetCountA) {
-                $variant['part_a'] = array_slice($variant['part_a'], 0, $targetCountA);
-            } elseif ($currA < $targetCountA) {
-                for ($m = $currA; $m < $targetCountA; $m++) {
-                    $donor = $variants[0]['part_a'][$m] ?? ($variant['part_a'][0] ?? null);
-                    if ($donor) {
-                        $cloned = $donor;
-                        $cloned['num'] = $m + 1;
-                        $cloned['number'] = $isSchool ? (string)($m + 1) : ('А' . ($m + 1));
-                        $letters = ['B', 'C', 'A', 'D'];
-                        $cloned['correct'] = $letters[($m + $varNum) % 4];
-                        $variant['part_a'][] = $cloned;
-                    }
-                }
-            }
-
-            // Symmetrize Part B
-            $currB = count($variant['part_b'] ?? []);
-            if ($currB > $targetCountB) {
-                $variant['part_b'] = array_slice($variant['part_b'], 0, $targetCountB);
-            } elseif ($currB < $targetCountB) {
-                for ($m = $currB; $m < $targetCountB; $m++) {
-                    $donor = $variants[0]['part_b'][$m] ?? ($variant['part_b'][0] ?? null);
-                    if ($donor) {
-                        $cloned = $donor;
-                        $cloned['num'] = $m + 1;
-                        $cloned['number'] = $isSchool ? (string)($targetCountA + $m + 1) : ('Б' . ($m + 1));
-                        $ansPool = ['14', '-3', '25', '6', '12', '-1', '8', '30'];
-                        $cloned['correct'] = $ansPool[($m + $varNum) % count($ansPool)];
-                        $variant['part_b'][] = $cloned;
-                    }
-                }
-            }
-        }
-        unset($variant);
 
         foreach ($variants as $vIdx => &$variant) {
-            $varNum = $variant['number'] ?? ($vIdx + 1);
+            $varNum = (int) ($variant['number'] ?? ($vIdx + 1));
+            $variant['part_a'] = is_array($variant['part_a'] ?? null) ? $variant['part_a'] : [];
+            $variant['part_b'] = is_array($variant['part_b'] ?? null) ? $variant['part_b'] : [];
 
-            // 1. Sanitize Part A tasks
-            foreach ($variant['part_a'] as $tIdx => &$task) {
-                // Clean explanation: eliminate internal AI monologue/panic
-                $expl = (string)($task['explanation'] ?? '');
-                $expl = self::cleanseAiExplanation($expl, $task['correct'] ?? '');
-                $task['explanation'] = $expl;
+            if (array_key_exists('count_a', $payload) && count($variant['part_a']) !== $targetCountA) {
+                $errors[] = "Вариант {$varNum}: ожидалось заданий с выбором ответа — {$targetCountA}, получено — ".count($variant['part_a']).'.';
+            }
+            if (array_key_exists('count_b', $payload) && count($variant['part_b']) !== $targetCountB) {
+                $errors[] = "Вариант {$varNum}: ожидалось заданий с кратким ответом — {$targetCountB}, получено — ".count($variant['part_b']).'.';
+            }
 
-                // Validate that correct answer is a single letter A..E
-                $ans = strtoupper(trim((string)($task['correct'] ?? '')));
-                if (in_array($ans, ['1', '2', '3', '4', '5'])) {
-                    $ans = chr(64 + (int)$ans);
-                }
-                if (! in_array($ans, ['A', 'B', 'C', 'D', 'E'])) {
-                    // Try to match from options if correct contains text
-                    $matched = false;
-                    if (! empty($task['options'])) {
-                        foreach ($task['options'] as $opt) {
-                            if (! empty($ans) && (str_contains(mb_strtolower($opt['text']), mb_strtolower($ans)) || str_contains(mb_strtolower($ans), mb_strtolower($opt['text'])))) {
-                                $ans = $opt['letter'];
-                                $matched = true;
-                                break;
+            $taskGroups = [
+                ['items' => &$variant['part_a'], 'kind' => 'A'],
+                ['items' => &$variant['part_b'], 'kind' => 'B'],
+            ];
+
+            foreach ($taskGroups as &$group) {
+                foreach ($group['items'] as $taskIndex => &$task) {
+                    $taskNum = (int) ($task['num'] ?? ($taskIndex + 1));
+                    $label = $group['kind'] === 'A' ? "А{$taskNum}" : "Б{$taskNum}";
+                    $rawCondition = (string) ($task['condition_html'] ?? $task['prompt'] ?? '');
+                    $plainCondition = trim(html_entity_decode(strip_tags($rawCondition), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    $plainCondition = preg_replace('/\s+/u', ' ', $plainCondition) ?? $plainCondition;
+
+                    if ($plainCondition === '' || mb_strlen($plainCondition) < 8) {
+                        $errors[] = "Вариант {$varNum}, задание {$label}: отсутствует полноценное условие.";
+                    }
+                    if (preg_match('/\[(?:текст|условие|вариант|вставьте|заполните)[^\]]*\]/ui', $plainCondition)
+                        || preg_match('/условие тестового задания|решите задание\s*:?$/ui', $plainCondition)) {
+                        $errors[] = "Вариант {$varNum}, задание {$label}: вместо условия осталась шаблонная заглушка.";
+                    }
+
+                    // Detect common AI hallucination where the stem ends after a parameter
+                    // and the actual expression (e.g. "при k = 1:") is missing.
+                    if ($isExact && preg_match('/значени[ея]\s+выражени[яе].*при\s+[a-zа-яё]\s*=\s*[-+]?\d+\s*[:.]?$/ui', $plainCondition)
+                        && ! preg_match('/\d\s*[+\-*\/·×^]\s*\d|[a-zа-яё]\s*[+\-*\/·×^]\s*\d/ui', $plainCondition)) {
+                        $errors[] = "Вариант {$varNum}, задание {$label}: условие ссылается на выражение, но само выражение отсутствует.";
+                    }
+
+                    $expl = trim((string) ($task['explanation'] ?? ''));
+                    $task['explanation'] = $expl !== '' ? self::cleanseAiExplanation($expl, (string) ($task['correct'] ?? '')) : '';
+
+                    if ($group['kind'] === 'A') {
+                        $options = is_array($task['options'] ?? null) ? array_values($task['options']) : [];
+                        if (! in_array(count($options), [4, 5], true)) {
+                            $errors[] = "Вариант {$varNum}, задание {$label}: требуется 4 или 5 реальных вариантов ответа; найдено — ".count($options).'.';
+                        }
+                        $optionTexts = [];
+                        foreach ($options as $optionIndex => &$option) {
+                            $optionText = trim(html_entity_decode(strip_tags((string) ($option['text'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                            $option['letter'] = chr(65 + $optionIndex);
+                            if ($optionText === '' || preg_match('/^вариант\s*\d+$/ui', $optionText)) {
+                                $errors[] = "Вариант {$varNum}, задание {$label}: обнаружен пустой или фиктивный вариант ответа.";
                             }
+                            $normalizedOption = mb_strtolower(preg_replace('/\s+/u', ' ', $optionText) ?? $optionText);
+                            if (isset($optionTexts[$normalizedOption])) {
+                                $errors[] = "Вариант {$varNum}, задание {$label}: повторяется вариант ответа «{$optionText}».";
+                            }
+                            $optionTexts[$normalizedOption] = true;
                         }
-                    }
-                    if (! $matched) {
-                        $letters = ['B', 'C', 'A', 'D', 'B', 'A', 'C'];
-                        $ans = $letters[($tIdx + $varNum) % count($letters)];
-                    }
-                }
-                $task['correct'] = $ans;
+                        unset($option);
+                        $task['options'] = $options;
 
-                // Ensure options list contains at least 4 items and doesn't contain raw 'Ответ:'
-                if (empty($task['options']) || count($task['options']) < 4) {
-                    $existingCount = count($task['options'] ?? []);
-                    for ($k = $existingCount; $k < 4; $k++) {
-                        $task['options'][] = [
-                            'letter' => chr(65 + $k),
-                            'text' => 'Вариант ' . ($k + 1),
-                        ];
-                    }
-                }
-            }
-            unset($task);
-
-            // 1.1 Anti-Cheat Option Distribution Balancing:
-            // If the AI lazily put the correct answer as option 1 / A for every single task,
-            // re-shuffle options so correct answers distribute naturally across A, B, C, D (or 1, 2, 3, 4)
-            $answersCount = [];
-            foreach ($variant['part_a'] as $t) {
-                $c = $t['correct'] ?? 'A';
-                $answersCount[$c] = ($answersCount[$c] ?? 0) + 1;
-            }
-            $totalA = count($variant['part_a']);
-            $maxSame = ! empty($answersCount) ? max($answersCount) : 0;
-            $needsRebalance = ($totalA >= 3 && $maxSame >= ($totalA - 1)) || ($totalA == 2 && $maxSame == 2);
-
-            if ($needsRebalance) {
-                $patternLetters = ['C', 'A', 'D', 'B', 'B', 'C', 'A', 'D'];
-                foreach ($variant['part_a'] as $tIdx => &$task) {
-                    if (empty($task['options']) || count($task['options']) < 2) {
-                        continue;
-                    }
-                    $currentTarget = $patternLetters[($tIdx + $varNum) % count($patternLetters)];
-                    $oldLetter = $task['correct'] ?? 'A';
-
-                    $oldIndex = 0;
-                    foreach ($task['options'] as $oIdx => $opt) {
-                        if (($opt['letter'] ?? '') === $oldLetter) {
-                            $oldIndex = $oIdx;
-                            break;
+                        $answer = strtoupper(trim((string) ($task['correct'] ?? '')));
+                        if (preg_match('/^[1-5]$/', $answer)) {
+                            $answer = chr(64 + (int) $answer);
                         }
-                    }
-
-                    $targetIndex = ord($currentTarget) - ord('A');
-                    if ($targetIndex >= count($task['options'])) {
-                        $targetIndex = count($task['options']) - 1;
-                    }
-
-                    if ($oldIndex !== $targetIndex && isset($task['options'][$oldIndex], $task['options'][$targetIndex])) {
-                        // Swap option text
-                        $temp = $task['options'][$targetIndex]['text'];
-                        $task['options'][$targetIndex]['text'] = $task['options'][$oldIndex]['text'];
-                        $task['options'][$oldIndex]['text'] = $temp;
-
-                        $newCorrect = chr(65 + $targetIndex);
-                        $task['correct'] = $newCorrect;
-
-                        $cText = html_entity_decode(strip_tags((string)($task['options'][$targetIndex]['text'] ?? '')));
-                        if (! empty($task['explanation'])) {
-                            $task['explanation'] = preg_replace('/^(?:верный ответ|ответ)\s*:\s*[A-E1-5А-Д][^\.\!\?]*/ui', "Верный ответ: {$newCorrect} ({$cText})", $task['explanation']);
+                        if (! in_array($answer, ['A', 'B', 'C', 'D', 'E'], true) || ord($answer) - 65 >= count($options)) {
+                            $errors[] = "Вариант {$varNum}, задание {$label}: правильный ответ не задан или не соответствует вариантам.";
                         } else {
-                            $task['explanation'] = "Верный ответ: {$newCorrect} ({$cText}). Обосновано программным материалом курса.";
+                            $task['correct'] = $answer;
+                        }
+                    } else {
+                        $answer = trim((string) ($task['correct'] ?? ''));
+                        $answer = preg_replace('/^(?:ответ|правильный ответ)\s*:\s*/ui', '', $answer) ?? $answer;
+                        $answer = trim($answer, "[] \t\n\r");
+                        if ($answer === '' || in_array(mb_strtolower($answer), ['целое число', 'ответ', '—', 'нет ответа'], true)
+                            || str_contains($answer, '____') || preg_match('/^\[.*\]$/u', $answer)) {
+                            $errors[] = "Вариант {$varNum}, задание {$label}: отсутствует проверяемый правильный ответ.";
+                        } else {
+                            $task['correct'] = $answer;
                         }
                     }
+
+                    $task['num'] = $isSchool
+                        ? ($group['kind'] === 'A' ? $taskIndex + 1 : count($variant['part_a']) + $taskIndex + 1)
+                        : $taskIndex + 1;
+                    $task['number'] = $isSchool
+                        ? (string) $task['num']
+                        : ($group['kind'] === 'A' ? 'А' : 'Б').($taskIndex + 1);
+                    $task['is_school'] = $isSchool;
                 }
                 unset($task);
             }
-
-            // 2. Sanitize Part B tasks
-            foreach ($variant['part_b'] as $tIdx => &$task) {
-                $expl = (string)($task['explanation'] ?? '');
-                $expl = self::cleanseAiExplanation($expl, $task['correct'] ?? '');
-                $task['explanation'] = $expl;
-
-                $condB = (string)($task['condition_html'] ?? '');
-                if ($isHumanities && preg_match('/(?:сколько лет|вычислите разницу|целое число)/ui', $condB)) {
-                    $task['condition_html'] = "Установите хронологическое соответствие между ключевыми событиями и датами. Ответ запишите в виде кода (например, А1Б2В3Г4).";
-                }
-
-                $ans = trim((string)($task['correct'] ?? ''));
-                $ans = preg_replace('/^(?:ответ|правильный ответ)\s*:\s*/ui', '', $ans);
-                $ans = trim($ans, "[] \t\n\r");
-
-                if (empty($ans) || mb_strtolower($ans) === 'целое число' || mb_strtolower($ans) === '—' || str_contains($ans, '____') || preg_match('/^\[.*\]$/', $ans)) {
-                    if ($isHumanities) {
-                        $humanitiesAnswers = [
-                            'А2Б1В4Г3', 'Статут ВКЛ', 'А1Б3В2Г4', 'фольварк', '1569',
-                            'Магдебургское право', 'Сапега', 'Люблинская уния', 'А3Б1В4Г2', 'Франциск Скорина'
-                        ];
-                        $ans = $humanitiesAnswers[($tIdx + $varNum) % count($humanitiesAnswers)];
-                    } else {
-                        $mathAnswers = ['14', '-3', '25', '6', '12', '-1', '8', '30'];
-                        $ans = $mathAnswers[($tIdx + $varNum) % count($mathAnswers)];
-                    }
-                }
-                $task['correct'] = $ans;
-            }
-            unset($task);
-
-            // 2.1 Sanitize Explanations so there are NO empty stubs
-            foreach (array_merge($variant['part_a'], $variant['part_b']) as &$task) {
-                $expl = trim((string)($task['explanation'] ?? ''));
-                if (empty($expl) || str_contains($expl, 'Сверено по') || str_contains($expl, 'Ответ вносится в бланк')) {
-                    if (! empty($task['options'])) {
-                        $cLetter = $task['correct'] ?? 'A';
-                        $cText = '';
-                        foreach ($task['options'] as $opt) {
-                            if (($opt['letter'] ?? '') === $cLetter) {
-                                $cText = html_entity_decode(strip_tags((string)($opt['text'] ?? '')));
-                                break;
-                            }
-                        }
-                        $task['explanation'] = "Верный ответ: {$cLetter}" . ($cText ? " ({$cText})" : "") . ". Обосновано программным материалом курса.";
-                    } else {
-                        $task['explanation'] = "Верный ответ: {$task['correct']}. Записывается точно по установленному образцу без пробелов.";
-                    }
-                }
-            }
-            unset($task);
+            unset($group, $taskGroups);
         }
         unset($variant);
 
-        // 2.2 Strict Sequential Renumbering Pass
-        foreach ($variants as $vIdx => &$variant) {
-            if ($isSchool) {
-                $tCount = 1;
-                foreach ($variant['part_a'] as &$t) {
-                    $t['num'] = $tCount;
-                    $t['number'] = (string) $tCount;
-                    $t['is_school'] = true;
-                    $tCount++;
-                }
-                unset($t);
-                foreach ($variant['part_b'] as &$t) {
-                    $t['num'] = $tCount;
-                    $t['number'] = (string) $tCount;
-                    $t['is_school'] = true;
-                    $tCount++;
-                }
-                unset($t);
-            } else {
-                foreach ($variant['part_a'] as $i => &$t) {
-                    $t['num'] = $i + 1;
-                    $t['number'] = 'А' . ($i + 1);
-                    $t['is_school'] = false;
-                }
-                unset($t);
-                foreach ($variant['part_b'] as $i => &$t) {
-                    $t['num'] = $i + 1;
-                    $t['number'] = 'Б' . ($i + 1);
-                    $t['is_school'] = false;
-                }
-                unset($t);
-            }
-        }
-        unset($variant);
-
-        // 3. Rebuild Master Table with flawless symmetry
-        // Guarantee 100% agreement and strict column symmetry across all variants
+        // Keep answer keys derived only from actual parsed answers. Never supply defaults.
         $newMasterTable = [];
-        foreach ($variants as $vIdx => $v) {
-            $pAKeys = [];
-            foreach ($v['part_a'] as $t) {
-                $pAKeys[] = $t['correct'] ?? 'A';
-            }
-            $pBKeys = [];
-            foreach ($v['part_b'] as $t) {
-                $pBKeys[] = $t['correct'] ?? '—';
-            }
-
-            $trap = $masterTable[$vIdx]['trap'] ?? 'Контроль типичных ошибок и внимательность к знакам.';
-
+        foreach ($variants as $vIdx => $variant) {
+            $partAKeys = array_map(static fn ($task) => $task['correct'] ?? '—', $variant['part_a'] ?? []);
+            $partBKeys = array_map(static fn ($task) => $task['correct'] ?? '—', $variant['part_b'] ?? []);
+            $trap = $masterTable[$vIdx]['trap'] ?? '';
             $newMasterTable[] = [
-                'variant' => $v['number'] ?? ($vIdx + 1),
-                'part_a' => implode(', ', $pAKeys),
-                'part_b' => implode(', ', $pBKeys),
+                'variant' => $variant['number'] ?? ($vIdx + 1),
+                'part_a' => implode(', ', $partAKeys),
+                'part_b' => implode(', ', $partBKeys),
                 'trap' => $trap,
             ];
         }
         $masterTable = $newMasterTable;
+
+        return array_values(array_unique($errors));
     }
 
     /**

@@ -517,8 +517,21 @@ class GeneratorCheckoutController extends Controller
         }
 
         if ($force || $isOutdated || empty($order->pdf_path) || ! Storage::disk('local')->exists($relativePath)) {
-            $cleaned = self::cleanMathFormulasForPrint((string) $order->generated_content);
-            $parsedData = \App\Services\Exam\ExamDocumentParser::parse($cleaned, $order);
+            $sourceContent = (string) $order->generated_content;
+            // Keep raw $...$ / LaTeX markup for the Python STIX math renderer.
+            // The Unicode cleanup is only for the DomPDF fallback below.
+            $cleaned = self::cleanMathFormulasForPrint($sourceContent);
+            $parsedData = \App\Services\Exam\ExamDocumentParser::parse($sourceContent, $order);
+
+            if (! empty($parsedData['validationErrors'])) {
+                Log::error('Exam PDF export blocked: invalid generated content', [
+                    'order' => $order->order_number,
+                    'errors' => $parsedData['validationErrors'],
+                ]);
+                throw new \RuntimeException(
+                    'Тест не прошёл проверку качества и не был экспортирован: '.implode(' ', $parsedData['validationErrors'])
+                );
+            }
 
             // 1. High-end Python ReportLab engine from edusfera_pdf_generator
             $pythonSuccess = \App\Services\Exam\PythonExamGeneratorService::generate($order, $parsedData, $relativePath);

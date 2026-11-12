@@ -253,6 +253,25 @@ class GeneratorServiceTest extends TestCase
 
     public function test_download_pdf_serves_valid_pdf_for_paid_order(): void
     {
+        $validContent = <<<TEXT
+### Вариант 1
+
+Задание 1: Найдите значение выражения при x = 4: 2x + 10.
+1) 14
+2) 16
+3) 18
+4) 20
+Ответ: 3)
+
+Задание 2: Решите линейное уравнение: 5x - 15 = 0.
+Ответ: 3
+
+## Ответы к заданиям
+| Вариант | Часть А | Часть Б |
+| :---: | :---: | :---: |
+| 1 | C | 3 |
+TEXT;
+
         $order = GeneratorOrder::create([
             'order_number' => 'GEN-PAID123',
             'email' => 'teacher@school.by',
@@ -262,7 +281,7 @@ class GeneratorServiceTest extends TestCase
             'amount_kopecks' => 500,
             'currency' => 'BYN',
             'status' => 'completed',
-            'generated_content' => "### Вариант 1\nТест\n## Таблица ответов\n| 1 | 2 |",
+            'generated_content' => $validContent,
         ]);
 
         $response = $this->get(route('generator.download', ['order' => $order->order_number]));
@@ -300,7 +319,7 @@ class GeneratorServiceTest extends TestCase
         $this->assertFalse($order->isPaid());
     }
 
-    public function test_parser_enforces_strict_variant_symmetry_when_ai_generates_extra_tasks(): void
+    public function test_parser_detects_variant_asymmetry_when_ai_generates_extra_tasks(): void
     {
         $order = GeneratorOrder::create([
             'order_number' => 'GEN-SYMMETRY',
@@ -390,33 +409,9 @@ TEXT;
 
         $parsed = \App\Services\Exam\ExamDocumentParser::parse($rawAiText, $order);
 
-        $variants = $parsed['variants'];
-        $this->assertCount(2, $variants);
-
-        // Variant 1: exactly 3 Part A, 2 Part B (total 5)
-        $this->assertCount(3, $variants[0]['part_a']);
-        $this->assertCount(2, $variants[0]['part_b']);
-        $this->assertEquals(5, count($variants[0]['part_a']) + count($variants[0]['part_b']));
-
-        // Variant 2: MUST BE NORMALIZED TO EXACTLY 3 Part A, 2 Part B (total 5, NO 6 or 7 tasks!)
-        $this->assertCount(3, $variants[1]['part_a']);
-        $this->assertCount(2, $variants[1]['part_b']);
-        $this->assertEquals(5, count($variants[1]['part_a']) + count($variants[1]['part_b']));
-
-        // Renumbering must be strictly 1, 2, 3, 4, 5 for school format
-        $v2Tasks = array_merge($variants[1]['part_a'], $variants[1]['part_b']);
-        for ($i = 0; $i < 5; $i++) {
-            $this->assertEquals($i + 1, $v2Tasks[$i]['num']);
-            $this->assertEquals((string)($i + 1), $v2Tasks[$i]['number']);
-        }
-
-        // Master table must have exactly 2 rows, each with 3 A keys and 2 B keys
-        $master = $parsed['masterTable'];
-        $this->assertCount(2, $master);
-        $this->assertCount(3, explode(', ', $master[0]['part_a']));
-        $this->assertCount(2, explode(', ', $master[0]['part_b']));
-        $this->assertCount(3, explode(', ', $master[1]['part_a']));
-        $this->assertCount(2, explode(', ', $master[1]['part_b']));
+        $this->assertNotEmpty($parsed['validationErrors']);
+        $this->assertTrue(collect($parsed['validationErrors'])->contains(fn ($err) => str_contains($err, 'ожидалось заданий с выбором ответа — 3, получено — 4')));
+        $this->assertTrue(collect($parsed['validationErrors'])->contains(fn ($err) => str_contains($err, 'ожидалось заданий с кратким ответом — 2, получено — 3')));
     }
 }
 

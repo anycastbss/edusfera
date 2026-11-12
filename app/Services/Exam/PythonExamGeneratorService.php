@@ -54,6 +54,50 @@ class PythonExamGeneratorService
         }
     }
 
+    /** Convert parser HTML to plain text while preserving LaTeX delimiters and line breaks. */
+    private static function conditionToPlainText(array $task): string
+    {
+        $raw = (string) ($task['condition_html'] ?? $task['prompt'] ?? '');
+        $raw = preg_replace('/<br\s*\/?\s*>/iu', "\n", $raw) ?? $raw;
+        $plain = html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim(preg_replace("/\n{3,}/u", "\n\n", $plain) ?? $plain);
+    }
+
+    /** Save parser-provided inline SVG/PNG diagrams into the isolated job directory. */
+    private static function materializeDiagram(array $task, string $tmpDir, string $name): ?string
+    {
+        $encoded = (string) ($task['diagram_b64'] ?? '');
+        if ($encoded === '') {
+            return null;
+        }
+        $bytes = base64_decode($encoded, true);
+        if ($bytes === false || strlen($bytes) < 16 || strlen($bytes) > 2_000_000) {
+            throw new \UnexpectedValueException("Некорректная или слишком большая схема в {$name}.");
+        }
+
+        $assetsDir = $tmpDir . DIRECTORY_SEPARATOR . 'assets';
+        if (! is_dir($assetsDir) && ! mkdir($assetsDir, 0700, true) && ! is_dir($assetsDir)) {
+            throw new \RuntimeException('Не удалось создать каталог графических ресурсов PDF.');
+        }
+
+        if (str_starts_with(ltrim($bytes), '<svg') || str_contains(substr($bytes, 0, 300), '<svg')) {
+            $svg = (string) $bytes;
+            if (preg_match('/<script|<foreignObject|(?:href|src)\\s*=\\s*["\\\']https?:/iu', $svg)) {
+                throw new \UnexpectedValueException("Схема {$name} содержит запрещённую SVG-разметку.");
+            }
+            $path = $assetsDir . DIRECTORY_SEPARATOR . $name . '.svg';
+        } elseif (str_starts_with($bytes, "\x89PNG\r\n\x1a\n")) {
+            $path = $assetsDir . DIRECTORY_SEPARATOR . $name . '.png';
+        } elseif (str_starts_with($bytes, "\xFF\xD8\xFF")) {
+            $path = $assetsDir . DIRECTORY_SEPARATOR . $name . '.jpg';
+        } else {
+            throw new \UnexpectedValueException("Формат схемы {$name} не поддерживается.");
+        }
+
+        file_put_contents($path, $bytes, LOCK_EX);
+        return $path;
+    }
+
     /**
      * Generate PDF bundle via edusfera_pdf_generator
      */
@@ -76,8 +120,14 @@ class PythonExamGeneratorService
             $variantsPayload = [];
             $allVariants = $parsedData['variants'] ?? [];
             $isSchoolFormat = ($parsedData['examFormat'] ?? '') === 'school';
+            if (! empty($parsedData['validationErrors'])) {
+                throw new \UnexpectedValueException('Контент не прошёл проверку: ' . implode(' ', $parsedData['validationErrors']));
+            }
+            if (empty($allVariants)) {
+                throw new \UnexpectedValueException('Нет вариантов для экспорта.');
+            }
 
-            foreach ($allVariants as $variant) {
+            foreach ($allVariants as $variantIndex => $variant) {
                 $varNum = $variant['number'] ?? (count($variantsPayload) + 1);
                 $partA = [];
                 $partB = [];
@@ -88,11 +138,15 @@ class PythonExamGeneratorService
                         $options[] = ['text' => (string)($opt['text'] ?? '')];
                     }
 
-                    $ans = strtoupper(trim((string)($t['correct'] ?? '')));
-                    if (empty($ans) || ! in_array($ans, ['A', 'B', 'C', 'D', 'E'])) {
-                        // Vary fallback answers across B, C, A, D, E based on task and variant
-                        $letters = ['B', 'C', 'A', 'D', 'B', 'A', 'C'];
-                        $ans = $letters[($t['num'] + $varNum) % count($letters)];
+                    $ans = strtoupper(trim((string) ($t['correct'] ?? '')));
+                    if (preg_match('/^[1-5]$/', $ans)) {
+                        $ans = chr(64 + (int) $ans);
+                    }
+                    if (! in_array($ans, ['A', 'B', 'C', 'D', 'E'], true) || ord($ans) - 65 >= count($options)) {
+                        throw new \UnexpectedValueException("Вариант {$varNum}, задание {$t['num']}: нет подтверждённого правильного ответа.");
+                    }
+                    if (count($options) < 4 || count($options) > 5) {
+                        throw new \UnexpectedValueException("Вариант {$varNum}, задание {$t['num']}: требуется 4 или 5 вариантов ответа.");
                     }
 
                     $taskNumLabel = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('А' . $t['num']);
@@ -110,26 +164,27 @@ class PythonExamGeneratorService
                         $explA = "Верный ответ: {$ans}" . ($matchedOptText ? " ({$matchedOptText})" : "") . ". Обоснование подтверждено программным материалом курса.";
                     }
 
-                    $partA[] = [
+                    $partATask = [
                         'number' => $taskNumLabel,
-                        'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
+                        'prompt' => self::conditionToPlainText($t),
                         'options' => $options,
                         'correct' => $ans,
                         'explanation' => $explA,
                     ];
+                    $diagramPath = self::materializeDiagram($t, $tmpDir, "diagram_v{$varNum}_a{$t['num']}");
+                    if ($diagramPath !== null) {
+                        $partATask['diagram_path'] = $diagramPath;
+                    }
+                    if ($partATask['prompt'] === '') {
+                        throw new \UnexpectedValueException("Вариант {$varNum}, задание {$t['num']}: пустое условие.");
+                    }
+                    $partA[] = $partATask;
                 }
 
                 foreach ($variant['part_b'] ?? [] as $t) {
-                    $ansB = $t['correct'] ?? null;
-                    $isHumanities = str_contains(mb_strtolower($order->subject), 'истор') || str_contains(mb_strtolower($order->subject), 'обществ');
-                    if (empty($ansB) || mb_strtolower($ansB) === 'целое число' || mb_strtolower($ansB) === '—') {
-                        if ($isHumanities) {
-                            $humanitiesAnswers = ['А2Б1В4Г3', 'Статут ВКЛ', 'А1Б3В2Г4', 'фольварк', '1569', 'Сапега'];
-                            $ansB = $humanitiesAnswers[($t['num'] + $varNum) % count($humanitiesAnswers)];
-                        } else {
-                            $mathAnswers = ['4', '-2', '15', '0', '7', '-1'];
-                            $ansB = $mathAnswers[($t['num'] + $varNum) % count($mathAnswers)];
-                        }
+                    $ansB = trim((string) ($t['correct'] ?? ''));
+                    if ($ansB === '' || in_array(mb_strtolower($ansB), ['целое число', 'ответ', '—'], true) || str_contains($ansB, '____')) {
+                        throw new \UnexpectedValueException("Вариант {$varNum}, задание {$t['num']}: нет подтверждённого краткого ответа.");
                     }
 
                     $taskNumLabelB = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('Б' . $t['num']);
@@ -139,12 +194,20 @@ class PythonExamGeneratorService
                         $explB = "Верный ответ: {$ansB}. Записывается точно по установленному образцу без пробелов.";
                     }
 
-                    $partB[] = [
+                    $partBTask = [
                         'number' => $taskNumLabelB,
-                        'prompt' => strip_tags(html_entity_decode((string)$t['condition_html'])),
+                        'prompt' => self::conditionToPlainText($t),
                         'correct' => $ansB,
                         'explanation' => $explB,
                     ];
+                    $diagramPath = self::materializeDiagram($t, $tmpDir, "diagram_v{$varNum}_b{$t['num']}");
+                    if ($diagramPath !== null) {
+                        $partBTask['diagram_path'] = $diagramPath;
+                    }
+                    if ($partBTask['prompt'] === '') {
+                        throw new \UnexpectedValueException("Вариант {$varNum}, задание {$t['num']}: пустое условие.");
+                    }
+                    $partB[] = $partBTask;
                 }
 
                 if (! empty($partA) || ! empty($partB)) {
@@ -215,9 +278,15 @@ class PythonExamGeneratorService
             Log::error('Error in PythonExamGeneratorService: ' . $e->getMessage());
             return false;
         } finally {
-            // Clean up temporary files
+            // Remove the isolated job directory, including materialized diagrams.
             if (is_dir($tmpDir)) {
-                array_map('unlink', glob("$tmpDir/*.*"));
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($tmpDir, \FilesystemIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::CHILD_FIRST
+                );
+                foreach ($iterator as $entry) {
+                    $entry->isDir() ? @rmdir($entry->getPathname()) : @unlink($entry->getPathname());
+                }
                 @rmdir($tmpDir);
             }
         }

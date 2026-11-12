@@ -444,6 +444,37 @@ def build_section_banner(title: str, width: float) -> Flowable:
     return t
 
 
+def _diagram_image(task: dict[str, Any], asset_dir: Path, max_width: float, max_height: float) -> Image | None:
+    """Load a safe local diagram; convert SVG to PNG for ReportLab's image flowable."""
+    raw_path = task.get("diagram_path")
+    if not raw_path:
+        return None
+    raw = Path(str(raw_path))
+    if raw.is_absolute():
+        path = raw.resolve()
+    else:
+        candidates = [(ROOT / raw).resolve(), (asset_dir / raw).resolve()]
+        path = next((candidate for candidate in candidates if candidate.exists()), candidates[0])
+    if not path.exists() or not path.is_file():
+        raise ValueError(f"Файл схемы не найден: {path.name}")
+
+    if path.suffix.lower() == ".svg":
+        try:
+            import cairosvg
+        except ImportError as exc:
+            raise RuntimeError("Для печати SVG-схем установите cairosvg.") from exc
+        png_path = asset_dir / f"{path.stem}_print.png"
+        cairosvg.svg2png(url=str(path), write_to=str(png_path), output_width=900)
+        path = png_path
+
+    img = Image(str(path))
+    scale = min(max_width / img.imageWidth, max_height / img.imageHeight, 1.0)
+    img.drawWidth = img.imageWidth * scale
+    img.drawHeight = img.imageHeight * scale
+    img.hAlign = "CENTER"
+    return img
+
+
 def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_exact: bool = True, is_school: bool = False) -> Flowable:
     """Renders a complete task with badge, prompt, options/answer-box, and divider without any overlapping."""
     num_str = str(task.get("number", "1")).strip()
@@ -481,18 +512,10 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
 
     elements: list[Flowable] = [top_t, Spacer(1, 3)]
 
-    # Optional Diagram image
-    diagram_path = task.get("diagram_path")
-    if diagram_path and not Path(diagram_path).is_absolute():
-        diagram_path = str((ROOT / diagram_path).resolve())
-    if diagram_path and Path(diagram_path).exists():
-        img = Image(str(diagram_path))
-        max_w = min(width * 0.60, 240)
-        max_h = float(task.get("diagram_height", 100))
-        scale = min(max_w / img.imageWidth, max_h / img.imageHeight, 1.0)
-        img.drawWidth = img.imageWidth * scale
-        img.drawHeight = img.imageHeight * scale
-        img.hAlign = "CENTER"
+    # Optional diagram; SVG is rasterized at high resolution for a crisp print.
+    img = _diagram_image(task, asset_dir, max_width=min(width * 0.60, 240),
+                         max_height=float(task.get("diagram_height", 100)))
+    if img is not None:
         elements.extend([img, Spacer(1, 3)])
 
     # Options or Part B box
@@ -533,11 +556,10 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
             c_w = (width - 42) / n
             grid_t = Table([opt_cells], colWidths=[c_w] * n)
         elif max_len <= 35:
-            # 2x2 grid
-            row1 = opt_cells[:2]
-            row2 = opt_cells[2:4]
+            # Two-column grid; supports both 4 and 5 answers without dropping E.
             c_w = (width - 42) / 2
-            grid_t = Table([row1, row2], colWidths=[c_w, c_w])
+            rows = [opt_cells[i:i + 2] for i in range(0, len(opt_cells), 2)]
+            grid_t = Table(rows, colWidths=[c_w, c_w])
         else:
             # 1 column stack
             grid_t = Table([[c] for c in opt_cells], colWidths=[width - 42])
@@ -677,7 +699,7 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
     else:
         # Grid for Part A
         if part_a:
-            a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number']) for i, t in enumerate(part_a)]
+            a_headers = [f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('А', 'A')) else str(t['number']) for i, t in enumerate(part_a)]
             col0_w = 90
             cell_w = min(32, (width - col0_w) / max(1, len(a_headers)))
             a_data = [
@@ -701,7 +723,7 @@ def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: l
 
         # Grid for Part B
         if part_b:
-            b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number']) for i, t in enumerate(part_b)]
+            b_headers = [f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('Б', 'B')) else str(t['number']) for i, t in enumerate(part_b)]
             col0_w = 90
             cell_w = min(48 if is_exact else 80, (width - col0_w) / max(1, len(b_headers)))
             b_label = "Ответ (число)" if is_exact else "Ответ (кратко)"
@@ -768,7 +790,7 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
     exam_format = meta.get("exam_format", "exam") if meta else "exam"
     is_school = (exam_format == "school")
     max_sc = str(meta.get("max_score", "10"))
-    is_ct_ce = meta.get("work_type") == "ct_ce" or max_sc == "100"
+    is_ct_ce = (not is_school) and (meta.get("work_type") in ("ct_ce", "exam") or max_sc == "100")
 
     first_v = variants[0]
     all_tasks_first = (first_v.get("part_a", []) + first_v.get("part_b", []))
@@ -803,7 +825,7 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
         sub_row = []
         for v in chunk:
             v_num = v.get("number", 1)
-            sub_markup = "<table width='100%'><tr><td width='25%' align='center'><b>№</b></td><td width='50%' align='center'><b>Ключ</b></td><td width='25%' align='center'><b>Балл</b></td></tr></table>"
+            sub_markup = "<b>№</b> &nbsp;&nbsp;&nbsp; <b>Ключ</b> &nbsp;&nbsp;&nbsp; <b>Балл</b>"
             p = Paragraph(sub_markup, ParagraphStyle(f"rsub_{v_num}", fontName="EDU-Bold", fontSize=7.0, alignment=1, textColor=colors.HexColor("#475569")))
             sub_row.append(p)
 
@@ -819,7 +841,7 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
                     if is_school:
                         clean_num = re.sub(r'^[АБAB]', '', raw_num).strip() or str(t_idx + 1)
                     else:
-                        clean_num = raw_num if (raw_num.startswith('А') or raw_num.startswith('Б')) else (f"А{t_idx+1}" if curr_t.get("options") else f"Б{t_idx+1}")
+                        clean_num = raw_num if (raw_num.startswith(('А', 'A', 'Б', 'B'))) else (f"А{t_idx+1}" if curr_t.get("options") else f"Б{t_idx+1}")
 
                     ans = str(curr_t.get("correct", "—")).strip()
                     if curr_t.get("options"):
@@ -827,18 +849,15 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
                         clean_ans = CYRILLIC_MAP.get(first_ch, first_ch if first_ch in ['А','Б','В','Г','Д','1','2','3','4','5'] else "—")
                     else:
                         if not ans or ans.lower() in ["целое число", "ответ", "—"]:
-                            ans = "14"
+                            ans = "—"
                         if len(ans) > 7:
                             ans = ans[:6] + "…"
                         clean_ans = ans
 
                     cell_markup = (
-                        f"<table width='100%' cellpadding='0' cellspacing='0'>"
-                        f"<tr>"
-                        f"<td width='25%' align='center'><font color='#64748b' size=7>{clean_num}</font></td>"
-                        f"<td width='50%' align='center'><b><font color='#0f172a' size=8>{clean_ans}</font></b></td>"
-                        f"<td width='25%' align='center'><font color='#047857' size=7>+{pts_per_task}</font></td>"
-                        f"</tr></table>"
+                        f"<font color='#64748b' size=7>{escape(clean_num)}</font>"
+                        f" &nbsp;&nbsp;&nbsp; <b><font color='#0f172a' size=8>{escape(clean_ans)}</font></b>"
+                        f" &nbsp;&nbsp;&nbsp; <font color='#047857' size=7>+{pts_per_task}</font>"
                     )
                     p = Paragraph(cell_markup, ParagraphStyle(f"rc_{v.get('number',1)}_{t_idx}", fontName="EDU", leading=9.0))
                     t_row.append(p)
@@ -888,7 +907,9 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     grade_lbl = meta.get("grade_label") or "Школьная программа"
     topic_str = meta.get("topic") or ""
     max_sc = str(meta.get("max_score", "100"))
-    is_ct_ce = meta.get("work_type") == "ct_ce" or max_sc == "100"
+    exam_format = meta.get("exam_format", "exam") if meta else "exam"
+    is_school = (exam_format == "school")
+    is_ct_ce = (not is_school) and (meta.get("work_type") in ("ct_ce", "exam") or max_sc == "100")
 
     # Header Warning Banner
     banner_p = Paragraph("<font color='#b91c1c'><b>КЛЮЧИ И ОТВЕТЫ ДЛЯ ПРЕПОДАВАТЕЛЯ  •  МАТЕРИАЛ ДЛЯ ПРОВЕРКИ (НЕ ВЫДАВАТЬ УЧЕНИКАМ)</b></font>", STYLES["banner_title"])
@@ -929,9 +950,6 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
     elements.append(Paragraph("Ниже приведена матрица для быстрой сверки результатов по всем вариантам:", STYLES["body"]))
     elements.append(Spacer(1, 5))
 
-    exam_format = meta.get("exam_format", "exam") if meta else "exam"
-    is_school = (exam_format == "school")
-
     CYRILLIC_MAP = {
         '1': 'А', 'A': 'А', 'А': 'А',
         '2': 'Б', 'B': 'Б', 'Б': 'Б',
@@ -968,14 +986,7 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
                         cell_p = Paragraph(f"<b>{clean_letter}</b>", ParagraphStyle("ac", fontName="EDU-Bold", fontSize=9, alignment=1, textColor=colors.HexColor("#0f172a")))
                     else:
                         if not ans or ans.lower() in ["целое число", "ответ", "—"]:
-                            subj = (meta.get("subject") or "").lower()
-                            v_num = v.get("number", 1)
-                            if "истор" in subj or "обществ" in subj:
-                                h_keys = ["А2Б1В4Г3", "Статут ВКЛ", "А1Б3В2Г4", "1569", "фольварк", "Сапега"]
-                                ans = h_keys[(i + v_num) % len(h_keys)]
-                            else:
-                                m_keys = ["14", "-3", "25", "6", "12", "-1", "8"]
-                                ans = m_keys[(i + v_num) % len(m_keys)]
+                            ans = "—"
                         if len(ans) > 10:
                             ans = ans[:9] + "…"
                         font_sz = 7.0 if len(ans) > 6 else 8.0
@@ -987,7 +998,7 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
             matrix_rows.append(row)
     else:
         for i, t in enumerate(tasks_a):
-            task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith('А') else str(t['number'])
+            task_label = f"А{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('А', 'A')) else str(t['number'])
             lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
             row = [lbl_p]
             for v in variants:
@@ -1003,7 +1014,7 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
             matrix_rows.append(row)
 
         for i, t in enumerate(tasks_b):
-            task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith('Б') else str(t['number'])
+            task_label = f"Б{t.get('number', i+1)}" if not str(t.get('number','')).startswith(('Б', 'B')) else str(t['number'])
             lbl_p = Paragraph(f"<b>{task_label}</b>", ParagraphStyle("lbl", fontName="EDU-Bold", fontSize=8, alignment=1))
             row = [lbl_p]
             for v in variants:
@@ -1011,14 +1022,7 @@ def build_teacher_section(variants: list[dict], master_table_raw: list[dict], as
                 if i < len(v_tasks):
                     ans = str(v_tasks[i].get("correct", "—")).strip()
                     if not ans or ans.lower() in ["целое число", "ответ", "—"]:
-                        subj = (meta.get("subject") or "").lower()
-                        v_num = v.get("number", 1)
-                        if "истор" in subj or "обществ" in subj:
-                            h_keys = ["А2Б1В4Г3", "Статут ВКЛ", "А1Б3В2Г4", "1569", "фольварк", "Сапега"]
-                            ans = h_keys[(i + v_num) % len(h_keys)]
-                        else:
-                            m_keys = ["14", "-3", "25", "6", "12", "-1", "8"]
-                            ans = m_keys[(i + v_num) % len(m_keys)]
+                        ans = "—"
                     if len(ans) > 10:
                         ans = ans[:9] + "…"
                     font_sz = 7.0 if len(ans) > 6 else 8.0
@@ -1211,9 +1215,11 @@ def build_economy_variant(
         ('BOTTOMPADDING', (0,0), (-1,-1), 1),
     ]))
     
+    logo_col_w = logo_flow.width + 18
+    badge_col_w = 75
     header_table = Table([
         [logo_flow, header_left, badge_t]
-    ], colWidths=[80, width - 160, 80])
+    ], colWidths=[logo_col_w, width - logo_col_w - badge_col_w, badge_col_w])
     header_table.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('ALIGN', (2,0), (2,0), 'RIGHT'),
@@ -1239,33 +1245,67 @@ def build_economy_variant(
     blocks.append(pupil_p)
     blocks.append(Spacer(1, 2.5))
 
-    # Tasks
+    # Tasks: keep each prompt, diagram and its answers together on the same page.
     for t_idx, task in enumerate(all_tasks):
+        task_blocks: list[Flowable] = []
         num_str = str(task.get("number", t_idx + 1)).strip()
         num_clean = re.sub(r'^[АБAB]', '', num_str).strip() or str(t_idx + 1)
-        
-        prompt_raw = str(task.get("prompt", ""))
+
+        prompt_raw = str(task.get("prompt", "")).strip()
+        if not prompt_raw:
+            raise ValueError(f"Вариант {var_num}, задание {num_clean}: пустое условие.")
         prompt_html = _safe_formula_markup(prompt_raw, asset_dir)
-        prompt_p = Paragraph(f"<font size=8.0><b>{num_clean}.</b> {prompt_html}</font>", ParagraphStyle(f"econ_q_{var_num}_{t_idx}", fontName="EDU", leading=10.5))
-        
-        blocks.append(prompt_p)
-        blocks.append(Spacer(1, 1))
+        prompt_p = Paragraph(
+            f"<font size=8.0><b>{num_clean}.</b> {prompt_html}</font>",
+            ParagraphStyle(f"econ_q_{var_num}_{t_idx}", fontName="EDU", leading=10.5)
+        )
+        task_blocks.extend([prompt_p, Spacer(1, 1)])
+
+        img = _diagram_image(task, asset_dir, max_width=min(width * 0.43, 165), max_height=44)
+        if img is not None:
+            task_blocks.extend([img, Spacer(1, 1)])
 
         options = task.get("options") or []
         if options:
-            opt_strs = []
+            option_paragraphs = []
             for o_i, opt in enumerate(options):
                 opt_letter = chr(65 + o_i)
                 opt_text = _safe_formula_markup(str(opt.get("text", "")), asset_dir)
-                opt_strs.append(f"<b>[{opt_letter}]</b> {opt_text}")
-            opts_markup = " &nbsp;&nbsp;&nbsp; ".join(opt_strs)
-            opts_p = Paragraph(f"<font size=7.8 color='#1e293b'>{opts_markup}</font>", ParagraphStyle(f"econ_opts_{var_num}_{t_idx}", fontName="EDU", leading=9.5))
-            blocks.append(opts_p)
-            blocks.append(Spacer(1, 1.5))
+                option_paragraphs.append(Paragraph(
+                    f"<b>[{opt_letter}]</b> {opt_text}",
+                    ParagraphStyle(f"econ_opt_{var_num}_{t_idx}_{o_i}", fontName="EDU", fontSize=7.6, leading=9.0)
+                ))
+
+            if len(options) <= 4 and max(len(str(o.get("text", ""))) for o in options) <= 10:
+                opts_table = Table([option_paragraphs], colWidths=[(width - 48) / len(option_paragraphs)] * len(option_paragraphs))
+            else:
+                cols = 2
+                option_rows = [option_paragraphs[i:i + cols] for i in range(0, len(option_paragraphs), cols)]
+                opts_table = Table(option_rows, colWidths=[(width - 48) / cols] * cols)
+            opts_table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            indented_opts = Table([["", opts_table]], colWidths=[42, width - 42])
+            indented_opts.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            task_blocks.extend([indented_opts, Spacer(1, 1.5)])
         else:
-            ans_p = Paragraph("<font size=7.5 color='#64748b'>Ответ ученика: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</font>", ParagraphStyle(f"econ_ans_{var_num}_{t_idx}", fontName="EDU", leading=9.5))
-            blocks.append(ans_p)
-            blocks.append(Spacer(1, 1.5))
+            ans_p = Paragraph(
+                "<font size=7.5 color='#64748b'>Ответ ученика: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</font>",
+                ParagraphStyle(f"econ_ans_{var_num}_{t_idx}", fontName="EDU", leading=9.5)
+            )
+            task_blocks.extend([ans_p, Spacer(1, 1.5)])
+
+        blocks.append(KeepTogether(task_blocks))
 
     # Compact Answer Blank Row
     ans_cells = ["<b>Бланк ответов:</b>"]
@@ -1293,7 +1333,7 @@ def build_economy_variant(
 
 
 def normalize_input_data(data: dict[str, Any]) -> dict[str, Any]:
-    """Ensures input data conforms to multi-variant structure with backward compatibility."""
+    """Normalize input without fabricating missing questions, options or answer keys."""
     normalized = dict(data)
     normalized.setdefault("subject", "Математика")
     normalized.setdefault("title", "Пробный тест в формате стандартов ЦТ и ЦЭ 2026")
@@ -1303,48 +1343,63 @@ def normalize_input_data(data: dict[str, Any]) -> dict[str, Any]:
 
     variants = normalized.get("variants") or []
     if not variants and normalized.get("questions"):
-        # Wrap flat questions list into a single variant
         questions = normalized["questions"]
-        part_a = [q for q in questions if not str(q.get("number","")).startswith("Б") and q.get("options")]
+        part_a = [q for q in questions if not str(q.get("number", "")).startswith("Б") and q.get("options")]
         part_b = [q for q in questions if q not in part_a]
-        variants = [{
-            "number": 1,
-            "title": "Вариант 1",
-            "part_a": part_a,
-            "part_b": part_b
-        }]
+        variants = [{"number": 1, "title": "Вариант 1", "part_a": part_a, "part_b": part_b}]
 
-    # Ironclad Variant Symmetry Check in Python:
-    # Guarantee that every variant has identical counts in Part A and Part B!
-    if variants:
-        target_a = len(variants[0].get("part_a", []))
-        target_b = len(variants[0].get("part_b", []))
-        exam_format = normalized.get("exam_format", "exam")
-        is_school = (exam_format == "school")
+    if not isinstance(variants, list) or not variants:
+        raise ValueError("PDF не создан: в документе нет вариантов заданий.")
 
-        for v_idx, v in enumerate(variants):
-            p_a = v.get("part_a", [])
-            p_b = v.get("part_b", [])
+    expected_a = len(variants[0].get("part_a", []))
+    expected_b = len(variants[0].get("part_b", []))
+    for v_idx, variant in enumerate(variants, start=1):
+        if not isinstance(variant, dict):
+            raise ValueError(f"Вариант {v_idx}: неверная структура данных.")
+        part_a = variant.get("part_a") or []
+        part_b = variant.get("part_b") or []
+        if len(part_a) != expected_a or len(part_b) != expected_b:
+            raise ValueError(
+                f"Вариант {v_idx}: нарушена симметрия заданий. "
+                f"Ожидалось А={expected_a}, Б={expected_b}; получено А={len(part_a)}, Б={len(part_b)}."
+            )
+        if not part_a and not part_b:
+            raise ValueError(f"Вариант {v_idx}: отсутствуют задания.")
 
-            # Symmetrize part_a
-            if len(p_a) > target_a:
-                v["part_a"] = p_a[:target_a]
-            elif len(p_a) < target_a and target_a > 0:
-                for k in range(len(p_a), target_a):
-                    src = variants[0]["part_a"][k] if k < len(variants[0].get("part_a", [])) else p_a[0]
-                    clone = dict(src)
-                    clone["number"] = str(k + 1) if is_school else f"А{k + 1}"
-                    v["part_a"].append(clone)
+        seen_prompts: set[str] = set()
+        for task_idx, task in enumerate([*part_a, *part_b], start=1):
+            label = str(task.get("number") or task_idx)
+            prompt = str(task.get("prompt", "")).strip()
+            if not prompt or re.search(r"\[(?:текст|условие|вариант|вставьте)[^\]]*\]", prompt, re.I):
+                raise ValueError(f"Вариант {v_idx}, задание {label}: пустое условие или шаблонная заглушка.")
+            normalized_prompt = re.sub(r"\s+", " ", prompt).strip().casefold()
+            if _is_exact_science(str(normalized.get("subject", ""))):
+                if re.search(r"значени[ея]\s+выражени[яе].*при\s+[a-zа-яё]\s*=\s*[-+]?\d+\s*[:.]?$", normalized_prompt, re.I):
+                    if not re.search(r"\d\s*[+\-*\/·×^]\s*\d|[a-zа-яё]\s*[+\-*\/·×^]\s*\d", normalized_prompt, re.I):
+                        raise ValueError(f"Вариант {v_idx}, задание {label}: условие ссылается на выражение, но само выражение отсутствует.")
+            if normalized_prompt in seen_prompts:
+                raise ValueError(f"Вариант {v_idx}: повторяется условие задания «{label}».")
+            seen_prompts.add(normalized_prompt)
 
-            # Symmetrize part_b
-            if len(p_b) > target_b:
-                v["part_b"] = p_b[:target_b]
-            elif len(p_b) < target_b and target_b > 0:
-                for k in range(len(p_b), target_b):
-                    src = variants[0]["part_b"][k] if k < len(variants[0].get("part_b", [])) else p_b[0]
-                    clone = dict(src)
-                    clone["number"] = str(target_a + k + 1) if is_school else f"Б{k + 1}"
-                    v["part_b"].append(clone)
+            options = task.get("options") or []
+            if options:
+                if len(options) not in (4, 5):
+                    raise ValueError(f"Вариант {v_idx}, задание {label}: требуется 4 или 5 вариантов ответа.")
+                option_texts = [re.sub(r"\s+", " ", str(opt.get("text", ""))).strip().casefold() for opt in options]
+                if any(not value or re.fullmatch(r"вариант \d+", value, re.I) for value in option_texts):
+                    raise ValueError(f"Вариант {v_idx}, задание {label}: обнаружен пустой / фиктивный вариант ответа.")
+                if len(set(option_texts)) != len(option_texts):
+                    raise ValueError(f"Вариант {v_idx}, задание {label}: есть повторяющиеся варианты ответа.")
+                correct = str(task.get("correct", "")).strip().upper()
+                if correct.isdigit() and correct in "12345":
+                    correct = chr(64 + int(correct))
+                    task["correct"] = correct
+                if correct not in [chr(65 + i) for i in range(len(options))]:
+                    raise ValueError(f"Вариант {v_idx}, задание {label}: не указан корректный ключ ответа.")
+            else:
+                answer = str(task.get("correct", "")).strip()
+                if not answer or answer.casefold() in {"целое число", "ответ", "—", "нет ответа"} or "____" in answer:
+                    raise ValueError(f"Вариант {v_idx}, задание {label}: отсутствует проверенный краткий ответ.")
 
     normalized["variants"] = variants
     return normalized
@@ -1387,7 +1442,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                 story.append(PageBreak())
 
             var_top = variants[v_pair_idx]
-            story.extend(build_economy_variant(
+            story.append(KeepTogether(build_economy_variant(
                 variant=var_top,
                 subject=subject,
                 subtitle=subtitle,
@@ -1400,7 +1455,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                 work_type=data.get("work_type"),
                 work_type_title=data.get("work_type_title"),
                 exam_format=exam_format
-            ))
+            )))
 
             story.append(Spacer(1, 3))
             story.append(ScissorsCutLineFlowable(width=CONTENT_W))
@@ -1408,7 +1463,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
 
             if v_pair_idx + 1 < len(variants):
                 var_bottom = variants[v_pair_idx + 1]
-                story.extend(build_economy_variant(
+                story.append(KeepTogether(build_economy_variant(
                     variant=var_bottom,
                     subject=subject,
                     subtitle=subtitle,
@@ -1421,7 +1476,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                     work_type=data.get("work_type"),
                     work_type_title=data.get("work_type_title"),
                     exam_format=exam_format
-                ))
+                )))
             else:
                 story.append(Spacer(1, 4))
                 story.append(build_student_workspace(CONTENT_W, height=130))
@@ -1546,6 +1601,11 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
     variants = data.get("variants") or []
     is_exact = _is_exact_science(subject)
 
+    grade = str(data.get("grade") or "7")
+    work_type = str(data.get("work_type") or "independent")
+    exam_format = str(data.get("exam_format") or "school")
+    is_school = (exam_format == "school") or (grade not in ["10", "11", "abiturient"] and work_type != "ct_ce")
+
     print_layout = data.get("print_layout") or ("economy" if is_school else "standard")
 
     if print_layout == "economy" and len(variants) > 0:
@@ -1554,7 +1614,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                 story_student.append(PageBreak())
 
             var_top = variants[v_pair_idx]
-            story_student.extend(build_economy_variant(
+            story_student.append(KeepTogether(build_economy_variant(
                 variant=var_top,
                 subject=subject,
                 subtitle=subtitle,
@@ -1567,7 +1627,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                 work_type=data.get("work_type"),
                 work_type_title=data.get("work_type_title"),
                 exam_format=exam_format
-            ))
+            )))
 
             story_student.append(Spacer(1, 3))
             story_student.append(ScissorsCutLineFlowable(width=CONTENT_W))
@@ -1575,7 +1635,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
 
             if v_pair_idx + 1 < len(variants):
                 var_bottom = variants[v_pair_idx + 1]
-                story_student.extend(build_economy_variant(
+                story_student.append(KeepTogether(build_economy_variant(
                     variant=var_bottom,
                     subject=subject,
                     subtitle=subtitle,
@@ -1588,7 +1648,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                     work_type=data.get("work_type"),
                     work_type_title=data.get("work_type_title"),
                     exam_format=exam_format
-                ))
+                )))
             else:
                 story_student.append(Spacer(1, 4))
                 story_student.append(build_student_workspace(CONTENT_W, height=130))
