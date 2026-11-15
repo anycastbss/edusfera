@@ -75,13 +75,15 @@ export function buildExamHtml(rawPayload) {
       const totalTasks = partA.length + partB.length;
       const maxPoints = [...partA, ...partB].reduce((sum, q) => sum + (Number(q.points) || 1), 0);
 
+      const isShortTest = totalTasks <= 6;
       return {
         number: v.number,
         title: v.title,
         partA,
         partB,
         totalTasks,
-        maxPoints
+        maxPoints,
+        isShortTest
       };
     });
   } else {
@@ -89,6 +91,7 @@ export function buildExamHtml(rawPayload) {
     const partB = processQuestions(clean.partB);
     const totalTasks = partA.length + partB.length;
     const maxPoints = [...partA, ...partB].reduce((sum, q) => sum + (Number(q.points) || 1), 0);
+    const isShortTest = totalTasks <= 6;
 
     resolvedVariants = [
       {
@@ -97,7 +100,8 @@ export function buildExamHtml(rawPayload) {
         partA,
         partB,
         totalTasks,
-        maxPoints
+        maxPoints,
+        isShortTest
       }
     ];
   }

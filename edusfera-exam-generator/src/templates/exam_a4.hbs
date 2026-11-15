@@ -330,6 +330,40 @@
       background: #ffffff;
     }
 
+    /* ── 5.1. Тетрадная клетка 5x5 мм для вычислений ── */
+    .math-workspace-box {
+      width: 100%;
+      min-height: 100mm;
+      margin-top: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.3) 0.5pt, transparent 0.5pt),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.3) 0.5pt, transparent 0.5pt);
+      background-size: 5mm 5mm;
+      background-position: -0.25pt -0.25pt;
+      position: relative;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .workspace-label {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1px 6px;
+      border-radius: 2px;
+      border: 1px solid #e2e8f0;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
     /* ── Бланк ответов внизу листа ── */
     .tear-off-sheet {
       page-break-inside: avoid;
@@ -503,6 +537,13 @@
         {{/each}}
       {{/if}}
 
+      <!-- Место для решений и черновика (заполняет пустой лист) -->
+      {{#if isShortTest}}
+        <div class="math-workspace-box">
+          <div class="workspace-label">Место для вычислений и записи решений</div>
+        </div>
+      {{/if}}
+
       <!-- 7. Отрезной бланк ответов -->
       <div class="tear-off-sheet">
         <div class="tear-off-title">
@@ -537,6 +578,10 @@
             </tr>
           {{/if}}
         </table>
+        <div style="margin-top: 6px; display: flex; justify-content: space-between; font-size: 8pt; color: #334155;">
+          <span>Отметка преподавателя: <strong>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / 10 ]</strong></span>
+          <span>Подпись: ______________________</span>
+        </div>
       </div>
     </div>
   {{/each}}
