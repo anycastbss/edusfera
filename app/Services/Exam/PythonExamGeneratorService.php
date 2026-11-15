@@ -387,8 +387,18 @@ class PythonExamGeneratorService
                 'subject' => $order->subject ?: 'Математика',
                 'title' => $parsedData['testTitle'] ?: ('Проверочная работа: ' . $order->topic),
                 'topic' => $order->topic ?: 'Стандарты экзаменов 2026',
+                'grade' => $parsedData['grade'] ?? '7',
+                'grade_label' => $parsedData['gradeLabel'] ?? '7 класс',
+                'work_type' => $parsedData['workType'] ?? 'independent',
+                'work_type_title' => $parsedData['workTypeTitle'] ?? 'Самостоятельная работа',
+                'difficulty' => $parsedData['difficulty'] ?? 'base',
+                'duration' => ($parsedData['timeMinutes'] ?? 45) . ' минут',
+                'max_score' => (string)($parsedData['maxScore'] ?? 10),
+                'exam_format' => $parsedData['examFormat'] ?? ($isSchoolFormat ? 'school' : 'exam'),
+                'print_layout' => $parsedData['printLayout'] ?? ($isSchoolFormat ? 'economy' : 'standard'),
                 'variants' => $variantsPayload,
                 'master_table' => $parsedData['masterTable'] ?? [],
+                'grading_scale' => $parsedData['gradingScale'] ?? [],
             ];
 
             $jsonFile = $tmpDir . '/input.json';
@@ -405,8 +415,9 @@ class PythonExamGeneratorService
             $process->run();
 
             if (! $process->isSuccessful() || ! file_exists($docxOut)) {
-                Log::warning('Python DOCX generator failed: ' . $process->getErrorOutput());
-                return false;
+                $err = $process->getErrorOutput() ?: $process->getOutput();
+                Log::warning('Python DOCX generator failed: ' . $err);
+                throw new \RuntimeException('Python DOCX generator process failed: ' . $err);
             }
 
             $destination = Storage::disk('local')->path($targetDocxPath);

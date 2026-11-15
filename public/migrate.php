@@ -915,6 +915,45 @@ try {
         exit;
     }
 
+    if ($action === 'fetch_docx') {
+        $orderNum = $_GET['order'] ?? '';
+        $order = \App\Models\GeneratorOrder::where('order_number', $orderNum)->first();
+        if (! $order) {
+            echo "Order not found";
+            exit;
+        }
+        $docxPath = $order->docx_path ?: ('exams/' . $order->order_number . '.docx');
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($docxPath);
+        if (! file_exists($fullPath) || isset($_GET['force'])) {
+            $parsedData = \App\Services\Exam\ExamDocumentParser::parse((string)$order->generated_content, $order);
+            $service = app(\App\Services\Exam\PythonExamGeneratorService::class);
+            try {
+                $ok = $service->generateDocx($order, $parsedData, $docxPath);
+                if ($ok) {
+                    $order->update(['docx_path' => $docxPath]);
+                } else {
+                    echo "generateDocx returned false! Parsed variants: " . count($parsedData['variants'] ?? []);
+                    exit;
+                }
+            } catch (\Throwable $e) {
+                echo "Exception: " . $e->getMessage();
+                exit;
+            }
+        }
+        if (! file_exists($fullPath)) {
+            echo "DOCX generation failed or file not found: {$fullPath}";
+            exit;
+        }
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: attachment; filename="' . basename($fullPath) . '"');
+        header('Content-Length: ' . filesize($fullPath));
+        readfile($fullPath);
+        exit;
+    }
+
     // ── ACTION: List Recent Generator Orders ────────────────────────
     if ($action === 'list_orders') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";

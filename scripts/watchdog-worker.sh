@@ -14,3 +14,4 @@ if command -v flock >/dev/null 2>&1; then
 else
     exec php artisan queue:work database --queue=exams,default --sleep=0.5 --max-time=55 --tries=2 > /dev/null 2>&1
 fi
+
