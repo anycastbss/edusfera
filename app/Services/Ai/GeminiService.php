@@ -75,6 +75,7 @@ class GeminiService
             ],
             'generationConfig' => [
                 'temperature' => $temperature,
+                'topP' => 0.95,
             ],
         ];
 
@@ -180,6 +181,7 @@ class GeminiService
             'contents' => $contents,
             'generationConfig' => [
                 'temperature' => $temperature,
+                'topP' => 0.95,
             ],
         ];
 
@@ -230,6 +232,7 @@ class GeminiService
             'contents' => $contents,
             'generationConfig' => [
                 'temperature' => $temperature,
+                'topP' => 0.95,
             ],
         ];
 

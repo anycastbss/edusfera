@@ -51,3 +51,4 @@ main().catch(async (err) => {
   await closeBrowserPool().catch(() => {});
   process.exit(1);
 });
+

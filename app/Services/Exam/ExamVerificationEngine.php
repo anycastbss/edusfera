@@ -283,7 +283,7 @@ SYS;
 
         $prompt = "Проведи экспертизу и реши следующие задания чистовика:\n\n" . $tasksList;
 
-        $rawResponse = $gemini->generateText($prompt, $verifierSystem, timeoutSeconds: 50);
+        $rawResponse = $gemini->generateText($prompt, $verifierSystem, temperature: 0.1, timeoutSeconds: 50);
         if (empty($rawResponse)) {
             return [];
         }

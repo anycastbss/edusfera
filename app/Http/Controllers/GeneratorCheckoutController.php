@@ -784,8 +784,8 @@ class GeneratorCheckoutController extends Controller
             $system = $promptData['system'];
 
             try {
-                // Tight 28s timeout to safely fit under any gateway limit
-                $result = $gemini->generateText($prompt, $system, timeoutSeconds: 28);
+                // Tight 28s timeout with low 0.2 temperature to eliminate hallucinations
+                $result = $gemini->generateText($prompt, $system, temperature: 0.2, timeoutSeconds: 28);
 
                 if (! empty($result)) {
                     $cleanedResult = self::cleanMathFormulasForPrint($result);

@@ -90,10 +90,22 @@ FONT_ITALIC = _find_font([
     MPL_FONTS / "DejaVuSans-Oblique.ttf",
 ])
 
+FONT_RIMMA = _find_font([
+    ROOT / "assets" / "Rimma_sans-Bold.ttf",
+    ROOT.parent / "resources" / "fonts" / "Rimma_sans-Bold.ttf",
+    ROOT.parent / "public" / "fonts" / "Rimma_sans-Bold.ttf",
+    ROOT.parent / "promo-tutors" / "assets" / "Rimma_sans-Bold.ttf",
+])
+
 if "EDU" not in pdfmetrics.getRegisteredFontNames():
     pdfmetrics.registerFont(TTFont("EDU", FONT_REGULAR))
     pdfmetrics.registerFont(TTFont("EDU-Bold", FONT_BOLD))
     pdfmetrics.registerFont(TTFont("EDU-Italic", FONT_ITALIC))
+    if FONT_RIMMA:
+        try:
+            pdfmetrics.registerFont(TTFont("EDUSFERA-Brand", FONT_RIMMA))
+        except Exception:
+            pass
     try:
         pdfmetrics.registerFontFamily("EDU", normal="EDU", bold="EDU-Bold", italic="EDU-Italic", boldItalic="EDU-Bold")
     except Exception:
@@ -336,9 +348,10 @@ class EdusferaLogoFlowable(Flowable):
         c.line(cx + d2, cy, cx, cy - d2)
         c.line(cx, cy - d2, cx - d2, cy)
         c.line(cx - d2, cy, cx, cy + d2)
-        # Logotype
+        # Logotype using official Rimma sans font
         c.setFillColor(colors.black)
-        c.setFont("EDU-Bold", 16 if s >= 28 else 11)
+        brand_font = "EDUSFERA-Brand" if "EDUSFERA-Brand" in pdfmetrics.getRegisteredFontNames() else "EDU-Bold"
+        c.setFont(brand_font, 16.5 if s >= 28 else 11.5)
         y_text = s * 0.44 if self.brand_sub else s * 0.28
         c.drawString(s + 6, y_text, "EDUSFERA")
         if self.brand_sub:

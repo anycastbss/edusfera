@@ -72,7 +72,7 @@ class GenerateExamPdfJob implements ShouldQueue
                 $system = $promptData['system'];
 
                 try {
-                    $result = $gemini->generateText($prompt, $system, timeoutSeconds: 28);
+                    $result = $gemini->generateText($prompt, $system, temperature: 0.2, timeoutSeconds: 28);
 
                     if (! empty($result)) {
                         $cleanedResult = GeneratorCheckoutController::cleanMathFormulasForPrint($result);

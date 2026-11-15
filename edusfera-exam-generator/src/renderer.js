@@ -20,6 +20,20 @@ const katexInlineCss = fs
   .readFileSync(katexCssPath, 'utf-8')
   .replace(/url\(fonts\//g, `url(${katexFontsBaseUrl}/fonts/`);
 
+// 1.1 Load Rimma Sans Bold font as base64 for EDUSFERA brand logotype
+const rimmaFontCandidates = [
+  path.resolve(__dirname, '../../resources/fonts/Rimma_sans-Bold.ttf'),
+  path.resolve(__dirname, '../../public/fonts/Rimma_sans-Bold.ttf'),
+  path.resolve(__dirname, '../../edusfera_pdf_generator/assets/Rimma_sans-Bold.ttf')
+];
+let rimmaFontB64 = '';
+for (const cand of rimmaFontCandidates) {
+  if (fs.existsSync(cand)) {
+    rimmaFontB64 = fs.readFileSync(cand).toString('base64');
+    break;
+  }
+}
+
 // 2. Safe Markdown-It + KaTeX parser (blocks harmful raw HTML, renders LaTeX in-memory)
 const md = new MarkdownIt({
   html: false,
@@ -108,6 +122,7 @@ export function buildExamHtml(rawPayload) {
 
   return compiledTemplate({
     katexInlineCss,
+    rimmaFontB64,
     options: {
       showAnswers: Boolean(clean.options?.showAnswers ?? true),
       showExplanations: Boolean(clean.options?.showExplanations ?? true),

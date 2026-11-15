@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <title>{{ $order->subject ?? 'Математика' }} — {{ $order->topic ?? 'Проверочная работа' }}</title>
     <style>
+        @font-face {
+            font-family: 'Rimma Sans';
+            src: url('{{ public_path("fonts/Rimma_sans-Bold.ttf") }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
         @page {
             size: A4 portrait;
             margin: 8mm 10mm 10mm 10mm;
@@ -45,6 +51,7 @@
             vertical-align: middle;
         }
         .brand-name {
+            font-family: 'Rimma Sans', 'DejaVu Sans', sans-serif;
             font-size: 17pt;
             font-weight: bold;
             letter-spacing: 1.5px;
