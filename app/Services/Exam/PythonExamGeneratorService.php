@@ -265,7 +265,6 @@ class PythonExamGeneratorService
                 return false;
             }
 
-            // Ensure destination directory exists and copy result
             $destination = Storage::disk('local')->path($targetPdfPath);
             $destDir = dirname($destination);
             if (! is_dir($destDir)) {
@@ -273,12 +272,155 @@ class PythonExamGeneratorService
             }
 
             copy($mergedOut, $destination);
+
+            // Also generate editable Microsoft Word (.docx) document alongside PDF
+            $docxScript = base_path('edusfera_pdf_generator/docx_generator.py');
+            if (file_exists($docxScript)) {
+                $docxOut = $tmpDir . '/complete.docx';
+                $docxProcess = new Process([
+                    $python,
+                    $docxScript,
+                    '--json', $jsonFile,
+                    '--out', $docxOut,
+                ]);
+                $docxProcess->setTimeout(30);
+                $docxProcess->run();
+
+                if ($docxProcess->isSuccessful() && file_exists($docxOut)) {
+                    $targetDocxPath = preg_replace('/\.pdf$/i', '.docx', $targetPdfPath);
+                    $destDocx = Storage::disk('local')->path($targetDocxPath);
+                    @copy($docxOut, $destDocx);
+                }
+            }
+
             return true;
         } catch (\Throwable $e) {
             Log::error('Error in PythonExamGeneratorService: ' . $e->getMessage(), ['exception' => $e]);
             return false;
         } finally {
             // Remove the isolated job directory, including materialized diagrams.
+            if (is_dir($tmpDir)) {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($tmpDir, \FilesystemIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::CHILD_FIRST
+                );
+                foreach ($iterator as $entry) {
+                    $entry->isDir() ? @rmdir($entry->getPathname()) : @unlink($entry->getPathname());
+                }
+                @rmdir($tmpDir);
+            }
+        }
+    }
+
+    /**
+     * Generate standalone editable Microsoft Word (.docx) document
+     */
+    public static function generateDocx(GeneratorOrder $order, array $parsedData, string $targetDocxPath): bool
+    {
+        $python = self::getPythonBinary();
+        $script = base_path('edusfera_pdf_generator/docx_generator.py');
+
+        if (! $python || ! file_exists($script)) {
+            return false;
+        }
+
+        $tmpDir = storage_path('app/temp_docx_' . $order->order_number . '_' . uniqid());
+        if (! is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+
+        try {
+            $variantsPayload = [];
+            $allVariants = $parsedData['variants'] ?? [];
+            $isSchoolFormat = ($parsedData['examFormat'] ?? '') === 'school';
+
+            foreach ($allVariants as $variantIndex => $variant) {
+                $varNum = $variant['number'] ?? (count($variantsPayload) + 1);
+                $partA = [];
+                $partB = [];
+
+                foreach ($variant['part_a'] ?? [] as $t) {
+                    $options = [];
+                    foreach ($t['options'] ?? [] as $opt) {
+                        $options[] = ['text' => (string)($opt['text'] ?? '')];
+                    }
+                    $ans = strtoupper(trim((string) ($t['correct'] ?? '')));
+                    if (preg_match('/^[1-5]$/', $ans)) {
+                        $ans = chr(64 + (int) $ans);
+                    }
+                    $taskNumLabel = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('А' . $t['num']);
+                    $partA[] = [
+                        'number' => $taskNumLabel,
+                        'prompt' => self::conditionToPlainText($t),
+                        'options' => $options,
+                        'correct' => $ans,
+                        'explanation' => trim((string)($t['explanation'] ?? '')),
+                    ];
+                }
+
+                foreach ($variant['part_b'] ?? [] as $t) {
+                    $ansB = trim((string) ($t['correct'] ?? ''));
+                    $taskNumLabelB = ($isSchoolFormat || ($t['is_school'] ?? false)) ? (string) $t['num'] : ('Б' . $t['num']);
+                    $partB[] = [
+                        'number' => $taskNumLabelB,
+                        'prompt' => self::conditionToPlainText($t),
+                        'correct' => $ansB,
+                        'explanation' => trim((string)($t['explanation'] ?? '')),
+                    ];
+                }
+
+                if (! empty($partA) || ! empty($partB)) {
+                    $variantsPayload[] = [
+                        'number' => $varNum,
+                        'title' => "Вариант {$varNum}",
+                        'part_a' => $partA,
+                        'part_b' => $partB,
+                    ];
+                }
+            }
+
+            if (empty($variantsPayload)) {
+                return false;
+            }
+
+            $payload = [
+                'subject' => $order->subject ?: 'Математика',
+                'title' => $parsedData['testTitle'] ?: ('Проверочная работа: ' . $order->topic),
+                'topic' => $order->topic ?: 'Стандарты экзаменов 2026',
+                'variants' => $variantsPayload,
+                'master_table' => $parsedData['masterTable'] ?? [],
+            ];
+
+            $jsonFile = $tmpDir . '/input.json';
+            file_put_contents($jsonFile, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+            $docxOut = $tmpDir . '/out.docx';
+            $process = new Process([
+                $python,
+                $script,
+                '--json', $jsonFile,
+                '--out', $docxOut,
+            ]);
+            $process->setTimeout(30);
+            $process->run();
+
+            if (! $process->isSuccessful() || ! file_exists($docxOut)) {
+                Log::warning('Python DOCX generator failed: ' . $process->getErrorOutput());
+                return false;
+            }
+
+            $destination = Storage::disk('local')->path($targetDocxPath);
+            $destDir = dirname($destination);
+            if (! is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+
+            copy($docxOut, $destination);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Error in PythonExamGeneratorService::generateDocx: ' . $e->getMessage());
+            return false;
+        } finally {
             if (is_dir($tmpDir)) {
                 $iterator = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($tmpDir, \FilesystemIterator::SKIP_DOTS),

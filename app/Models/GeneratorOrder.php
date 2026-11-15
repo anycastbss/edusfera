@@ -49,7 +49,15 @@ class GeneratorOrder extends Model
 
     public function isPaid(): bool
     {
-        return in_array($this->status, ['paid', 'completed', 'generating'], true) || ! empty($this->paid_at);
+        if (! empty($this->paid_at)) {
+            return true;
+        }
+
+        if (in_array($this->payment_method, ['admin_test_bypass', 'tutor_subscription', 'promo_code', 'card', 'alfabank', 'bepaid'], true)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function hasValidAccessToken(?string $token): bool

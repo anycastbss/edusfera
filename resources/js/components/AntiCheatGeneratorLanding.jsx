@@ -1371,9 +1371,10 @@ export function getSamplePreview(subject, grade) {
 }
 
 const VARIANT_COUNTS = [
-    { count: 10, label: '10 вариантов' },
-    { count: 15, label: '15 вариантов', popular: true },
-    { count: 25, label: '25 вариантов' }
+    { count: 2, label: '2 варианта (По партам)', popular: true },
+    { count: 4, label: '4 варианта (Ряды)' },
+    { count: 15, label: '15 вариантов (Класс)' },
+    { count: 25, label: '25 вариантов (Индивидуально)' }
 ];
 
 const EMAIL_DOMAINS = ['@gmail.com', '@mail.ru', '@yandex.by'];
@@ -1390,7 +1391,7 @@ export default function AntiCheatGeneratorLanding() {
     const [selectedSubject, setSelectedSubject] = useState('math');
     const [selectedQuarter, setSelectedQuarter] = useState('2'); // '1' | '2' (сейчас) | '3' | '4'
     const [topic, setTopic] = useState('Линейные уравнения с одной переменной');
-    const [variantCount, setVariantCount] = useState(15);
+    const [variantCount, setVariantCount] = useState(2);
     const [tasksCountA, setTasksCountA] = useState(3);
     const [tasksCountB, setTasksCountB] = useState(2);
     const [printLayout, setPrintLayout] = useState('economy');
@@ -2555,8 +2556,8 @@ export default function AntiCheatGeneratorLanding() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Lock className="w-3.5 h-3.5 text-white" />
-                                                        <span>Оплатить картой 5.00 BYN</span>
+                                                        <FileText className="w-4 h-4 text-[#C6FF33]" />
+                                                        <span>Сформировать комплект (с предпросмотром)</span>
                                                     </>
                                                 )}
                                             </>

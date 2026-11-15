@@ -70,6 +70,22 @@ Route::get('/generator/download/{order:order_number}', [\App\Http\Controllers\Ge
     ->middleware(['throttle:120,1'])
     ->name('generator.download');
 
+Route::get('/generator/download-docx/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'downloadDocx'])
+    ->middleware(['throttle:120,1'])
+    ->name('generator.download_docx');
+
+Route::post('/generator/pay/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'payOrder'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.pay');
+
+Route::post('/generator/unlock-tutor/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'unlockWithTutorSubscription'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.unlock_tutor');
+
+Route::post('/generator/apply-promo/{order:order_number}', [\App\Http\Controllers\GeneratorCheckoutController::class, 'applyPromoCode'])
+    ->middleware(['throttle:30,1'])
+    ->name('generator.apply_promo');
+
 // Generator Teacher Workspace / Personal Cabinet (Lightweight, No-Friction)
 Route::redirect('/generator/my', '/generator', 301)->name('generator.my');
 Route::redirect('/generator/cabinet', '/generator', 301)->name('generator.cabinet');

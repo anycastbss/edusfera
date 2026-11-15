@@ -171,6 +171,10 @@ def _auto_detect_math_spans(text: str) -> str:
     text = re.sub(r'√([a-zA-Z0-9]+)', r'\\sqrt{\1}', text)
     text = text.replace('²', '^2').replace('³', '^3').replace('·', '*').replace('×', '*').replace('−', '-')
 
+    # Separate Russian text directly adjacent to LaTeX math or formulas (e.g. "уравнение\frac" -> "уравнение \frac", "10и" -> "10 и")
+    text = re.sub(r'([а-яА-ЯёЁ])(\\[a-zA-Z]+|\$)', r'\1 \2', text)
+    text = re.sub(r'([0-9\$\}])([а-яА-ЯёЁ])', r'\1 \2', text)
+
     # Wrap formula after colon (e.g. "Решите уравнение: 3x - 5 = 10." or "корень: \frac{x}{2} + \frac{x}{3} = 10.")
     def _wrap_after_colon(m):
         col = m.group(1)
@@ -287,12 +291,18 @@ def _safe_formula_markup(text: str, asset_dir: Path) -> str:
                     w_px, h_px = im.size
                 height = max(10.0, min(24.0, h_px * 0.24))
                 width = max(8.5, w_px * (height / h_px))
+                # Guarantee crisp, non-collapsible spacing before and after inline formulas
                 lead_space = ""
                 trail_space = ""
-                if idx > 0 and output and not output[-1].endswith((" ", ">", "&nbsp;")):
-                    lead_space = "&nbsp;"
-                if idx + 1 < len(pieces) and pieces[idx + 1] and not pieces[idx + 1].startswith((" ", ".", ",", ";", ":", "!", "?", "<")):
-                    trail_space = "&nbsp;"
+                if idx > 0 and output:
+                    if not output[-1].endswith(("&nbsp;", " ")):
+                        lead_space = "&nbsp;"
+                if idx + 1 < len(pieces):
+                    next_str = pieces[idx + 1].lstrip()
+                    if next_str and not next_str.startswith((".", ",", ";", ":", "!", "?", ")", "]")):
+                        trail_space = "&nbsp;"
+                        # Consume the leading space from next piece to avoid double space
+                        pieces[idx + 1] = next_str
                 output.append(f'{lead_space}<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="-3.0"/>{trail_space}')
             except Exception:
                 output.append(escape(expr))

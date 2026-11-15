@@ -546,8 +546,8 @@ try {
 
     // ── ACTION: Run queue work ────────────────────────────────────────
     if ($action === 'run_queue') {
-        echo "▶ <b>Обработка очереди задач (php artisan queue:work --stop-when-empty --tries=3)...</b>\n\n";
-        $kernel->call('queue:work', ['--stop-when-empty' => true, '--tries' => 3]);
+        echo "▶ <b>Обработка очереди задач (php artisan queue:work --queue=default,exams --stop-when-empty --tries=3)...</b>\n\n";
+        $kernel->call('queue:work', ['--queue' => 'default,exams', '--stop-when-empty' => true, '--tries' => 3]);
         $output = trim($kernel->output());
         if ($output) {
             echo $output."\n";

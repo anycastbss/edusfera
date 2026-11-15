@@ -256,6 +256,11 @@ CRITICAL_FILES=(
     "resources/views/generator/success.blade.php"
     "resources/views/generator/cabinet.blade.php"
     "resources/views/payments/generator-hosted.blade.php"
+    "edusfera_pdf_generator/generator.py"
+    "edusfera_pdf_generator/docx_generator.py"
+    "edusfera_pdf_generator/assets/Rimma_sans-Bold.ttf"
+    "scripts/watchdog-worker.sh"
+    "routes/web.php"
 )
 
 # Добавляем микросервис edusfera-exam-generator (без node_modules)
