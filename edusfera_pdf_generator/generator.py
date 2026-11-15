@@ -35,7 +35,7 @@ LEFT = 13 * mm
 RIGHT = 13 * mm
 CONTENT_W = PAGE_W - LEFT - RIGHT
 
-# --- 1. FONTS CONFIGURATION ---
+# --- 1. FONTS CONFIGURATION (ACADEMIC SERIF / TIMES NEW ROMAN STANDARDS) ---
 MPL_FONTS = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
 
 
@@ -44,43 +44,73 @@ def _find_font(candidates: list[str | Path]) -> str:
         p = Path(candidate)
         if p.exists():
             return str(p)
-    raise FileNotFoundError("Шрифт не найден. Проверьте наличие DejaVuSans.")
+    raise FileNotFoundError("Шрифт не найден. Проверьте наличие DejaVuSerif.")
 
 
 FONT_REGULAR = _find_font([
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/local/share/fonts/DejaVuSans.ttf",
+    "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+    "/Library/Fonts/Times New Roman.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/times.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+    "/usr/share/fonts/truetype/liberation2/LiberationSerif-Regular.ttf",
+    "/usr/share/fonts/liberation-serif/LiberationSerif-Regular.ttf",
+    "/usr/share/fonts/truetype/paratype/PTSerif-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+    "/usr/local/share/fonts/DejaVuSerif.ttf",
+    MPL_FONTS / "DejaVuSerif.ttf",
     MPL_FONTS / "DejaVuSans.ttf",
 ])
 FONT_BOLD = _find_font([
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
+    "/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf",
+    "/Library/Fonts/Times New Roman Bold.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/timesbd.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+    "/usr/share/fonts/truetype/liberation2/LiberationSerif-Bold.ttf",
+    "/usr/share/fonts/liberation-serif/LiberationSerif-Bold.ttf",
+    "/usr/share/fonts/truetype/paratype/PTSerif-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+    "/usr/local/share/fonts/DejaVuSerif-Bold.ttf",
+    MPL_FONTS / "DejaVuSerif-Bold.ttf",
     MPL_FONTS / "DejaVuSans-Bold.ttf",
 ])
 FONT_ITALIC = _find_font([
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
-    "/usr/local/share/fonts/DejaVuSans-Oblique.ttf",
+    "/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf",
+    "/Library/Fonts/Times New Roman Italic.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/timesi.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/Times_New_Roman_Italic.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+    "/usr/share/fonts/truetype/liberation2/LiberationSerif-Italic.ttf",
+    "/usr/share/fonts/liberation-serif/LiberationSerif-Italic.ttf",
+    "/usr/share/fonts/truetype/paratype/PTSerif-Italic.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+    "/usr/local/share/fonts/DejaVuSerif-Italic.ttf",
+    MPL_FONTS / "DejaVuSerif-Italic.ttf",
     MPL_FONTS / "DejaVuSans-Oblique.ttf",
-    MPL_FONTS / "DejaVuSans.ttf",
 ])
 
 if "EDU" not in pdfmetrics.getRegisteredFontNames():
     pdfmetrics.registerFont(TTFont("EDU", FONT_REGULAR))
     pdfmetrics.registerFont(TTFont("EDU-Bold", FONT_BOLD))
     pdfmetrics.registerFont(TTFont("EDU-Italic", FONT_ITALIC))
+    try:
+        pdfmetrics.registerFontFamily("EDU", normal="EDU", bold="EDU-Bold", italic="EDU-Italic", boldItalic="EDU-Bold")
+    except Exception:
+        pass
 
 
 STYLES = {
-    "body": ParagraphStyle("body", fontName="EDU", fontSize=8.8, leading=12.5, textColor=colors.black),
-    "body_bold": ParagraphStyle("body_bold", fontName="EDU-Bold", fontSize=8.8, leading=12.5, textColor=colors.black),
-    "body_small": ParagraphStyle("body_small", fontName="EDU", fontSize=7.8, leading=10.5, textColor=colors.black),
-    "question": ParagraphStyle("question", fontName="EDU", fontSize=9.5, leading=14.5, textColor=colors.black),
-    "option": ParagraphStyle("option", fontName="EDU", fontSize=8.8, leading=12.5, textColor=colors.black),
-    "banner_title": ParagraphStyle("banner_title", fontName="EDU-Bold", fontSize=9, leading=11, textColor=colors.HexColor("#0f172a")),
+    "body": ParagraphStyle("body", fontName="EDU", fontSize=9.5, leading=14.0, textColor=colors.black),
+    "body_bold": ParagraphStyle("body_bold", fontName="EDU-Bold", fontSize=9.5, leading=14.0, textColor=colors.black),
+    "body_small": ParagraphStyle("body_small", fontName="EDU", fontSize=8.5, leading=12.0, textColor=colors.black),
+    "question": ParagraphStyle("question", fontName="EDU", fontSize=10.0, leading=15.0, textColor=colors.black),
+    "option": ParagraphStyle("option", fontName="EDU", fontSize=9.5, leading=13.5, textColor=colors.black),
+    "banner_title": ParagraphStyle("banner_title", fontName="EDU-Bold", fontSize=9.5, leading=12, textColor=colors.HexColor("#0f172a")),
     "teacher_title": ParagraphStyle("teacher_title", fontName="EDU-Bold", fontSize=11, leading=14, textColor=colors.HexColor("#0f172a")),
-    "teacher_expl": ParagraphStyle("teacher_expl", fontName="EDU", fontSize=7.2, leading=9.2, textColor=colors.HexColor("#1e293b")),
-    "teacher_vtitle": ParagraphStyle("teacher_vtitle", fontName="EDU-Bold", fontSize=8.0, leading=10, textColor=colors.HexColor("#0f172a")),
-    "workspace_title": ParagraphStyle("workspace_title", fontName="EDU-Bold", fontSize=7.2, leading=9.0, textColor=colors.HexColor("#64748b")),
+    "teacher_expl": ParagraphStyle("teacher_expl", fontName="EDU", fontSize=8.0, leading=10.5, textColor=colors.HexColor("#1e293b")),
+    "teacher_vtitle": ParagraphStyle("teacher_vtitle", fontName="EDU-Bold", fontSize=8.5, leading=11, textColor=colors.HexColor("#0f172a")),
+    "workspace_title": ParagraphStyle("workspace_title", fontName="EDU-Bold", fontSize=8.0, leading=10.0, textColor=colors.HexColor("#475569")),
 }
 
 
@@ -122,10 +152,12 @@ class NumberedCanvas(canvas.Canvas):
 # --- 3. MATHEMATICAL FORMULAS RENDERER (WORD / STIX MATH STANDARDS) ---
 def _auto_detect_math_spans(text: str) -> str:
     """Intelligently detect equations and mathematical expressions, wrapping them in $...$ for STIX/Word rendering."""
-    # Convert unicode powers and roots first
-    text = re.sub(r'√\(([^)]+)\)', lambda m: f"$\\sqrt{{{m.group(1)}}}$", text)
-    text = re.sub(r'√([a-zA-Z0-9]+)', lambda m: f"$\\sqrt{{{m.group(1)}}}$", text)
-    text = text.replace('²', '^2').replace('³', '^3').replace('·', '*').replace('×', '*')
+    # Convert unicode powers, roots and symbols first (WITHOUT wrapping in $ to prevent nesting)
+    text = re.sub(r'∛\(([^)]+)\)', r'\\sqrt[3]{\1}', text)
+    text = re.sub(r'∛([a-zA-Z0-9]+)', r'\\sqrt[3]{\1}', text)
+    text = re.sub(r'√\(([^)]+)\)', r'\\sqrt{\1}', text)
+    text = re.sub(r'√([a-zA-Z0-9]+)', r'\\sqrt{\1}', text)
+    text = text.replace('²', '^2').replace('³', '^3').replace('·', '*').replace('×', '*').replace('−', '-')
 
     # Wrap formula after colon (e.g. "Решите уравнение: 3x - 5 = 10." or "корень: \frac{x}{2} + \frac{x}{3} = 10.")
     def _wrap_after_colon(m):
@@ -135,33 +167,40 @@ def _auto_detect_math_spans(text: str) -> str:
         if expr.endswith(('.', ':', '?', ';', '!')):
             trail = expr[-1]
             expr = expr[:-1].strip()
+        if not expr:
+            return col
         return f"{col}${expr}${trail}"
 
-    text = re.sub(r'(:[ \t]+)([^а-яА-ЯёЁ\n]+)$', _wrap_after_colon, text)
+    text = re.sub(r'(:[ \t]+)([^а-яА-ЯёЁ\n$]+?)(?=[ \t]*[а-яА-ЯёЁ]|$)', _wrap_after_colon, text)
 
-    # Wrap any bare LaTeX \frac fractions that might still be outside $...$: e.g. \frac{x+3}{4} = 3
-    if r'\frac' in text:
+    # 2. Wrap any bare LaTeX \frac or \sqrt that might still be outside $...$ (preserving surrounding spaces!)
+    if r'\frac' in text or r'\sqrt' in text:
         pieces = re.split(r'(\$[^\$]+\$)', text)
         res = []
         for p in pieces:
             if p.startswith('$') and p.endswith('$'):
                 res.append(p)
-            elif r'\frac' in p:
-                m = re.search(r'([^а-яА-ЯёЁ\n]*\\frac\{[^}]+\}\{[^}]+\}[^а-яА-ЯёЁ\n]*)', p)
-                if m:
-                    frag = m.group(1).strip()
-                    punct = ''
-                    if frag.endswith(('.', ':', '?', ';', '!')):
-                        punct = frag[-1]
-                        frag = frag[:-1].strip()
-                    p = p[:m.start()] + f"${frag}${punct}" + p[m.end():]
+            elif r'\frac' in p or r'\sqrt' in p:
+                def _wrap_latex_token(match):
+                    full = match.group(0)
+                    lead = " " if full.startswith(" ") else ""
+                    trail = " " if full.endswith(" ") else ""
+                    expr = full.strip()
+                    punct = ""
+                    if expr.endswith(('.', ':', '?', ';', '!', ',')):
+                        punct = expr[-1]
+                        expr = expr[:-1].strip()
+                    return f"{lead}${expr}${punct}{trail}"
+                p = re.sub(r'(?:[ \t]|^)(?:[^\sа-яА-ЯёЁ]*(?:\\frac\{[^}]+\}\{[^}]+\}|\\sqrt(?:\[[^\]]+\])?\{[^}]+\})[^\sа-яА-ЯёЁ]*(?:\s+[-+*=]\s+[^\sа-яА-ЯёЁ]+)*)(?=[ \t.,:;?!]|$)', _wrap_latex_token, p)
                 res.append(p)
             else:
                 res.append(p)
         text = ''.join(res)
 
-    # If already fully formatted with $, return
-    # Otherwise, process pieces outside $...$
+    # Clean up double $
+    text = re.sub(r'\$\$+', '$', text)
+
+    # Process pieces outside $...$
     pieces = re.split(r'(\$[^\$]+\$)', text)
     res = []
     for piece in pieces:
@@ -179,9 +218,7 @@ def _auto_detect_math_spans(text: str) -> str:
             if eq.endswith(('.', ':', '?', ';', ',')):
                 punct = eq[-1]
                 eq = eq[:-1].strip()
-            # Convert (a)/(b) inside equations to \frac{a}{b}
             eq = re.sub(r'\(([^)]+)\)\s*/\s*\(?([0-9a-zA-Z]+)\)?', r'\\frac{\1}{\2}', eq)
-            # Clean up multiplication symbol for LaTeX
             eq = re.sub(r'(\d)\s*\*\s*([a-zA-Z\(])', r'\1 \2', eq)
             eq = eq.replace('*', r'\cdot ')
             return f"${eq}${punct}"
@@ -202,7 +239,6 @@ def _auto_detect_math_spans(text: str) -> str:
             return f"${expr}${punct}"
 
         expr_pattern = r'(?<![\w$])(?:\d+[a-zA-Z]|[a-zA-Z]\d+)\s*[+\-*\/]\s*\d+[.:;?!]?'
-        # Split again by $ in case p now has $
         sub_pieces = re.split(r'(\$[^\$]+\$)', p)
         sub_res = []
         for sp in sub_pieces:
@@ -212,18 +248,20 @@ def _auto_detect_math_spans(text: str) -> str:
                 sub_res.append(re.sub(expr_pattern, _expr_wrap, sp))
         res.append("".join(sub_res))
 
-    return "".join(res)
+    result = "".join(res)
+    result = re.sub(r'\$\$+', '$', result)
+    return result
 
 
 def _safe_formula_markup(text: str, asset_dir: Path) -> str:
-    """Safely convert $math$ and unicode formula spans into crisp inline images matching MS Word Cambria/STIX typography."""
+    """Safely convert $math$ and unicode formula spans into crisp inline images matching Times New Roman / STIX typography."""
     raw = str(text)
     normalized = _auto_detect_math_spans(raw)
 
     pieces = re.split(r"(\$[^$]+\$)", normalized)
     output: list[str] = []
     counter = 0
-    for piece in pieces:
+    for idx, piece in enumerate(pieces):
         if len(piece) >= 2 and piece.startswith("$") and piece.endswith("$"):
             expr = piece[1:-1].strip()
             if not expr:
@@ -231,15 +269,21 @@ def _safe_formula_markup(text: str, asset_dir: Path) -> str:
             counter += 1
             file_path = asset_dir / f"math_{counter}_{uuid.uuid4().hex[:6]}.png"
             try:
-                # Render using STIX font matching Word / Cambridge Math standards
-                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=11), dpi=260, format="png", color="black")
+                # Render using STIX font matching Word / Times New Roman standards
+                math_to_image(f"${expr}$", str(file_path), prop=FontProperties(size=12), dpi=270, format="png", color="black")
                 with PILImage.open(file_path) as im:
                     w_px, h_px = im.size
-                height = max(9.0, min(20.0, h_px * 0.23))
-                width = max(8.0, w_px * (height / h_px))
-                output.append(f'<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="-2.5"/>')
+                height = max(10.0, min(24.0, h_px * 0.24))
+                width = max(8.5, w_px * (height / h_px))
+                lead_space = ""
+                trail_space = ""
+                if idx > 0 and output and not output[-1].endswith((" ", ">", "&nbsp;")):
+                    lead_space = "&nbsp;"
+                if idx + 1 < len(pieces) and pieces[idx + 1] and not pieces[idx + 1].startswith((" ", ".", ",", ";", ":", "!", "?", "<")):
+                    trail_space = "&nbsp;"
+                output.append(f'{lead_space}<img src="{file_path.as_posix()}" width="{width:.1f}" height="{height:.1f}" valign="-3.0"/>{trail_space}')
             except Exception:
-                output.append(escape(piece))
+                output.append(escape(expr))
         else:
             output.append(escape(piece).replace("\n", "<br/>"))
     return "".join(output)
@@ -305,7 +349,7 @@ class EdusferaLogoFlowable(Flowable):
 
 
 class ScissorsCutLineFlowable(Flowable):
-    """Draws a clean dashed line with scissors ✂ for cutting A4 sheet in half or ruler strips."""
+    """Draws a clean dashed line with vector scissors for cutting A4 sheet in half or ruler strips."""
     def __init__(self, width: float, height: float = 20, label: str = ""):
         super().__init__()
         self.width = width
@@ -314,6 +358,21 @@ class ScissorsCutLineFlowable(Flowable):
 
     def wrap(self, availWidth, availHeight):
         return self.width, self.height
+
+    def _draw_vector_scissors(self, c, x, y):
+        c.saveState()
+        c.setLineWidth(0.7)
+        c.setStrokeColor(colors.HexColor("#64748b"))
+        c.setFillColor(colors.HexColor("#64748b"))
+        # Finger loops
+        c.circle(x - 3.8, y - 2.0, 1.8, stroke=1, fill=0)
+        c.circle(x - 3.8, y + 2.0, 1.8, stroke=1, fill=0)
+        # Crossed blades
+        c.line(x - 2.4, y - 1.3, x + 4.8, y + 2.2)
+        c.line(x - 2.4, y + 1.3, x + 4.8, y - 2.2)
+        # Pivot screw
+        c.circle(x - 0.2, y, 0.6, stroke=0, fill=1)
+        c.restoreState()
 
     def draw(self):
         c = self.canv
@@ -325,20 +384,22 @@ class ScissorsCutLineFlowable(Flowable):
         if self.label:
             c.setFont("EDU-Bold", 7.5)
             c.setFillColor(colors.HexColor("#475569"))
-            lbl_w = c.stringWidth(f"✂   {self.label}   ✂", "EDU-Bold", 7.5)
-            gap = (lbl_w / 2) + 6
+            raw_lbl = self.label.strip().upper()
+            text = raw_lbl if raw_lbl.startswith("ЛИНИЯ") else f"ЛИНИЯ СРЕЗА: {raw_lbl}"
+            lbl_w = c.stringWidth(text, "EDU-Bold", 7.5)
+            gap = (lbl_w / 2) + 20
             c.line(0, cy, self.width / 2 - gap, cy)
             c.line(self.width / 2 + gap, cy, self.width, cy)
-            c.drawCentredString(self.width / 2, cy - 2.5, f"✂   {self.label}   ✂")
+            c.drawCentredString(self.width / 2, cy - 2.5, text)
+            self._draw_vector_scissors(c, self.width / 2 - gap + 9, cy)
+            self._draw_vector_scissors(c, self.width / 2 + gap - 9, cy)
         else:
             # Left segment
-            c.line(0, cy, self.width / 2 - 14, cy)
+            c.line(0, cy, self.width / 2 - 12, cy)
             # Right segment
-            c.line(self.width / 2 + 14, cy, self.width, cy)
-            # Center scissors icon
-            c.setFont("EDU-Bold", 10.5)
-            c.setFillColor(colors.HexColor("#475569"))
-            c.drawCentredString(self.width / 2, cy - 3.5, "✂")
+            c.line(self.width / 2 + 12, cy, self.width, cy)
+            # Center vector scissors
+            self._draw_vector_scissors(c, self.width / 2, cy)
         c.restoreState()
 
 
@@ -755,7 +816,7 @@ class MathGridWorkspaceFlowable(Flowable):
         canv.saveState()
         canv.setFont("EDU-Bold", 7.5)
         canv.setFillColor(colors.HexColor("#475569"))
-        canv.drawString(4, self.height - 11, f"✏️ {self.title}")
+        canv.drawString(4, self.height - 11, self.title)
 
         box_y = 2
         box_h = self.height - 16
@@ -948,7 +1009,7 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
         STYLES["teacher_title"]
     )
     sub_p = Paragraph(
-        "<font color='#475569' size=7.2>✂ <i>Вырежьте вертикальные полоски вариантов по пунктиру и прикладывайте к бланку ответов ученика для моментальной сверки за 3 секунды:</i></font>",
+        "<font color='#475569' size=7.2><i>Вырежьте вертикальные полоски вариантов по пунктиру и прикладывайте к бланку ответов ученика для моментальной сверки:</i></font>",
         STYLES["body"]
     )
     elements.append(header_p)
@@ -986,7 +1047,7 @@ def build_express_ruler(variants: list[dict], meta: dict, width: float) -> list[
         header_row = []
         for v in chunk:
             v_num = v.get("number", 1)
-            v_title = f"<b>✂ ВАРИАНТ {v_num} ✂</b>"
+            v_title = f"<b>ВАРИАНТ {v_num}</b>"
             p = Paragraph(v_title, ParagraphStyle(f"rh_{v_num}", fontName="EDU-Bold", fontSize=8.0, alignment=1, textColor=colors.HexColor("#0f172a")))
             header_row.append(p)
 
@@ -1354,7 +1415,7 @@ def build_economy_variant(
     is_exact = _is_exact_science(subject)
 
     # 1. Compact Header
-    logo_flow = EdusferaLogoFlowable(size=18, brand_sub=None)
+    logo_flow = EdusferaLogoFlowable(size=20, brand_sub=None)
     
     topic_clean = subtitle.replace("Проверочная работа:", "").strip()
     if topic_clean.lower().startswith(subject.lower()):
@@ -1364,14 +1425,14 @@ def build_economy_variant(
     grade_disp = f" ({grade_label})" if grade_label else ""
     
     header_left = Paragraph(
-        f"<font name='EDU-Bold' size=9.5 color='#000000'><b>{escape(subject)}</b></font> &nbsp;•&nbsp; "
-        f"<font name='EDU' size=8 color='#475569'>{escape(work_disp)}{escape(grade_disp)}</font><br/>"
-        f"<font name='EDU-Bold' size=7.5 color='#334155'>Тема: </font><font name='EDU' size=7.5 color='#475569'>{escape(topic_clean)}</font>",
-        ParagraphStyle("econ_hl", leading=10)
+        f"<font name='EDU-Bold' size=11 color='#000000'><b>{escape(subject)}</b></font> &nbsp;•&nbsp; "
+        f"<font name='EDU' size=9 color='#334155'>{escape(work_disp)}{escape(grade_disp)}</font><br/>"
+        f"<font name='EDU-Bold' size=8.5 color='#1e293b'>Тема: </font><font name='EDU' size=8.5 color='#334155'>{escape(topic_clean)}</font>",
+        ParagraphStyle("econ_hl", leading=12)
     )
     
-    badge_p = Paragraph(f"<b>{escape(var_title)}</b>", ParagraphStyle("econ_bdg", fontName="EDU-Bold", fontSize=9, alignment=1, textColor=colors.black))
-    badge_t = Table([[badge_p]], colWidths=[75], rowHeights=[18])
+    badge_p = Paragraph(f"<b>{escape(var_title)}</b>", ParagraphStyle("econ_bdg", fontName="EDU-Bold", fontSize=10, alignment=1, textColor=colors.black))
+    badge_t = Table([[badge_p]], colWidths=[80], rowHeights=[20])
     badge_t.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 1.0, colors.black),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f1f5f9")),
@@ -1384,7 +1445,7 @@ def build_economy_variant(
     ]))
     
     logo_col_w = logo_flow.width + 18
-    badge_col_w = 75
+    badge_col_w = 80
     header_table = Table([
         [logo_flow, header_left, badge_t]
     ], colWidths=[logo_col_w, width - logo_col_w - badge_col_w, badge_col_w])
@@ -1397,7 +1458,7 @@ def build_economy_variant(
         ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
     blocks.append(header_table)
-    blocks.append(Spacer(1, 2))
+    blocks.append(Spacer(1, 3))
 
     # Pupil row
     if grade == "abiturient":
@@ -1407,11 +1468,11 @@ def build_economy_variant(
     else:
         grade_str = "_______"
     pupil_p = Paragraph(
-        f"<font size=7.5 color='#334155'><b>Учащийся:</b> __________________________________ &nbsp;&nbsp; <b>Класс:</b> {grade_str} &nbsp;&nbsp; <b>Дата:</b> __________</font>",
-        ParagraphStyle("econ_pupil", fontName="EDU", leading=9.5)
+        f"<font size=8.5 color='#1e293b'><b>Учащийся:</b> __________________________________ &nbsp;&nbsp;&nbsp;&nbsp; <b>Класс:</b> {grade_str} &nbsp;&nbsp;&nbsp;&nbsp; <b>Дата:</b> __________</font>",
+        ParagraphStyle("econ_pupil", fontName="EDU", leading=11.5)
     )
     blocks.append(pupil_p)
-    blocks.append(Spacer(1, 2.5))
+    blocks.append(Spacer(1, 5))
 
     # Tasks: keep each prompt, diagram and its answers together on the same page.
     for t_idx, task in enumerate(all_tasks):
@@ -1424,14 +1485,14 @@ def build_economy_variant(
             raise ValueError(f"Вариант {var_num}, задание {num_clean}: пустое условие.")
         prompt_html = _safe_formula_markup(prompt_raw, asset_dir)
         prompt_p = Paragraph(
-            f"<font size=8.0><b>{num_clean}.</b> {prompt_html}</font>",
-            ParagraphStyle(f"econ_q_{var_num}_{t_idx}", fontName="EDU", leading=10.5)
+            f"<font size=9.5><b>{num_clean}.</b> &nbsp;{prompt_html}</font>",
+            ParagraphStyle(f"econ_q_{var_num}_{t_idx}", fontName="EDU", leading=14.0)
         )
-        task_blocks.extend([prompt_p, Spacer(1, 1)])
+        task_blocks.extend([prompt_p, Spacer(1, 2.5)])
 
         img = _diagram_image(task, asset_dir, max_width=min(width * 0.43, 165), max_height=44)
         if img is not None:
-            task_blocks.extend([img, Spacer(1, 1)])
+            task_blocks.extend([img, Spacer(1, 2)])
 
         options = task.get("options") or []
         if options:
@@ -1441,24 +1502,26 @@ def build_economy_variant(
                 opt_letter = cyrillic_letters[o_i] if o_i < len(cyrillic_letters) else chr(65 + o_i)
                 opt_text = _safe_formula_markup(str(opt.get("text", "")), asset_dir)
                 option_paragraphs.append(Paragraph(
-                    f"<b>[{opt_letter}]</b> {opt_text}",
-                    ParagraphStyle(f"econ_opt_{var_num}_{t_idx}_{o_i}", fontName="EDU", fontSize=7.6, leading=9.0)
+                    f"<b>[ {opt_letter} ]</b>&nbsp;&nbsp;{opt_text}",
+                    ParagraphStyle(f"econ_opt_{var_num}_{t_idx}_{o_i}", fontName="EDU", fontSize=9.0, leading=12.5)
                 ))
 
-            if len(options) <= 4 and max(len(str(o.get("text", ""))) for o in options) <= 10:
-                opts_table = Table([option_paragraphs], colWidths=[(width - 48) / len(option_paragraphs)] * len(option_paragraphs))
+            if len(options) <= 4 and max(len(str(o.get("text", ""))) for o in options) <= 14:
+                col_w = (width - 18) / len(option_paragraphs)
+                opts_table = Table([option_paragraphs], colWidths=[col_w] * len(option_paragraphs))
             else:
                 cols = 2
+                col_w = (width - 18) / cols
                 option_rows = [option_paragraphs[i:i + cols] for i in range(0, len(option_paragraphs), cols)]
-                opts_table = Table(option_rows, colWidths=[(width - 48) / cols] * cols)
+                opts_table = Table(option_rows, colWidths=[col_w] * cols)
             opts_table.setStyle(TableStyle([
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 2),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 3),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
             ]))
-            indented_opts = Table([["", opts_table]], colWidths=[42, width - 42])
+            indented_opts = Table([["", opts_table]], colWidths=[14, width - 14])
             indented_opts.setStyle(TableStyle([
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -1466,36 +1529,44 @@ def build_economy_variant(
                 ("TOPPADDING", (0, 0), (-1, -1), 0),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
             ]))
-            task_blocks.extend([indented_opts, Spacer(1, 1.5)])
+            task_blocks.extend([indented_opts, Spacer(1, 4)])
         else:
             ans_p = Paragraph(
-                "<font size=7.5 color='#64748b'>Ответ ученика: [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</font>",
-                ParagraphStyle(f"econ_ans_{var_num}_{t_idx}", fontName="EDU", leading=9.5)
+                "<font size=8.5 color='#334155'><b>Ответ ученика:</b> &nbsp;[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]</font>",
+                ParagraphStyle(f"econ_ans_{var_num}_{t_idx}", fontName="EDU", leading=12.0)
             )
-            task_blocks.extend([ans_p, Spacer(1, 1.5)])
+            indented_ans = Table([["", ans_p]], colWidths=[14, width - 14])
+            indented_ans.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            task_blocks.extend([indented_ans, Spacer(1, 4)])
 
         blocks.append(KeepTogether(task_blocks))
 
     # Compact Answer Blank Row
-    ans_cells = ["<b>Бланк ответов:</b>"]
+    ans_cells = ["<b>БЛАНК ОТВЕТОВ:</b>"]
     for t_idx, task in enumerate(all_tasks):
         num_str = str(task.get("number", t_idx + 1)).strip()
         num_clean = re.sub(r'^[АБAB]', '', num_str).strip() or str(t_idx + 1)
         ans_cells.append(f"№{num_clean}: [ &nbsp;&nbsp;&nbsp; ]")
-    ans_cells.append("Отметка: [ &nbsp;&nbsp;&nbsp; ]")
+    ans_cells.append("<b>Отметка:</b> [ &nbsp;&nbsp;&nbsp;&nbsp; / 10 ]")
     
-    ans_markup = " &nbsp;&nbsp; ".join(ans_cells)
-    ans_p = Paragraph(f"<font size=7.5 color='#0f172a'>{ans_markup}</font>", ParagraphStyle(f"econ_blank_{var_num}", fontName="EDU", leading=9.5))
+    ans_markup = " &nbsp;&nbsp;&nbsp; ".join(ans_cells)
+    ans_p = Paragraph(f"<font size=8.5 color='#0f172a'>{ans_markup}</font>", ParagraphStyle(f"econ_blank_{var_num}", fontName="EDU", leading=11.5))
     ans_table = Table([[ans_p]], colWidths=[width])
     ans_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
-        ('BOX', (0,0), (-1,-1), 0.6, colors.HexColor("#94a3b8")),
-        ('LEFTPADDING', (0,0), (-1,-1), 5),
-        ('RIGHTPADDING', (0,0), (-1,-1), 5),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('BOX', (0,0), (-1,-1), 0.7, colors.HexColor("#64748b")),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
-    blocks.append(Spacer(1, 1.5))
+    blocks.append(Spacer(1, 5))
     blocks.append(ans_table)
 
     return blocks
@@ -1628,9 +1699,9 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                 exam_format=exam_format
             ))
 
-            story.append(Spacer(1, 3))
+            story.append(Spacer(1, 8))
             story.append(ScissorsCutLineFlowable(width=CONTENT_W))
-            story.append(Spacer(1, 3))
+            story.append(Spacer(1, 8))
 
             if v_pair_idx + 1 < len(variants):
                 var_bottom = variants[v_pair_idx + 1]
@@ -1785,7 +1856,7 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                 story_student.append(PageBreak())
 
             var_top = variants[v_pair_idx]
-            story_student.append(KeepTogether(build_economy_variant(
+            story_student.extend(build_economy_variant(
                 variant=var_top,
                 subject=subject,
                 subtitle=subtitle,
@@ -1798,15 +1869,15 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                 work_type=data.get("work_type"),
                 work_type_title=data.get("work_type_title"),
                 exam_format=exam_format
-            )))
+            ))
 
-            story_student.append(Spacer(1, 3))
+            story_student.append(Spacer(1, 8))
             story_student.append(ScissorsCutLineFlowable(width=CONTENT_W))
-            story_student.append(Spacer(1, 3))
+            story_student.append(Spacer(1, 8))
 
             if v_pair_idx + 1 < len(variants):
                 var_bottom = variants[v_pair_idx + 1]
-                story_student.append(KeepTogether(build_economy_variant(
+                story_student.extend(build_economy_variant(
                     variant=var_bottom,
                     subject=subject,
                     subtitle=subtitle,
@@ -1819,10 +1890,10 @@ def generate_pdfs(data: dict[str, Any], out_dir: str | Path) -> tuple[Path, Path
                     work_type=data.get("work_type"),
                     work_type_title=data.get("work_type_title"),
                     exam_format=exam_format
-                )))
+                ))
             else:
-                story_student.append(Spacer(1, 4))
-                story_student.append(build_student_workspace(CONTENT_W, height=130))
+                story_student.append(Spacer(1, 6))
+                story_student.append(build_student_workspace(CONTENT_W, height=115))
     else:
         for v_idx, variant in enumerate(variants):
             if v_idx > 0:

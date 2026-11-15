@@ -893,6 +893,28 @@ try {
         exit;
     }
 
+    if ($action === 'fetch_pdf') {
+        $orderNum = $_GET['order'] ?? '';
+        $order = \App\Models\GeneratorOrder::where('order_number', $orderNum)->first();
+        if (! $order || empty($order->pdf_path)) {
+            echo "Order or PDF not found";
+            exit;
+        }
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($order->pdf_path);
+        if (! file_exists($fullPath)) {
+            echo "File not found: {$fullPath}";
+            exit;
+        }
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('Content-Length: ' . filesize($fullPath));
+        readfile($fullPath);
+        exit;
+    }
+
     // ── ACTION: List Recent Generator Orders ────────────────────────
     if ($action === 'list_orders') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
@@ -901,9 +923,11 @@ try {
         foreach ($orders as $o) {
             $hasPdf = ! empty($o->pdf_path) ? '✓ PDF' : '✗ no PDF';
             $hasContent = ! empty($o->generated_content) ? '✓ Content' : '✗ no Content';
-            $downUrl = route('generator.download', ['order' => $o->order_number]);
+            $downUrl = route('generator.download', ['order' => $o->order_number, 'token' => $o->access_token]);
+            $successUrl = route('generator.success', ['order' => $o->order_number, 'token' => $o->access_token]);
             echo "• {$o->order_number} | status: {$o->status} | {$hasContent} | {$hasPdf} | topic: ".mb_substr($o->topic, 0, 30)." | created: {$o->created_at}\n";
-            echo "  URL: {$downUrl}\n\n";
+            echo "  Download: {$downUrl}\n";
+            echo "  Success:  {$successUrl}\n\n";
         }
         echo "</pre>";
         exit;
@@ -1047,10 +1071,61 @@ try {
                 echo "<a href='?key=edusfera2026&action=install_python_deps' style='display:inline-block;padding:8px 16px;background:#10b981;color:#fff;border-radius:8px;font-weight:bold;text-decoration:none;'>Установить зависимости через pip</a>\n\n";
             } else {
                 echo "\n🎉 <b>Все Python-зависимости генератора в наличии и готовы к работе!</b>\n\n";
+                $fontProbe = shell_exec('python3 -c "import matplotlib; from pathlib import Path; p = Path(matplotlib.get_data_path()) / \'fonts/ttf\'; print(\'Matplotlib fonts:\', [f.name for f in p.glob(\'*Serif*.ttf\')])" 2>&1');
+                echo "   Шрифты с засечками (Serif):\n   " . trim($fontProbe ?? '') . "\n";
+                $sysFonts = shell_exec('find /usr/share/fonts -iname "*times*" -o -iname "*liberation*serif*" 2>/dev/null | head -n 10');
+                echo "   Системные Times / Liberation Serif:\n   " . (trim($sysFonts ?? '') ?: 'не найдены в /usr/share/fonts') . "\n\n";
             }
         }
 
         echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>← В меню</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
+    if ($action === 'start_node_daemon') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "🚀 <b>Запуск HTTP-демона edusfera-exam-generator...</b>\n\n";
+
+        $serviceDir = base_path('edusfera-exam-generator');
+        $logFile = storage_path('logs/node_generator.log');
+
+        $checkCmd = 'pgrep -f "[n]ode src/server.js"';
+        $pids = trim(shell_exec($checkCmd) ?? '');
+
+        if (! empty($pids)) {
+            echo "ℹ️ Демон уже запущен (PID: {$pids})\n\n";
+        } else {
+            $cmd = 'export PATH="/usr/lib/ispnodejs/bin:$PATH" && cd ' . escapeshellarg($serviceDir) . ' && nohup node src/server.js > ' . escapeshellarg($logFile) . ' 2>&1 &';
+            shell_exec($cmd);
+            sleep(1);
+            $pids = trim(shell_exec($checkCmd) ?? '');
+            echo "   Статус запуска: " . (! empty($pids) ? "✅ Запущен (PID: {$pids})" : "⚠️ Проверьте лог") . "\n\n";
+        }
+
+        $psInfo = shell_exec('ps aux | grep node | grep -v grep 2>&1');
+        echo "Процессы node:\n" . ($psInfo ?: 'нет процессов') . "\n\n";
+
+        if (file_exists($logFile)) {
+            echo "Лог демона (" . basename($logFile) . "):\n";
+            echo htmlspecialchars(shell_exec('tail -n 25 ' . escapeshellarg($logFile)) ?: 'пусто') . "\n\n";
+        } else {
+            echo "Файл лога еще не создан: {$logFile}\n\n";
+        }
+
+        $health = trim(shell_exec('curl -s http://127.0.0.1:3005/health 2>&1') ?? '');
+        echo "Ответ http://127.0.0.1:3005/health:\n" . ($health ?: 'нет ответа') . "\n\n";
+
+        echo "<a href='?key=edusfera2026&action=check_node' style='color:#38bdf8;font-weight:bold;'>← В диагностику Node</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
+    if ($action === 'stop_node_daemon') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        shell_exec('pkill -f "node src/server.js"');
+        echo "🛑 Сигнал остановки отправлен.\n\n";
+        echo "<a href='?key=edusfera2026&action=start_node_daemon' style='color:#38bdf8;'>Запустить снова</a>\n";
         echo "</pre>";
         exit;
     }
@@ -1066,8 +1141,6 @@ try {
             echo "   Версия Node: {$nodeVer}\n";
         }
         $ispBin = '/usr/lib/ispnodejs/bin/node';
-        echo "   file_exists({$ispBin}): " . (file_exists($ispBin) ? 'YES' : 'NO') . "\n";
-        echo "   is_executable({$ispBin}): " . (is_executable($ispBin) ? 'YES' : 'NO') . "\n";
         $ispCheck = shell_exec('/usr/lib/ispnodejs/bin/node -v 2>&1');
         echo "   Тест {$ispBin} -v: " . trim($ispCheck ?? '') . "\n";
         $npmBin = '/usr/lib/ispnodejs/bin/npm';
@@ -1134,14 +1207,14 @@ try {
             exit;
         }
 
-        $cmd = "cd " . escapeshellarg($serviceDir) . " && npm install --omit=dev 2>&1";
+        $cmd = "export PATH=\"/usr/lib/ispnodejs/bin:\$PATH\" && cd " . escapeshellarg($serviceDir) . " && npm install --omit=dev 2>&1";
         echo "Выполняется команда:\n{$cmd}\n\n";
 
         $output = shell_exec($cmd);
         echo htmlspecialchars($output ?? 'Нет вывода') . "\n\n";
 
         echo "Проверка браузеров Playwright...\n";
-        $pwCmd = "cd " . escapeshellarg($serviceDir) . " && npx playwright install chromium 2>&1";
+        $pwCmd = "export PATH=\"/usr/lib/ispnodejs/bin:\$PATH\" && cd " . escapeshellarg($serviceDir) . " && npx playwright install chromium 2>&1";
         $pwOutput = shell_exec($pwCmd);
         echo htmlspecialchars($pwOutput ?? 'Нет вывода') . "\n\n";
 

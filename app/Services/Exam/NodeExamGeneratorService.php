@@ -200,6 +200,10 @@ class NodeExamGeneratorService
         try {
             file_put_contents($tempJson, json_encode($payload, JSON_UNESCAPED_UNICODE));
 
+            $env = [
+                'PATH' => '/usr/lib/ispnodejs/bin:/usr/local/bin:/usr/bin:/bin:' . (getenv('PATH') ?: ''),
+            ];
+
             $process = new Process([
                 $nodeBinary,
                 $cliScript,
@@ -207,7 +211,7 @@ class NodeExamGeneratorService
                 $tempJson,
                 '--out',
                 $destination,
-            ]);
+            ], env: $env);
 
             $process->setWorkingDirectory(base_path('edusfera-exam-generator'));
             $process->setTimeout($timeout);
