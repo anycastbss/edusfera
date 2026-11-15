@@ -27,6 +27,7 @@ class NodeExamGeneratorService
             }
 
             $candidates = [
+                '/usr/lib/ispnodejs/bin/node',
                 '/usr/bin/node',
                 '/usr/local/bin/node',
                 '/opt/homebrew/bin/node',
@@ -34,7 +35,8 @@ class NodeExamGeneratorService
             ];
 
             foreach ($candidates as $candidate) {
-                if (@file_exists($candidate) && @is_executable($candidate)) {
+                $ver = @shell_exec("$candidate -v 2>&1");
+                if ($ver && str_starts_with(trim($ver), 'v')) {
                     return $candidate;
                 }
             }

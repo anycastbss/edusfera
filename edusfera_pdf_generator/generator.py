@@ -123,12 +123,42 @@ class NumberedCanvas(canvas.Canvas):
 def _auto_detect_math_spans(text: str) -> str:
     """Intelligently detect equations and mathematical expressions, wrapping them in $...$ for STIX/Word rendering."""
     # Convert unicode powers and roots first
-    text = re.sub(r'√\(([^)]+)\)', r'$\\sqrt{\1}$', text)
-    text = re.sub(r'√([a-zA-Z0-9]+)', r'$\\sqrt{\1}$', text)
+    text = re.sub(r'√\(([^)]+)\)', lambda m: f"$\\sqrt{{{m.group(1)}}}$", text)
+    text = re.sub(r'√([a-zA-Z0-9]+)', lambda m: f"$\\sqrt{{{m.group(1)}}}$", text)
     text = text.replace('²', '^2').replace('³', '^3').replace('·', '*').replace('×', '*')
 
-    # Wrap any bare LaTeX \frac fractions: e.g. \frac{x+3}{4} = 3
-    text = re.sub(r'(?<!\$)(?:[-+0-9a-zA-Z\s]*=)?\s*\\frac\{[^}]+\}\{[^}]+\}(?:\s*[=+\-*]\s*[-+]?[0-9a-zA-Z]+)*(?!\$)', r'$\g<0>$', text)
+    # Wrap formula after colon (e.g. "Решите уравнение: 3x - 5 = 10." or "корень: \frac{x}{2} + \frac{x}{3} = 10.")
+    def _wrap_after_colon(m):
+        col = m.group(1)
+        expr = m.group(2).strip()
+        trail = ''
+        if expr.endswith(('.', ':', '?', ';', '!')):
+            trail = expr[-1]
+            expr = expr[:-1].strip()
+        return f"{col}${expr}${trail}"
+
+    text = re.sub(r'(:[ \t]+)([^а-яА-ЯёЁ\n]+)$', _wrap_after_colon, text)
+
+    # Wrap any bare LaTeX \frac fractions that might still be outside $...$: e.g. \frac{x+3}{4} = 3
+    if r'\frac' in text:
+        pieces = re.split(r'(\$[^\$]+\$)', text)
+        res = []
+        for p in pieces:
+            if p.startswith('$') and p.endswith('$'):
+                res.append(p)
+            elif r'\frac' in p:
+                m = re.search(r'([^а-яА-ЯёЁ\n]*\\frac\{[^}]+\}\{[^}]+\}[^а-яА-ЯёЁ\n]*)', p)
+                if m:
+                    frag = m.group(1).strip()
+                    punct = ''
+                    if frag.endswith(('.', ':', '?', ';', '!')):
+                        punct = frag[-1]
+                        frag = frag[:-1].strip()
+                    p = p[:m.start()] + f"${frag}${punct}" + p[m.end():]
+                res.append(p)
+            else:
+                res.append(p)
+        text = ''.join(res)
 
     # If already fully formatted with $, return
     # Otherwise, process pieces outside $...$
@@ -709,20 +739,50 @@ def build_task_flowable(task: dict[str, Any], asset_dir: Path, width: float, is_
     return KeepTogether(elements)
 
 
+class MathGridWorkspaceFlowable(Flowable):
+    """Draws an authentic 5x5mm ruled grid notebook workspace for student math calculations."""
+    def __init__(self, width: float, height: float = 120, title: str = "Место для вычислений и решений"):
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.title = title
+
+    def wrap(self, availWidth, availHeight):
+        return self.width, self.height
+
+    def draw(self):
+        canv = self.canv
+        canv.saveState()
+        canv.setFont("EDU-Bold", 7.5)
+        canv.setFillColor(colors.HexColor("#475569"))
+        canv.drawString(4, self.height - 11, f"✏️ {self.title}")
+
+        box_y = 2
+        box_h = self.height - 16
+        canv.setStrokeColor(colors.HexColor("#94a3b8"))
+        canv.setLineWidth(0.6)
+        canv.setFillColor(colors.HexColor("#ffffff"))
+        canv.rect(0, box_y, self.width, box_h, fill=1, stroke=1)
+
+        # 5mm grid cells
+        grid_size = 5 * mm
+        canv.setStrokeColor(colors.HexColor("#e2e8f0"))
+        canv.setLineWidth(0.3)
+        x = grid_size
+        while x < self.width:
+            canv.line(x, box_y, x, box_y + box_h)
+            x += grid_size
+        y = box_y + grid_size
+        while y < box_y + box_h:
+            canv.line(0, y, self.width, y)
+            y += grid_size
+
+        canv.restoreState()
+
+
 def build_student_workspace(width: float, height: float = 120) -> Flowable:
-    """Builds a clean ruled workspace / scratchpad for student calculations."""
-    title_p = Paragraph("<font color='#64748b' size=7.5><b>Место для вычислений и записи решений задач (черновик):</b></font>", STYLES["workspace_title"])
-    box_t = Table([[title_p]], colWidths=[width], rowHeights=[height])
-    box_t.setStyle(TableStyle([
-        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#fafafa")),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 6),
-        ('RIGHTPADDING', (0,0), (-1,-1), 6),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-    ]))
-    return box_t
+    """Builds a clean ruled workspace / scratchpad for student calculations with 5mm grid."""
+    return MathGridWorkspaceFlowable(width=width, height=height)
 
 
 def build_variant_answer_sheet(variant_title: str, part_a: list[dict], part_b: list[dict], width: float, is_exact: bool = True, max_score: str = "100", exam_format: str = "exam") -> Flowable:
@@ -1376,8 +1436,9 @@ def build_economy_variant(
         options = task.get("options") or []
         if options:
             option_paragraphs = []
+            cyrillic_letters = ["А", "Б", "В", "Г", "Д"]
             for o_i, opt in enumerate(options):
-                opt_letter = chr(65 + o_i)
+                opt_letter = cyrillic_letters[o_i] if o_i < len(cyrillic_letters) else chr(65 + o_i)
                 opt_text = _safe_formula_markup(str(opt.get("text", "")), asset_dir)
                 option_paragraphs.append(Paragraph(
                     f"<b>[{opt_letter}]</b> {opt_text}",
@@ -1552,7 +1613,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                 story.append(PageBreak())
 
             var_top = variants[v_pair_idx]
-            story.append(KeepTogether(build_economy_variant(
+            story.extend(build_economy_variant(
                 variant=var_top,
                 subject=subject,
                 subtitle=subtitle,
@@ -1565,7 +1626,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                 work_type=data.get("work_type"),
                 work_type_title=data.get("work_type_title"),
                 exam_format=exam_format
-            )))
+            ))
 
             story.append(Spacer(1, 3))
             story.append(ScissorsCutLineFlowable(width=CONTENT_W))
@@ -1573,7 +1634,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
 
             if v_pair_idx + 1 < len(variants):
                 var_bottom = variants[v_pair_idx + 1]
-                story.append(KeepTogether(build_economy_variant(
+                story.extend(build_economy_variant(
                     variant=var_bottom,
                     subject=subject,
                     subtitle=subtitle,
@@ -1586,7 +1647,7 @@ def generate_multivariant_pdf(data: dict[str, Any], output_pdf: str | Path):
                     work_type=data.get("work_type"),
                     work_type_title=data.get("work_type_title"),
                     exam_format=exam_format
-                )))
+                ))
             else:
                 story.append(Spacer(1, 4))
                 story.append(build_student_workspace(CONTENT_W, height=130))

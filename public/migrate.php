@@ -1055,6 +1055,102 @@ try {
         exit;
     }
 
+    if ($action === 'check_node') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "⚡ <b>Диагностика Node.js окружения для Edusfera Exam Generator (KaTeX + Chromium):</b>\n\n";
+
+        $nodeBinary = \App\Services\Exam\NodeExamGeneratorService::getNodeBinary();
+        echo "1. Путь к Node.js: " . ($nodeBinary ?: '❌ Не найден') . "\n";
+        if ($nodeBinary) {
+            $nodeVer = trim(shell_exec("$nodeBinary -v 2>&1") ?? '');
+            echo "   Версия Node: {$nodeVer}\n";
+        }
+        $ispBin = '/usr/lib/ispnodejs/bin/node';
+        echo "   file_exists({$ispBin}): " . (file_exists($ispBin) ? 'YES' : 'NO') . "\n";
+        echo "   is_executable({$ispBin}): " . (is_executable($ispBin) ? 'YES' : 'NO') . "\n";
+        $ispCheck = shell_exec('/usr/lib/ispnodejs/bin/node -v 2>&1');
+        echo "   Тест {$ispBin} -v: " . trim($ispCheck ?? '') . "\n";
+        $npmBin = '/usr/lib/ispnodejs/bin/npm';
+        echo "   Тест {$npmBin} -v: " . trim(shell_exec("{$npmBin} -v 2>&1") ?? '') . "\n";
+        $ispBins = shell_exec('ls -la /usr/lib/ispnodejs/bin/ 2>&1');
+        echo "   Содержимое /usr/lib/ispnodejs/bin:\n" . trim($ispBins ?? '') . "\n";
+
+        $npmBinary = trim(shell_exec('which npm 2>/dev/null') ?? '');
+        echo "2. Путь к npm: " . ($npmBinary ?: '❌ Не найден') . "\n";
+        if ($npmBinary) {
+            $npmVer = trim(shell_exec("$npmBinary -v 2>&1") ?? '');
+            echo "   Версия npm: {$npmVer}\n";
+        }
+
+        $pm2Binary = trim(shell_exec('which pm2 2>/dev/null') ?? '');
+        echo "3. Путь к PM2: " . ($pm2Binary ?: '❌ Не установлен (CLI режим активен)') . "\n\n";
+
+        $serviceDir = base_path('edusfera-exam-generator');
+        echo "4. Каталог микросервиса: " . (is_dir($serviceDir) ? "✅ {$serviceDir}" : "❌ Не найден") . "\n";
+
+        $modules = ['katex', 'handlebars', 'markdown-it', 'playwright-core', 'fastify', 'p-limit'];
+        $missing = [];
+        if (is_dir($serviceDir)) {
+            echo "5. Проверка npm пакетов в edusfera-exam-generator:\n";
+            foreach ($modules as $mod) {
+                $pkgPath = $serviceDir . '/node_modules/' . $mod . '/package.json';
+                if (file_exists($pkgPath)) {
+                    $pkgData = json_decode(file_get_contents($pkgPath), true);
+                    $v = $pkgData['version'] ?? 'installed';
+                    echo "   ✓ {$mod} ({$v}): УСТАНОВЛЕН\n";
+                } else {
+                    echo "   ❌ {$mod}: НЕ НАЙДЕН\n";
+                    $missing[] = $mod;
+                }
+            }
+
+            // Chromium check
+            $chromeBinary = trim(shell_exec('which chromium || which chromium-browser || which google-chrome 2>/dev/null') ?? '');
+            echo "6. Системный Chromium: " . ($chromeBinary ?: 'Используется Playwright default') . "\n";
+
+            // Status of service
+            $isAvailable = \App\Services\Exam\NodeExamGeneratorService::isAvailable();
+            echo "7. Статус доступности NodeExamGeneratorService: " . ($isAvailable ? "✅ ГОТОВ К РАБОТЕ" : "⚠️ НЕ ДОСТУПЕН") . "\n\n";
+
+            if (! empty($missing)) {
+                echo "⚠️ Отсутствуют некоторые npm зависимости. Нажмите кнопку для автоматической установки:\n";
+                echo "<a href='?key=edusfera2026&action=install_node_deps' style='display:inline-block;padding:8px 16px;background:#38bdf8;color:#0f172a;border-radius:8px;font-weight:bold;text-decoration:none;'>npm install в edusfera-exam-generator</a>\n\n";
+            }
+        }
+
+        echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>← В меню</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
+    if ($action === 'install_node_deps') {
+        echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
+        echo "🚀 <b>Установка npm зависимостей для edusfera-exam-generator...</b>\n\n";
+
+        $serviceDir = base_path('edusfera-exam-generator');
+        if (! is_dir($serviceDir)) {
+            echo "❌ Каталог {$serviceDir} не существует.\n";
+            echo "</pre>";
+            exit;
+        }
+
+        $cmd = "cd " . escapeshellarg($serviceDir) . " && npm install --omit=dev 2>&1";
+        echo "Выполняется команда:\n{$cmd}\n\n";
+
+        $output = shell_exec($cmd);
+        echo htmlspecialchars($output ?? 'Нет вывода') . "\n\n";
+
+        echo "Проверка браузеров Playwright...\n";
+        $pwCmd = "cd " . escapeshellarg($serviceDir) . " && npx playwright install chromium 2>&1";
+        $pwOutput = shell_exec($pwCmd);
+        echo htmlspecialchars($pwOutput ?? 'Нет вывода') . "\n\n";
+
+        echo "<a href='?key=edusfera2026&action=check_node' style='color:#38bdf8;font-weight:bold;'>← Проверить Node снова</a> | ";
+        echo "<a href='?key=edusfera2026' style='color:#94a3b8;'>В меню</a>\n";
+        echo "</pre>";
+        exit;
+    }
+
     if ($action === 'install_python_deps') {
         echo "<pre style='background:#0f172a;color:#f8fafc;padding:20px;border-radius:12px;font-family:monospace;'>";
         echo "🚀 <b>Установка Python зависимостей для PDF Generator...</b>\n\n";
@@ -1144,9 +1240,17 @@ try {
 
         $pdfFullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($order->pdf_path);
         $pdfSize = file_exists($pdfFullPath) ? filesize($pdfFullPath) : 0;
+        $isNode = \App\Services\Exam\NodeExamGeneratorService::isAvailable();
         $isPython = \App\Services\Exam\PythonExamGeneratorService::isAvailable();
+        $engineName = "📄 DomPDF Standard Engine (Fallback)";
+        if ($isNode) {
+            $engineName = "⚡ Node.js Exam Generator (KaTeX + Chromium A4)";
+        } elseif ($isPython) {
+            $engineName = "🐍 Python ReportLab (edusfera_pdf_generator)";
+        }
+
         echo "3. Сборка PDF:\n";
-        echo "   ✓ Движок генерации: " . ($isPython ? "🐍 Python ReportLab (edusfera_pdf_generator)" : "📄 DomPDF Standard Engine (Fallback)") . "\n";
+        echo "   ✓ Движок генерации: {$engineName}\n";
         echo "   ✓ Размер готового PDF: ".round($pdfSize / 1024, 1)." КБ\n\n";
 
         echo "4. Предпросмотр начала сгенерированного документа:\n";

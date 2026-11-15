@@ -251,10 +251,21 @@ CRITICAL_FILES=(
     "app/Services/Exam/ExamVerificationEngine.php"
     "app/Services/Exam/PedagogicalPromptEngine.php"
     "app/Services/Exam/PythonExamGeneratorService.php"
+    "app/Services/Exam/NodeExamGeneratorService.php"
+    "app/Jobs/GenerateExamPdfJob.php"
     "resources/views/generator/success.blade.php"
     "resources/views/generator/cabinet.blade.php"
     "resources/views/payments/generator-hosted.blade.php"
 )
+
+# Добавляем микросервис edusfera-exam-generator (без node_modules)
+if [ -d "edusfera-exam-generator" ]; then
+    while IFS= read -r nodegenfile; do
+        if [[ ! "$nodegenfile" =~ (node_modules/|\.git/|\.DS_Store) ]] && [ -f "$nodegenfile" ]; then
+            FILES+=("$nodegenfile")
+        fi
+    done < <(find edusfera-exam-generator -type f)
+fi
 
 # Добавляем модуль edusfera_pdf_generator
 if [ -d "edusfera_pdf_generator" ]; then
