@@ -1590,7 +1590,6 @@ export default function AntiCheatGeneratorLanding() {
         const currentSubjectObj = SUBJECTS.find(s => s.id === selectedSubject);
         const subjectName = currentSubjectObj ? currentSubjectObj.name : selectedSubject;
         const planType = 'single';
-        const isAdmin = Boolean(user?.is_admin || user?.role === 'admin');
 
         setIsSubmitting(true);
 
@@ -1615,7 +1614,6 @@ export default function AntiCheatGeneratorLanding() {
                     exam_format: examFormat,
                     print_layout: printLayout,
                     plan_type: planType,
-                    test_bypass: isAdmin ? 1 : 0,
                 }),
             });
 

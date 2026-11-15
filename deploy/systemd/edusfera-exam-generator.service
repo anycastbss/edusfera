@@ -1,0 +1,25 @@
+[Unit]
+Description=Edusfera Exam Generator Microservice (Node.js + KaTeX + Chromium)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/edusfera.by/edusfera-exam-generator
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/www/edusfera.by/storage/logs/exam-generator.log
+StandardError=append:/var/www/edusfera.by/storage/logs/exam-generator.error.log
+Environment=NODE_ENV=production
+Environment=PORT=3005
+Environment=HOST=127.0.0.1
+Environment=RENDER_CONCURRENCY=3
+Environment=BROWSER_RESTART_THRESHOLD=400
+Environment=CHROME_EXECUTABLE_PATH=/usr/bin/chromium
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+

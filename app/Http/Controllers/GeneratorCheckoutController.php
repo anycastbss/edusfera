@@ -52,6 +52,47 @@ class GeneratorCheckoutController extends Controller
     }
 
     /**
+     * Server-side admin check. Client-supplied flags must never be trusted.
+     */
+    protected function isAdminUser($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        return (bool) $user && (
+            (method_exists($user, 'isAdmin') && $user->isAdmin()) ||
+            $user->role === 'admin' ||
+            ($user->role instanceof \App\Domain\User\Enums\UserRole && $user->role === \App\Domain\User\Enums\UserRole::Admin)
+        );
+    }
+
+    /**
+     * Order links are bearer links: order_number alone must not grant access.
+     */
+    protected function authorizeOrderAccess(GeneratorOrder $order, Request $request): void
+    {
+        $token = $request->query('token');
+        if (! is_string($token)) {
+            $token = $request->input('token');
+        }
+
+        if ($order->hasValidAccessToken(is_string($token) ? $token : null)) {
+            return;
+        }
+
+        // Compatibility bridge: links emailed before the token rollout keep
+        // working, because they cannot be re-signed retroactively.
+        if ($order->legacy_access && ! $request->filled('token')) {
+            return;
+        }
+
+        if ($this->isAdminUser()) {
+            return;
+        }
+
+        abort(404);
+    }
+
+    /**
      * Step 1: Initiate payment via Alfa-Bank Gateway or fallback hosted sandbox
      */
     public function initiate(
@@ -72,7 +113,6 @@ class GeneratorCheckoutController extends Controller
             'difficulty' => ['nullable', 'string', 'in:base,advanced,olympiad'],
             'exam_format' => ['nullable', 'string', 'in:school,exam,ct_ce'],
             'print_layout' => ['nullable', 'string', 'in:economy,micro,standard'],
-            'test_bypass' => ['nullable'],
         ], [
             'email.required' => 'Укажите адрес электронной почты для получения материалов.',
             'email.email' => 'Пожалуйста, введите корректный адрес электронной почты.',
@@ -94,6 +134,7 @@ class GeneratorCheckoutController extends Controller
         $examFormat = $validated['exam_format'] ?? (($numGrade < 10 && $workType !== 'ct_ce') ? 'school' : 'exam');
         $printLayout = $validated['print_layout'] ?? ($examFormat === 'school' ? 'economy' : 'standard');
 
+        $isAdmin = $this->isAdminUser();
         $isQuarterPass = ($planType === 'quarter_pass');
         $isSubscription = ($planType === 'subscription');
         if ($isSubscription) {
@@ -138,24 +179,21 @@ class GeneratorCheckoutController extends Controller
         session(['generator_email' => $email]);
         Cookie::queue('generator_email', $email, 60 * 24 * 365);
 
-        // Option 1: Admin bypass or test mode
-        $user = auth()->user();
-        $isAdmin = $user && (
-            (method_exists($user, 'isAdmin') && $user->isAdmin()) ||
-            $user->role === 'admin' ||
-            ($user->role instanceof \App\Domain\User\Enums\UserRole && $user->role === \App\Domain\User\Enums\UserRole::Admin)
-        );
+        // Only a server-side verified admin may generate without payment.
+        // Client flags (test_bypass, promo codes, special emails) are never trusted.
+        if ($request->boolean('test_bypass') && ! $isAdmin) {
+            Log::channel('payments')->warning('Rejected client-side generator test_bypass attempt', [
+                'order' => $orderNumber,
+                'email' => $email,
+                'ip' => $request->ip(),
+            ]);
+        }
 
-        $isTestBypass = $isAdmin
-            || $request->boolean('test_bypass')
-            || strtolower($email) === 'test@edusfera.by'
-            || $request->input('promo_code') === 'TEST2026';
-
-        if ($isTestBypass) {
+        if ($isAdmin) {
             $order->update([
                 'status' => 'generating',
                 'paid_at' => now(),
-                'payment_method' => $isAdmin ? 'admin_test_bypass' : 'sandbox_test',
+                'payment_method' => 'admin_test_bypass',
             ]);
 
             Log::channel('payments')->info('Generator test bypass activated', [
@@ -165,7 +203,10 @@ class GeneratorCheckoutController extends Controller
                 'is_admin' => $isAdmin,
             ]);
 
-            $successUrl = route('generator.success', ['order' => $order->order_number]);
+            $successUrl = route('generator.success', [
+                'order' => $order->order_number,
+                'token' => $order->access_token,
+            ]);
 
             // Background generation via fastcgi_finish_request if available
             if (function_exists('fastcgi_finish_request')) {
@@ -207,7 +248,11 @@ class GeneratorCheckoutController extends Controller
         $returnUrl = route('generator.checkout.callback', ['order' => $order->order_number, 'status' => 'success']);
         $failUrl = route('generator.checkout.callback', ['order' => $order->order_number, 'status' => 'failed']);
 
-        $redirectUrl = route('generator.checkout.hosted', ['order' => $order->order_number]);
+        $redirectUrl = route('generator.checkout.hosted', [
+            'order' => $order->order_number,
+            'token' => $order->access_token,
+        ]);
+        $paymentReady = false;
 
         $description = sprintf('Edusfera Вариант (%d вар.): %s [%s]', $variantCount, mb_substr($topic, 0, 40), $orderNumber);
 
@@ -226,6 +271,7 @@ class GeneratorCheckoutController extends Controller
             if (($paymentResult['success'] ?? false) && ! empty($paymentResult['redirect_url'])) {
                 $alfaOrderId = $paymentResult['mdOrder'] ?? $paymentResult['gateway_transaction_id'] ?? null;
                 $redirectUrl = $paymentResult['redirect_url'];
+                $paymentReady = true;
 
                 $order->update([
                     'alfa_order_id' => $alfaOrderId,
@@ -237,13 +283,41 @@ class GeneratorCheckoutController extends Controller
                     'redirectUrl' => $redirectUrl,
                 ]);
             } else {
-                Log::channel('payments')->notice('AlfaBank Generator using hosted fallback or bank error', [
+                Log::channel('payments')->warning('AlfaBank Generator payment was not registered', [
                     'order' => $orderNumber,
                     'result' => $paymentResult,
                 ]);
             }
         } catch (\Throwable $e) {
             Log::channel('payments')->error('AlfaBank exception in Generator checkout: '.$e->getMessage(), ['order' => $orderNumber]);
+        }
+
+        // A failed gateway call must never look like a working checkout.
+        // The fake "confirm" screen is a local/testing helper only.
+        if (! $paymentReady) {
+            $order->update(['status' => 'failed']);
+
+            if (app()->environment('local', 'testing')) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'order_number' => $order->order_number,
+                        'redirect_url' => $redirectUrl,
+                        'demo_payment' => true,
+                    ]);
+                }
+
+                return redirect()->to($redirectUrl);
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Платёжный шлюз временно недоступен. Пожалуйста, попробуйте ещё раз через минуту.',
+                ], 502);
+            }
+
+            return redirect()->route('generator', ['payment' => 'failed']);
         }
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -258,10 +332,16 @@ class GeneratorCheckoutController extends Controller
     }
 
     /**
-     * Hosted payment screen fallback for sandbox / direct card confirmation
+     * Hosted payment screen fallback for sandbox / local development only.
      */
-    public function hosted(GeneratorOrder $order): View
+    public function hosted(GeneratorOrder $order, Request $request): View|RedirectResponse
     {
+        if (! app()->environment('local', 'testing') && ! $this->isAdminUser()) {
+            return redirect()->route('generator', ['payment' => 'failed']);
+        }
+
+        $this->authorizeOrderAccess($order, $request);
+
         return view('payments.generator-hosted', [
             'order' => $order,
         ]);
@@ -283,22 +363,34 @@ class GeneratorCheckoutController extends Controller
         if (! empty($alfaOrderId)) {
             $checkResult = $gateway->getOrderStatus((string) $alfaOrderId);
             if (($checkResult['is_paid'] ?? false) === true) {
-                $bankOrderNumber = $checkResult['raw']['orderNumber'] ?? null;
-                if ($bankOrderNumber === null || $bankOrderNumber === $order->order_number) {
+                $raw = is_array($checkResult['raw'] ?? null) ? $checkResult['raw'] : [];
+                $bankOrderNumber = $raw['orderNumber'] ?? null;
+
+                // SEC-03 FIX: a successful status for another/cheaper order must not unlock this one.
+                $orderNumberMatches = $bankOrderNumber === null || $bankOrderNumber === $order->order_number;
+                $bankAmount = isset($raw['amount']) ? (int) $raw['amount'] : null;
+                $bankCurrency = isset($raw['currency']) ? (string) $raw['currency'] : null;
+                $amountMatches = $bankAmount === null || $bankAmount === (int) $order->amount_kopecks;
+                $currencyMatches = $bankCurrency === null
+                    || in_array($bankCurrency, [(string) config('payments.alfabank.currency_code', '933'), 'BYN'], true);
+
+                if ($orderNumberMatches && $amountMatches && $currencyMatches) {
                     $isPaid = true;
+                } else {
+                    Log::channel('payments')->critical('Generator payment verification mismatch', [
+                        'order' => $order->order_number,
+                        'expected_amount' => $order->amount_kopecks,
+                        'bank_amount' => $bankAmount,
+                        'bank_order_number' => $bankOrderNumber,
+                        'bank_currency' => $bankCurrency,
+                    ]);
                 }
             }
         }
 
         // Allow simulated success ONLY in local or testing environments OR for admin
         if (! $isPaid && $request->has('simulated_success')) {
-            $user = auth()->user();
-            $isAdmin = $user && (
-                (method_exists($user, 'isAdmin') && $user->isAdmin()) ||
-                $user->role === 'admin' ||
-                ($user->role instanceof \App\Domain\User\Enums\UserRole && $user->role === \App\Domain\User\Enums\UserRole::Admin)
-            );
-            if ($isAdmin || app()->environment('local', 'testing')) {
+            if ($this->isAdminUser() || app()->environment('local', 'testing')) {
                 $isPaid = true;
             }
         }
@@ -326,7 +418,10 @@ class GeneratorCheckoutController extends Controller
                 $this->sendOrderEmail($order);
             }
 
-            return redirect()->route('generator.success', ['order' => $order->order_number]);
+            return redirect()->route('generator.success', [
+                'order' => $order->order_number,
+                'token' => $order->access_token,
+            ]);
         }
 
         return redirect()->route('generator', ['payment' => 'failed']);
@@ -335,34 +430,38 @@ class GeneratorCheckoutController extends Controller
     /**
      * JSON status polling endpoint for async UI progress
      */
-    public function status(GeneratorOrder $order): JsonResponse
+    public function status(GeneratorOrder $order, Request $request): JsonResponse
     {
-        if (! empty($order->generated_content) && $order->status !== 'completed') {
-            $order->update(['status' => 'completed']);
-            $order->refresh();
-        }
+        $this->authorizeOrderAccess($order, $request);
 
         return response()->json([
             'order_number' => $order->order_number,
             'status' => $order->status,
             'is_paid' => $order->isPaid(),
             'is_ready' => ! empty($order->generated_content),
-            'download_url' => $order->isPaid() ? route('generator.download', ['order' => $order->order_number]) : null,
+            'download_url' => $order->isPaid()
+                ? route('generator.download', ['order' => $order->order_number, 'token' => $order->access_token])
+                : null,
         ]);
     }
 
     /**
-     * Process AI generation on demand if still in progress
+     * Process AI generation on demand if still in progress.
+     * Authorization is required; the generation itself is idempotent (see lock below).
      */
-    public function process(GeneratorOrder $order, GeminiService $gemini): JsonResponse
+    public function process(GeneratorOrder $order, Request $request, GeminiService $gemini): JsonResponse
     {
-        if ($order->isPaid() && empty($order->generated_content)) {
-            $this->generateContentAndPdf($order, $gemini);
-            $order->refresh();
-        }
+        $this->authorizeOrderAccess($order, $request);
 
-        if (! empty($order->generated_content) && $order->status !== 'completed') {
-            $order->update(['status' => 'completed']);
+        if ($order->isPaid() && empty($order->generated_content)) {
+            if (config('queue.default') === 'sync') {
+                $this->generateContentAndPdf($order, $gemini);
+            } else {
+                \App\Jobs\GenerateExamPdfJob::dispatch($order)->onQueue('exams');
+                if ($order->status !== 'generating') {
+                    $order->update(['status' => 'generating']);
+                }
+            }
             $order->refresh();
         }
 
@@ -371,22 +470,21 @@ class GeneratorCheckoutController extends Controller
             'status' => $order->status,
             'is_paid' => $order->isPaid(),
             'is_ready' => ! empty($order->generated_content),
-            'download_url' => $order->isPaid() ? route('generator.download', ['order' => $order->order_number]) : null,
+            'download_url' => ! empty($order->generated_content) && $order->isPaid()
+                ? route('generator.download', ['order' => $order->order_number, 'token' => $order->access_token])
+                : null,
         ]);
     }
 
     /**
      * Step 3: Success page with ready download buttons
      */
-    public function success(GeneratorOrder $order): View
+    public function success(GeneratorOrder $order, Request $request): View
     {
+        $this->authorizeOrderAccess($order, $request);
+
         session(['generator_email' => $order->email]);
         Cookie::queue('generator_email', $order->email, 60 * 24 * 365);
-
-        if (! empty($order->generated_content) && $order->status !== 'completed') {
-            $order->update(['status' => 'completed']);
-            $order->refresh();
-        }
 
         return view('generator.success', [
             'order' => $order,
@@ -398,6 +496,8 @@ class GeneratorCheckoutController extends Controller
      */
     public function downloadPdf(GeneratorOrder $order, Request $request): BinaryFileResponse|Response|RedirectResponse
     {
+        $this->authorizeOrderAccess($order, $request);
+
         if (! $order->isPaid()) {
             return redirect()->route('generator')->with('error', 'Заказ ожидает оплаты.');
         }
@@ -405,15 +505,13 @@ class GeneratorCheckoutController extends Controller
         session(['generator_email' => $order->email]);
         Cookie::queue('generator_email', $order->email, 60 * 24 * 365);
 
+        // Download must never start another AI generation. Send the buyer back
+        // to the progress screen instead (the order is fulfilled there).
         if (empty($order->generated_content)) {
-            $gemini = app(GeminiService::class);
-            $this->generateContentAndPdf($order, $gemini);
-            $order->refresh();
-        }
-
-        if ($order->status !== 'completed') {
-            $order->update(['status' => 'completed']);
-            $order->refresh();
+            return redirect()->route('generator.success', [
+                'order' => $order->order_number,
+                'token' => $order->access_token,
+            ]);
         }
 
         $force = $request->boolean('force') || $request->has('refresh');
@@ -533,11 +631,19 @@ class GeneratorCheckoutController extends Controller
                 );
             }
 
-            // 1. High-end Python ReportLab engine from edusfera_pdf_generator
-            $pythonSuccess = \App\Services\Exam\PythonExamGeneratorService::generate($order, $parsedData, $relativePath);
+            // 1. High-speed Node.js microservice (edusfera-exam-generator: KaTeX vector math + Chromium A4)
+            $pdfSuccess = false;
+            if (\App\Services\Exam\NodeExamGeneratorService::isAvailable()) {
+                $pdfSuccess = \App\Services\Exam\NodeExamGeneratorService::generate($order, $parsedData, $relativePath);
+            }
 
-            // 2. Fallback: Standard PDF engine
-            if (! $pythonSuccess || ! Storage::disk('local')->exists($relativePath)) {
+            // 2. Python ReportLab engine fallback from edusfera_pdf_generator
+            if (! $pdfSuccess || ! Storage::disk('local')->exists($relativePath)) {
+                $pdfSuccess = \App\Services\Exam\PythonExamGeneratorService::generate($order, $parsedData, $relativePath);
+            }
+
+            // 3. Fallback: Standard PDF engine (DomPDF)
+            if (! $pdfSuccess || ! Storage::disk('local')->exists($relativePath)) {
                 // SEC-02 FIX: Strip raw HTML from markdown to prevent SSRF and injection
                 $htmlContent = Str::markdown($cleaned, [
                     'html_input' => 'strip',
@@ -659,43 +765,60 @@ class GeneratorCheckoutController extends Controller
      */
     protected function generateContentAndPdf(GeneratorOrder $order, GeminiService $gemini): void
     {
-        $promptData = PedagogicalPromptEngine::build($order);
-        $prompt = $promptData['prompt'];
-        $system = $promptData['system'];
-
-        try {
-            // Tight 28s timeout to safely fit under any gateway limit
-            $result = $gemini->generateText($prompt, $system, timeoutSeconds: 28);
-
-            if (! empty($result)) {
-                $cleanedResult = self::cleanMathFormulasForPrint($result);
-
-                // Run verification (offline if variants > 3 to keep SLA tight)
-                $verifierAi = ($order->variant_count <= 3) ? $gemini : null;
-                $verifiedResult = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($cleanedResult, $order, $verifierAi);
-
-                $order->update([
-                    'status' => 'completed',
-                    'generated_content' => $verifiedResult,
-                ]);
-
-                // Pre-generate and cache PDF immediately
-                $this->ensurePdfExists($order, force: true);
-
-                return;
-            }
-        } catch (\Throwable $e) {
-            Log::error('AI generation error for order '.$order->order_number.': '.$e->getMessage());
+        // Only one worker may generate a given order. The success page, the
+        // payment callback and repeated process calls would otherwise fork
+        // parallel Gemini requests and parallel PDF builds.
+        $lock = \Illuminate\Support\Facades\Cache::lock('generator:generation:'.$order->id, 300);
+        if (! $lock->get()) {
+            return;
         }
 
-        // Graceful fallback with valid structure if AI temporary unavailable or times out
-        $fallbackContent = $this->buildFallbackContent($order, (int) ($order->variant_count ?: 5));
-        $verifiedFallback = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($fallbackContent, $order, null);
-        $order->update([
-            'status' => 'completed',
-            'generated_content' => self::cleanMathFormulasForPrint($verifiedFallback),
-        ]);
-        $this->ensurePdfExists($order, force: true);
+        try {
+            $order->refresh();
+            if (! empty($order->generated_content)) {
+                return;
+            }
+
+            $promptData = PedagogicalPromptEngine::build($order);
+            $prompt = $promptData['prompt'];
+            $system = $promptData['system'];
+
+            try {
+                // Tight 28s timeout to safely fit under any gateway limit
+                $result = $gemini->generateText($prompt, $system, timeoutSeconds: 28);
+
+                if (! empty($result)) {
+                    $cleanedResult = self::cleanMathFormulasForPrint($result);
+
+                    // Run verification (offline if variants > 3 to keep SLA tight)
+                    $verifierAi = ($order->variant_count <= 3) ? $gemini : null;
+                    $verifiedResult = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($cleanedResult, $order, $verifierAi);
+
+                    $order->update([
+                        'status' => 'completed',
+                        'generated_content' => $verifiedResult,
+                    ]);
+
+                    // Pre-generate and cache PDF immediately
+                    $this->ensurePdfExists($order, force: true);
+
+                    return;
+                }
+            } catch (\Throwable $e) {
+                Log::error('AI generation error for order '.$order->order_number.': '.$e->getMessage());
+            }
+
+            // Graceful fallback with valid structure if AI temporary unavailable or times out
+            $fallbackContent = $this->buildFallbackContent($order, (int) ($order->variant_count ?: 5));
+            $verifiedFallback = \App\Services\Exam\ExamVerificationEngine::verifyAndCorrect($fallbackContent, $order, null);
+            $order->update([
+                'status' => 'completed',
+                'generated_content' => self::cleanMathFormulasForPrint($verifiedFallback),
+            ]);
+            $this->ensurePdfExists($order, force: true);
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
@@ -943,7 +1066,10 @@ class GeneratorCheckoutController extends Controller
     protected function sendOrderEmail(GeneratorOrder $order): void
     {
         try {
-            $downloadUrl = route('generator.download', ['order' => $order->order_number]);
+            $downloadUrl = route('generator.download', [
+                'order' => $order->order_number,
+                'token' => $order->access_token,
+            ]);
             $subject = "Ваш комплект проверочной работы ({$order->subject}) — Заказ {$order->order_number}";
 
             Mail::send([], [], function ($message) use ($order, $downloadUrl, $subject) {

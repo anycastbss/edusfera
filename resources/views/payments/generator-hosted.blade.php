@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <title>Оплата заказа № {{ $order->order_number }} — Альфа-Банк | Edusfera</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     @vite(['resources/css/app.css'])
@@ -25,6 +26,12 @@
                 {{ number_format($order->amountByn(), 2) }} BYN
             </span>
         </div>
+
+        @if (app()->environment('local', 'testing'))
+            <div class="rounded-xl border border-[#C6FF33]/30 bg-[#C6FF33]/10 px-3 py-2 text-[11px] text-[#C6FF33] font-mono">
+                Тестовый режим: реальная оплата не производится.
+            </div>
+        @endif
 
         {{-- Order Details --}}
         <div class="p-4 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2 text-xs">
@@ -60,7 +67,7 @@
                 href="{{ route('generator.checkout.callback', ['order' => $order->order_number, 'status' => 'success', 'simulated_success' => 1]) }}"
                 class="w-full py-4 px-6 rounded-2xl bg-[#EF3124] hover:bg-[#d6281b] text-white font-bold text-sm shadow-[0_0_25px_rgba(239,49,36,0.35)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-                <span>Подтвердить оплату {{ number_format($order->amountByn(), 2) }} BYN (Карта / ЕРИП)</span>
+                <span>Подтвердить оплату {{ number_format($order->amountByn(), 2) }} BYN (тестовый режим)</span>
             </a>
 
             <a 

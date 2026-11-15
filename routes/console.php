@@ -49,3 +49,10 @@ Schedule::command('app:optimize-storage')
 Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')
     ->everyMinute()
     ->withoutOverlapping();
+
+// 9. Автоматическая очистка временных папок генератора тестов
+Schedule::command('exam:cleanup-temp --minutes=30')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();
+

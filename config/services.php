@@ -67,4 +67,9 @@ return [
         'yandex_metrika_id' => env('YANDEX_METRIKA_ID', '113978262'),
         'google_tag_id' => env('GOOGLE_TAG_ID', ''),
     ],
+
+    'exam_generator' => [
+        'url' => env('EXAM_GENERATOR_URL', 'http://127.0.0.1:3005'),
+        'timeout' => (int) env('EXAM_GENERATOR_TIMEOUT', 30),
+    ],
 ];

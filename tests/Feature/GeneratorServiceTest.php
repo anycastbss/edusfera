@@ -155,7 +155,10 @@ class GeneratorServiceTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->get(route('generator.checkout.hosted', ['order' => $order->order_number]));
+        $response = $this->get(route('generator.checkout.hosted', [
+            'order' => $order->order_number,
+            'token' => $order->access_token,
+        ]));
 
         $response->assertStatus(200);
         $response->assertSee('GEN-TEST1234');
@@ -201,7 +204,10 @@ class GeneratorServiceTest extends TestCase
             'orderId' => 'ALFA-ORDER-999',
         ]));
 
-        $response->assertRedirect(route('generator.success', ['order' => $order->order_number]));
+        $response->assertRedirect(route('generator.success', [
+            'order' => $order->order_number,
+            'token' => $order->access_token,
+        ]));
 
         $order->refresh();
         $this->assertTrue($order->isPaid());
@@ -246,7 +252,10 @@ class GeneratorServiceTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->get(route('generator.download', ['order' => $order->order_number]));
+        $response = $this->get(route('generator.download', [
+            'order' => $order->order_number,
+            'token' => $order->access_token,
+        ]));
 
         $response->assertRedirect(route('generator'));
     }
@@ -284,7 +293,10 @@ TEXT;
             'generated_content' => $validContent,
         ]);
 
-        $response = $this->get(route('generator.download', ['order' => $order->order_number]));
+        $response = $this->get(route('generator.download', [
+            'order' => $order->order_number,
+            'token' => $order->access_token,
+        ]));
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ meta.subject }} — {{ meta.title }}</title>
+  <style>{{{ katexInlineCss }}}</style>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm 10mm 10mm;
+      @bottom-left {
+        content: "EDUSFERA • Не зубри. Знай.";
+        font-family: -apple-system, BlinkMacSystemFont, "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+        font-size: 7.5pt;
+        color: #64748b;
+      }
+      @bottom-right {
+        content: "Стр. " counter(page) " из " counter(pages);
+        font-family: -apple-system, BlinkMacSystemFont, "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+        font-size: 7.5pt;
+        color: #475569;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+      font-size: {{ options.fontSizePt }}pt;
+      line-height: 1.4;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .page-sheet {
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+    }
+    .page-sheet:last-of-type {
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    /* ── 1. Фирменная шапка Edusfera ── */
+    .brand-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-rhombus {
+      width: 18px;
+      height: 18px;
+      background-color: #0f172a;
+      transform: rotate(45deg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-rhombus-inner {
+      width: 6px;
+      height: 6px;
+      background-color: #ffffff;
+    }
+
+    .brand-name {
+      font-size: 15pt;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: #0f172a;
+      line-height: 1;
+    }
+
+    .brand-slogan {
+      font-size: 9.5pt;
+      font-style: italic;
+      color: #334155;
+      border-left: 1.5px solid #cbd5e1;
+      padding-left: 10px;
+      line-height: 1.2;
+    }
+
+    .brand-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .promo-badge {
+      font-size: 7.5pt;
+      color: #475569;
+      text-align: right;
+      line-height: 1.2;
+    }
+
+    .promo-badge strong {
+      color: #0f172a;
+      display: block;
+    }
+
+    .variant-badge {
+      border: 1.5px solid #0f172a;
+      padding: 3px 10px;
+      font-weight: 800;
+      font-size: 10pt;
+      letter-spacing: 0.04em;
+      background: #f8fafc;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* ── 2. Паспорт теста ── */
+    .passport-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background-color: #f8fafc;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5pt;
+    }
+
+    .passport-title-wrap {
+      flex: 1;
+    }
+
+    .passport-subject {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .passport-status {
+      font-size: 8pt;
+      color: #64748b;
+      margin-top: 1px;
+    }
+
+    .passport-meta-grid {
+      display: flex;
+      gap: 12px;
+      text-align: right;
+      font-size: 8pt;
+      color: #334155;
+    }
+
+    .meta-pill {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 3px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .meta-pill strong {
+      color: #0f172a;
+    }
+
+    /* ── 3. Блок учащегося ── */
+    .student-bar {
+      border: 1px dashed #94a3b8;
+      border-radius: 3px;
+      padding: 5px 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      background: #fafafa;
+    }
+
+    /* ── 4. Инструкция ── */
+    .instruction-callout {
+      border-left: 3px solid #0f172a;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      font-size: 8pt;
+      color: #334155;
+      border-radius: 0 3px 3px 0;
+    }
+    .instruction-callout strong {
+      color: #0f172a;
+    }
+
+    /* ── 5. Разделы Часть А и Часть Б ── */
+    .section-title-bar {
+      background-color: #0f172a;
+      color: #ffffff;
+      padding: 3px 8px;
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin: 8px 0 6px 0;
+      border-radius: 2px;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    /* ── Карточки заданий ── */
+    .task-block {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 5px 0 6px 0;
+      margin-bottom: 2px;
+    }
+
+    .task-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .task-num-badge {
+      display: inline-block;
+      min-width: 32px;
+      font-weight: 800;
+      font-size: 8.5pt;
+      color: #0f172a;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 2px;
+      text-align: center;
+      padding: 1px 4px;
+      flex-shrink: 0;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 9pt;
+      color: #0f172a;
+    }
+    .task-text p {
+      margin: 0 0 3px 0;
+    }
+
+    .task-points {
+      font-size: 7.5pt;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+      border-radius: 2px;
+      padding: 1px 4px;
+      white-space: nowrap;
+    }
+
+    /* Варианты Части А */
+    .options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      margin-top: 4px;
+      padding-left: 38px;
+      font-size: 8.8pt;
+    }
+
+    .option-item {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      min-width: 42%;
+    }
+
+    .option-letter-badge {
+      border: 1px solid #0f172a;
+      border-radius: 2px;
+      font-weight: 700;
+      font-size: 7.5pt;
+      width: 17px;
+      height: 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    /* Клеточный бланк Части Б */
+    .part-b-box-wrap {
+      margin-top: 4px;
+      padding-left: 38px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 8.5pt;
+      color: #475569;
+    }
+
+    .cell-grid {
+      display: inline-flex;
+      border-top: 1px solid #0f172a;
+      border-left: 1px solid #0f172a;
+    }
+    .cell-grid span {
+      width: 18px;
+      height: 18px;
+      border-right: 1px solid #0f172a;
+      border-bottom: 1px solid #0f172a;
+      display: inline-block;
+      text-align: center;
+      font-size: 8pt;
+      line-height: 17px;
+      color: #94a3b8;
+      background: #ffffff;
+    }
+
+    /* ── Бланк ответов внизу листа ── */
+    .tear-off-sheet {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-top: 12px;
+      border-top: 2px dashed #64748b;
+      padding-top: 6px;
+    }
+
+    .tear-off-title {
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .quick-answer-grid {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      text-align: center;
+    }
+    .quick-answer-grid th, .quick-answer-grid td {
+      border: 1px solid #0f172a;
+      padding: 2px 3px;
+    }
+    .quick-answer-grid th {
+      background: #f1f5f9;
+      font-weight: 700;
+    }
+    .quick-answer-grid td {
+      height: 16px;
+    }
+
+    /* ── 6. Страница мастер-таблицы ключей (для учителя) ── */
+    .keys-section {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    .keys-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 8.5pt;
+    }
+    .keys-table th {
+      background: #f1f5f9;
+      border: 1px solid #94a3b8;
+      padding: 5px 8px;
+      text-align: left;
+      font-weight: 700;
+    }
+    .keys-table td {
+      border: 1px solid #cbd5e1;
+      padding: 5px 8px;
+      vertical-align: top;
+    }
+    .keys-table tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .explanation-callout {
+      font-size: 8pt;
+      color: #334155;
+      margin-top: 3px;
+      border-left: 2px solid #cbd5e1;
+      padding-left: 6px;
+    }
+
+    /* KaTeX math adjustments */
+    .katex {
+      font-size: 1.05em;
+    }
+    .katex-display {
+      margin: 4px 0 !important;
+    }
+  </style>
+</head>
+<body>
+
+  {{#each resolvedVariants}}
+    <div class="page-sheet">
+      <!-- 1. Шапка бренда -->
+      <header class="brand-header">
+        <div class="brand-left">
+          <div class="brand-logo-group">
+            <div class="brand-rhombus"><div class="brand-rhombus-inner"></div></div>
+            <span class="brand-name">EDUSFERA</span>
+          </div>
+          <div class="brand-slogan">Не зубри. Знай.</div>
+        </div>
+        <div class="brand-right">
+          <div class="promo-badge">
+            <strong>edusfera.by</strong>
+            <span>Платформа для репетиторов</span>
+          </div>
+          <div class="variant-badge">ВАРИАНТ № {{ number }}</div>
+        </div>
+      </header>
+
+      <!-- 2. Паспорт теста -->
+      <div class="passport-box">
+        <div class="passport-title-wrap">
+          <div class="passport-subject">{{ ../meta.subject }}</div>
+          <div class="passport-status">Пробный тест в формате стандартов ЦТ и ЦЭ 2026 • {{ ../meta.title }}</div>
+        </div>
+        <div class="passport-meta-grid">
+          <div class="meta-pill">Уровень: <strong>{{ ../meta.grade }}</strong></div>
+          <div class="meta-pill">Время: <strong>{{ ../meta.durationMinutes }} мин</strong></div>
+          <div class="meta-pill">Заданий: <strong>{{ totalTasks }}</strong></div>
+          <div class="meta-pill">Макс. балл: <strong>{{ maxPoints }}</strong></div>
+        </div>
+      </div>
+
+      <!-- 3. Блок учащегося -->
+      <div class="student-bar">
+        <span>Учащийся: __________________________________________________________________</span>
+        <span>Класс: _________</span>
+        <span>Дата: {{ ../meta.generatedDate }}</span>
+      </div>
+
+      <!-- 4. Инструкция -->
+      <div class="instruction-callout">
+        <strong>(i) Инструкция:</strong> В заданиях Части А выберите один верный ответ из предложенных. В заданиях Части Б запишите краткий ответ в клеточный бланк без пробелов и единиц измерения. Внизу листа внесите ответы в отрезной бланк.
+      </div>
+
+      <!-- 5. Часть А -->
+      {{#if partA.length}}
+        <div class="section-title-bar">Часть А — выбор одного правильного ответа</div>
+        {{#each partA}}
+          <div class="task-block">
+            <div class="task-header">
+              <span class="task-num-badge">А{{ displayNumber }}</span>
+              <div class="task-text">{{{ renderedText }}}</div>
+              <span class="task-points">{{ points }} б.</span>
+            </div>
+            <div class="options-row">
+              {{#each renderedChoices}}
+                <div class="option-item">
+                  <span class="option-letter-badge">{{ letter }}</span>
+                  <span>{{{ html }}}</span>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        {{/each}}
+      {{/if}}
+
+      <!-- 6. Часть Б -->
+      {{#if partB.length}}
+        <div class="section-title-bar">Часть Б — краткий точный ответ</div>
+        {{#each partB}}
+          <div class="task-block">
+            <div class="task-header">
+              <span class="task-num-badge">Б{{ displayNumber }}</span>
+              <div class="task-text">{{{ renderedText }}}</div>
+              <span class="task-points">{{ points }} б.</span>
+            </div>
+            <div class="part-b-box-wrap">
+              <span>Бланк ответа:</span>
+              <div class="cell-grid">
+                <span>±</span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      {{/if}}
+
+      <!-- 7. Отрезной бланк ответов -->
+      <div class="tear-off-sheet">
+        <div class="tear-off-title">
+          <span>✄ Линия отреза • Бланк ответов учащегося (Вариант № {{ number }})</span>
+          <span>EDUSFERA</span>
+        </div>
+        <table class="quick-answer-grid">
+          <tr>
+            <th style="width: 50px;">Часть А</th>
+            {{#each partA}}
+              <th>А{{ displayNumber }}</th>
+            {{/each}}
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">Ответ</td>
+            {{#each partA}}
+              <td></td>
+            {{/each}}
+          </tr>
+          {{#if partB.length}}
+            <tr>
+              <th style="width: 50px;">Часть Б</th>
+              {{#each partB}}
+                <th>Б{{ displayNumber }}</th>
+              {{/each}}
+            </tr>
+            <tr>
+              <td style="font-weight: 700;">Ответ</td>
+              {{#each partB}}
+                <td></td>
+              {{/each}}
+            </tr>
+          {{/if}}
+        </table>
+      </div>
+    </div>
+  {{/each}}
+
+  <!-- 8. Лист ключей для учителя -->
+  {{#if options.showAnswers}}
+    <div class="page-sheet keys-section">
+      <header class="brand-header">
+        <div class="brand-left">
+          <div class="brand-logo-group">
+            <div class="brand-rhombus"><div class="brand-rhombus-inner"></div></div>
+            <span class="brand-name">EDUSFERA • КЛЮЧИ</span>
+          </div>
+          <div class="brand-slogan">Мастер-таблица ответов и разбор ловушек</div>
+        </div>
+        <div class="brand-right">
+          <div class="promo-badge">
+            <strong>Только для преподавателя</strong>
+            <span>Стандарты ЦТ / ЦЭ 2026</span>
+          </div>
+        </div>
+      </header>
+
+      {{#each resolvedVariants}}
+        <h3 style="margin: 12px 0 4px 0; font-size: 10pt; color: #0f172a; border-bottom: 1.5px solid #0f172a; padding-bottom: 2px;">
+          Вариант № {{ number }}
+        </h3>
+        <table class="keys-table">
+          <thead>
+            <tr>
+              <th style="width: 8%;">№</th>
+              <th style="width: 22%;">Верный ответ</th>
+              <th style="width: 8%;">Балл</th>
+              {{#if ../options.showExplanations}}
+                <th>Методическое обоснование и ловушки</th>
+              {{/if}}
+            </tr>
+          </thead>
+          <tbody>
+            {{#each partA}}
+              <tr>
+                <td><strong>А{{ displayNumber }}</strong></td>
+                <td><strong>{{{ renderedAnswer }}}</strong></td>
+                <td>{{ points }}</td>
+                {{#if ../../options.showExplanations}}
+                  <td><div class="explanation-callout">{{{ renderedExplanation }}}</div></td>
+                {{/if}}
+              </tr>
+            {{/each}}
+            {{#each partB}}
+              <tr>
+                <td><strong>Б{{ displayNumber }}</strong></td>
+                <td><strong>{{{ renderedAnswer }}}</strong></td>
+                <td>{{ points }}</td>
+                {{#if ../../options.showExplanations}}
+                  <td><div class="explanation-callout">{{{ renderedExplanation }}}</div></td>
+                {{/if}}
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{/each}}
+    </div>
+  {{/if}}
+
+</body>
+</html>
+

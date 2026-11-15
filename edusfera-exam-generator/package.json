@@ -1,0 +1,27 @@
+{
+  "name": "edusfera-exam-generator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stateless HTML/KaTeX to A4 PDF exam rendering microservice for Edusfera",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/render_test.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@iktakahiro/markdown-it-katex": "^4.0.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "handlebars": "^4.7.8",
+    "katex": "^0.16.21",
+    "markdown-it": "^14.1.0",
+    "p-limit": "^6.2.0",
+    "playwright-core": "^1.50.1"
+  }
+}
+

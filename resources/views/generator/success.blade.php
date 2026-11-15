@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
     <title>Заказ № {{ $order->order_number }} | Edusfera</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -69,7 +70,7 @@
             <div class="space-y-3 pt-2">
                 <a 
                     id="download-btn"
-                    href="{{ route('generator.download', ['order' => $order->order_number]) }}"
+                    href="{{ route('generator.download', ['order' => $order->order_number, 'token' => $order->access_token]) }}"
                     class="w-full py-4 px-6 rounded-2xl bg-[#7D39EB] hover:bg-[#6D28D9] text-white font-bold text-base tracking-tight shadow-[0_0_30px_rgba(125,57,235,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,8 +150,10 @@
     <script>
         (function() {
             const orderNumber = @js($order->order_number);
-            const statusUrl = "/generator/status/" + orderNumber;
-            const processUrl = "/generator/process/" + orderNumber;
+            const accessToken = @js($order->access_token);
+            const query = "?token=" + encodeURIComponent(accessToken);
+            const statusUrl = "/generator/status/" + orderNumber + query;
+            const processUrl = "/generator/process/" + orderNumber + query;
             let progress = 25;
             let checkCount = 0;
             let isDone = false;

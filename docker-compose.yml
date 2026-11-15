@@ -110,6 +110,23 @@ services:
         networks:
             - edusfera
 
+    exam-generator:
+        build:
+            context: ./edusfera-exam-generator
+            dockerfile: Dockerfile
+        ports:
+            - '${EXAM_GENERATOR_PORT:-3005}:3005'
+        environment:
+            NODE_ENV: 'development'
+            PORT: '3005'
+            HOST: '0.0.0.0'
+            RENDER_CONCURRENCY: '2'
+            BROWSER_RESTART_THRESHOLD: '200'
+        shm_size: '256mb'
+        restart: unless-stopped
+        networks:
+            - edusfera
+
     nginx:
         image: nginx:alpine
         container_name: edusfera-nginx-local
